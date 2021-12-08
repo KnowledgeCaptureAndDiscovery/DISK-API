@@ -341,15 +341,15 @@
 				background: white;
 			}
 			.gwt-DialogBox .dialogBottomCenter {
-				background: url(customise/hborder.png) repeat-x 0px -2945px;
-				-background: url(customise/hborder_ie6.png) repeat-x 0px -2144px;
+				background: url(customize/hborder.png) repeat-x 0px -2945px;
+				-background: url(customize/hborder_ie6.png) repeat-x 0px -2144px;
 			}
 			.gwt-DialogBox .dialogMiddleLeft {
-				background: url(customise/vborder.png) repeat-y -31px 0px;
+				background: url(customize/vborder.png) repeat-y -31px 0px;
 			}
 			.gwt-DialogBox .dialogMiddleRight {
-				background: url(customise/vborder.png) repeat-y -32px 0px;
-				-background: url(customise/vborder_ie6.png) repeat-y -32px 0px;
+				background: url(customize/vborder.png) repeat-y -32px 0px;
+				-background: url(customize/vborder_ie6.png) repeat-y -32px 0px;
 			}
 			.gwt-DialogBox .dialogTopLeftInner {
 				width: 10px;
@@ -371,20 +371,20 @@
 				zoom: 1;
 			}
 			.gwt-DialogBox .dialogTopLeft {
-				background: url(customise/circles.png) no-repeat -20px 0px;
-				-background: url(customise/circles_ie6.png) no-repeat -20px 0px;
+				background: url(customize/circles.png) no-repeat -20px 0px;
+				-background: url(customize/circles_ie6.png) no-repeat -20px 0px;
 			}
 			.gwt-DialogBox .dialogTopRight {
-				background: url(customise/circles.png) no-repeat -28px 0px;
-				-background: url(customise/circles_ie6.png) no-repeat -28px 0px;
+				background: url(customize/circles.png) no-repeat -28px 0px;
+				-background: url(customize/circles_ie6.png) no-repeat -28px 0px;
 			}
 			.gwt-DialogBox .dialogBottomLeft {
-				background: url(customise/circles.png) no-repeat 0px -36px;
-				-background: url(customise/circles_ie6.png) no-repeat 0px -36px;
+				background: url(customize/circles.png) no-repeat 0px -36px;
+				-background: url(customize/circles_ie6.png) no-repeat 0px -36px;
 			}
 			.gwt-DialogBox .dialogBottomRight {
-				background: url(customise/circles.png) no-repeat -8px -36px;
-				-background: url(customise/circles_ie6.png) no-repeat -8px -36px;
+				background: url(customize/circles.png) no-repeat -8px -36px;
+				-background: url(customize/circles_ie6.png) no-repeat -8px -36px;
 			}
 			* html .gwt-DialogBox .dialogTopLeftInner {
 				width: 10px;
@@ -445,7 +445,7 @@
 				<paper-toolbar class="app-logo">
 					<g:Anchor href="#{nameTokens.getHome}">
 						<div class="horizontal layout center app-logo">
-							<img src="customise/Logo.png" class="app-logo" />
+							<img src="customize/Logo.png" class="app-logo" />
 							<h1 class="app-logo">NeuroDISK</h1>
 						</div>
 					</g:Anchor>

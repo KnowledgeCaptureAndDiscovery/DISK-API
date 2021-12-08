@@ -1,4 +1,4 @@
-package org.diskproject.client.components.customise;
+package org.diskproject.client.components.customize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -392,7 +392,7 @@ public class GWTCodeMirror extends Composite implements TakesValue<String>, HasV
                             var result = [];
                             var cursor = editor.doc.getCursor();
                             var index = editor.indexFromPos(cursor);
-                            $entry(myCodeMirror.@org.diskproject.client.components.customise.GWTCodeMirror::getCompletions(Ljava/lang/String;IIILcom/google/gwt/core/client/JavaScriptObject;Lcom/google/gwt/core/client/JavaScriptObject;)(editor.getValue(), cursor.line, cursor.ch, index, result, callback));
+                            $entry(myCodeMirror.@org.diskproject.client.components.customize.GWTCodeMirror::getCompletions(Ljava/lang/String;IIILcom/google/gwt/core/client/JavaScriptObject;Lcom/google/gwt/core/client/JavaScriptObject;)(editor.getValue(), cursor.line, cursor.ch, index, result, callback));
                         }, {async: true});
                     }
                 },
@@ -401,7 +401,7 @@ public class GWTCodeMirror extends Composite implements TakesValue<String>, HasV
         );
         // Listener for changes and propagate them back into the GWT compiled code
         theCM.on("change", function () {
-            $entry(myCodeMirror.@org.diskproject.client.components.customise.GWTCodeMirror::handleChange()());
+            $entry(myCodeMirror.@org.diskproject.client.components.customize.GWTCodeMirror::handleChange()());
         });
         return theCM;
 

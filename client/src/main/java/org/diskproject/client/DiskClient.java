@@ -27,10 +27,14 @@ import org.diskproject.client.authentication.AuthUser;
  */
 public class DiskClient implements EntryPoint {
   public final ApplicationController controller = GWT.create(ApplicationController.class);
+
+  public native static String getPortalPrefix() /*-{
+    return $wnd.CONFIG.CLIENT_PREFIX ? $wnd.CONFIG.CLIENT_PREFIX : "";
+  }-*/;
   
   public void onModuleLoad() {
 	//Login with keycloak 
-	final Keycloak keycloak = new Keycloak("DiskClient", "/customise/keycloak.json");
+	final Keycloak keycloak = new Keycloak("DiskClient", getPortalPrefix() + "/customize/keycloak.json");
 	keycloak.getInitOptions().setCheckLoginIframe(false);
 	keycloak.addKeycloakListener(new KeycloakListenerAdapter()
 		{

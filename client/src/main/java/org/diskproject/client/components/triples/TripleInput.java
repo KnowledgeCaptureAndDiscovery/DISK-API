@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.diskproject.client.components.customise.GWTCodeMirror;
+import org.diskproject.client.components.customize.GWTCodeMirror;
 import org.diskproject.client.place.NameTokens;
 import org.diskproject.client.rest.AppNotification;
 import org.diskproject.client.rest.DiskREST;
