@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+    xmlns:g="urn:import:com.google.gwt.user.client.ui" 
+    xmlns:p='urn:import:com.vaadin.polymer.paper.widget'
+    xmlns:i='urn:import:com.vaadin.polymer.iron.widget'
+    xmlns:v='urn:import:com.vaadin.polymer.vaadin.widget'
+    xmlns:m='urn:import:org.diskproject.client.components.menu'>
+
+    <g:HTMLPanel>
+        <style is="custom-style">
+            .bold {
+                font-weight: bold;
+            }
+            .inline {
+                display: inline;
+            }
+            .workflow-main-view { 
+                padding: 10px 20px;
+            }
+            .workflow-header {
+                display: flex;
+                align-items: center;
+            }
+            .workflow-name {
+                font-size: 1.1em;
+                font-weight: bold;
+            }
+            .two-columns {
+                display: flex;
+            }
+        </style>
+        <div class="workflow-main-view">
+            <div class="workflow-header">
+                <i:IronIcon ui:field="statusIcon"></i:IronIcon>
+                <g:Label styleName="workflow-name" ui:field="workflowName"/>
+                <g:HTMLPanel styleName="workflow-buttons">
+                </g:HTMLPanel>
+            </div>
+            <div class="workflow-body">
+                <g:Label ui:field="workflowDate"/>
+                <g:HTMLPanel styleName="two-columns" ui:field="outputsPanel">
+                    <b style="margin-right: 10px">Output files:</b>
+                </g:HTMLPanel>
+
+                <g:HTMLPanel styleName="two-columns" ui:field="parametersPanel">
+                    <b style="margin-right: 10px">Parameters:</b>
+                    <g:HTMLPanel ui:field="parameterList"></g:HTMLPanel>
+                </g:HTMLPanel>
+            </div>
+        </div>
+    </g:HTMLPanel>
+</ui:UiBinder>

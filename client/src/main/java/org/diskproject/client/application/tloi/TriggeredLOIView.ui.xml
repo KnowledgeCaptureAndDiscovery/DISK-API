@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:g="urn:import:com.google.gwt.user.client.ui" 
+	xmlns:l='urn:import:org.diskproject.client.components.loader'
+	xmlns:lw='urn:import:org.diskproject.client.components.list'
+	xmlns:tloi='urn:import:org.diskproject.client.components.tloi'
+	xmlns:p='urn:import:com.vaadin.polymer.paper.widget'>
+
+	<g:HTMLPanel>
+		<style is="custom-style">
+            .list .item {
+                @apply(--layout-horizontal);
+                margin: 16px 16px 0 16px;
+                padding: 20px;
+                border-radius: 8px;
+                background-color: #eee;
+                border: 1px solid #ddd;
+            }
+            .list iron-collapse.pad {
+                margin-left: 20px;
+            }
+            @media(max-width: 640px) {
+                .list iron-collapse.pad {
+                    margin-left: 10px;
+                }
+            }          
+            .list {
+            	border: 1px #e5e5e5;
+            }  
+            .list paper-item {
+                border-top: 1px dotted #e5e5e5;
+                padding: 2px;
+                font-size: 13px;
+                min-height: 32px;
+            }
+            .list paper-item.both-borders {
+                border-bottom: 1px dotted #e5e5e5;
+            }
+            .list paper-item:first-of-type {
+                border-top: 0px;
+            }
+            iron-collapse {
+                border-left: 1px dotted #e5e5e5;
+            }
+            .list paper-item iron-icon {
+                margin-right: 8px;
+                margin-left: 8px;
+                min-width: 18px;
+                width: 18px;
+                height: 18px;
+            }
+            .list paper-item iron-icon.transparent {
+                opacity: 0;
+            }
+            div.padded {
+                padding: 10px;
+            }
+            div.content {
+                padding: 0px;
+            }            
+            .list paper-item.header {
+                font-weight: 500;
+                background-color: #f5f5f5;
+                cursor: default;
+                font-size: 13px;
+            }
+            paper-item.no-padding {
+            	padding: 0px;
+            }
+            paper-icon-button.orange {
+            	color: var(--paper-orange-500);
+            }
+            .list paper-item iron-icon.orange {
+                background-color: transparent;
+                border: 0px;
+            }
+			.list paper-item iron-icon.blue {
+                background-color: transparent;
+                border: 0px;
+            }         
+		</style>
+		<l:Loader ui:field="loader" />
+		<lw:ListWidget ui:field="tloilist" styleName="list" />
+		<tloi:TriggeredLOIViewer ui:field="viewer" styleName="padded" />
+		<div class="horizontal end-justified layout">
+			<p:PaperButton ui:field="reloadbutton">
+				<iron-icon icon="refresh" />
+				Reload
+			</p:PaperButton>
+		</div>		
+	</g:HTMLPanel>
+</ui:UiBinder>

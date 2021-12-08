@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:p='urn:import:com.vaadin.polymer.paper.widget'
+	xmlns:g="urn:import:com.google.gwt.user.client.ui">
+    <g:HTMLPanel styleName="brain-main">
+    <style is="custom-style">
+        .brain-main {
+            display: flex;
+        }
+        .brain-gradient {
+            width: 20px;
+            margin: 50px 0px;
+            background: red;
+            -webkit-mask-image: -webkit-gradient(linear, left top, left bottom, from(rgba(0,0,0,1)), to(rgba(0,0,0,0)));
+        }
+        .gradient-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            margin: 41px 3px;
+        }
+        .loading-brain {
+            position: absolute;
+			top: calc(50% - 25px);
+			right: calc(50% - 25px);
+			width: 50px;
+			height: 50px;
+		}
+    </style>
+        <p:PaperSpinner active="true" ui:field="loading" class="loading-brain"/>
+    	<div ui:field="container">
+    		<canvas ui:field="canvas" width="600" height="400"></canvas>
+    	</div>
+	    <div class="brain-gradient"/>
+	    <div class="gradient-info">
+		    <span>1</span>
+		    <span>0</span>
+	    </div>
+    </g:HTMLPanel>
+</ui:UiBinder>

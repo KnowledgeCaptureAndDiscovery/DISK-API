@@ -1,0 +1,102 @@
+@prefix : <http://disk-project.org/ontology/omics#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@base <http://disk-project.org/ontology/omics> .
+
+<http://disk-project.org/ontology/omics> a owl:Ontology .
+
+# Object Properties
+# -----------------
+:associatedWith a owl:ObjectProperty .
+
+:collectedFrom a owl:ObjectProperty ;
+               rdfs:domain :Tissue ;               
+               rdfs:range :Patient .
+
+
+:createdFrom a owl:ObjectProperty ;
+             rdfs:domain :Data ;             
+             rdfs:range :Workflow .
+
+:hasDiagnosis a owl:ObjectProperty ;              
+              rdfs:domain :Patient ;
+              rdfs:range :Diagnosis .
+
+:hasPatternGraph a owl:ObjectProperty ;
+                 rdfs:domain :LineOfInquiry ;                 
+                 rdfs:range :PatternGraph .
+
+:isDiagnosedWith a owl:ObjectProperty ;
+                 rdfs:domain :Diagnosis ;                 
+                 rdfs:range :Cancer .
+
+:matchesWorkflow a owl:ObjectProperty ;
+                 rdfs:domain :LineOfInquiry ;                 
+                 rdfs:range :Workflow .
+
+:bindsTo a owl:ObjectProperty ;
+                 rdfs:domain :Variable ;                 
+                 rdfs:range :Variable .
+
+# Data properties
+# ---------------
+:collectedAt a owl:DatatypeProperty ;
+             rdfs:domain :Tissue ;             
+             rdfs:range xsd:dateTime .
+
+
+:diagnosedAt a owl:DatatypeProperty ;
+             rdfs:domain :Diagnosis ;             
+             rdfs:range xsd:dateTime .
+
+
+# Classes
+# -------
+:Cancer a owl:Class .
+
+:Data a owl:Class .
+
+:Diagnosis a owl:Class .
+
+:Experiment a owl:Class .
+
+:Gene a owl:Class .
+
+:Graph a owl:Class .
+
+:Hypothesis a owl:Class ;            
+            rdfs:subClassOf :Graph .
+
+:LineOfInquiry a owl:Class ;               
+               rdfs:subClassOf :Graph .
+
+
+:MassSpecData a owl:Class ;              
+              rdfs:subClassOf :Data .
+
+:Patient a owl:Class .
+
+:PatternGraph a owl:Class ;
+              rdfs:subClassOf :Graph .
+
+:Protein a owl:Class .
+
+:Tissue a owl:Class .
+
+:Variable a owl:Class .
+
+:Workflow a owl:Class ;         
+          rdfs:subClassOf :Graph .
+
+
+
+# Individuals
+# -----------
+:ColonCancer a :Cancer .
+:EGFR a :Protein .
+:KRAS a :Protein .
+:HNF4a a :Gene .
+

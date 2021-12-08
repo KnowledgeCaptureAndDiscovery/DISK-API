@@ -1,0 +1,28 @@
+Hello there!
+
+I am the DISK AI Agent and I am here to assist you in testing your hypotheses. After you send me  a hypothesis, I will run analyses on the hypothesis and send you the results. I will also give you updates on these results if I see any new data that is relevant. 
+
+To submit a hypothesis for consideration, send me an email with this subject line:
+
+Hypothesis submission
+
+The body of the email should specify the hypothesis that you are interested in. At the moment, I can test hypotheses about whether a gene is associated with a particular brain characteristic.  For example, a hypothesis could be whether the APOE4 gene is associated with hippocampal volume.  You would email me the hypothesis in this format:
+
+<Gene> associatedWith <BrainCharacteristic>
+
+For example:
+
+APOE4 associatedWith HippocampalVolume
+
+
+The brain characteristics that we support at the moment include:
+
+HippocampalVolume
+Allele
+
+Finally, don't forget to address this email to me at disk.ai.agent@gmail.com.
+
+Thank you for using our services,
+
+The DISK AI Agent
+

@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:g="urn:import:com.google.gwt.user.client.ui" 
+	xmlns:lw='urn:import:org.diskproject.client.components.list'
+	xmlns:tr='urn:import:org.diskproject.client.components.triples'	
+	xmlns:tloi='urn:import:org.diskproject.client.components.tloi'
+	xmlns:p='urn:import:com.vaadin.polymer.paper.widget' xmlns:G="urn:import:com.google.gwt.thirdparty.common.css.compiler.gssfunctions.GssFunctions" xmlns:s="urn:import:com.google.gwt.dom.builder.shared">
+
+	<g:HTMLPanel>
+		<style is="custom-style">
+			.name {
+                font-size: 14px;
+                font-weight: bold;
+            }
+			div.section {
+                padding: 10px;
+            }
+			div.bordered-list {				
+				background: white;
+				border-radius: 3px;
+				border: 1px solid #E5E5E5;
+				min-height: 15px;
+				margin-bottom: 10px;
+			}
+			div.gutter {
+				display: table-cell;			
+				background: #F7F7F7;
+				border-right: 1px solid #DDD;
+				width: 35px;
+				padding-right: 5px;
+				text-align: right;
+				color: #999;
+			}
+			div.triple-text {
+				padding-left: 5px;
+				display:table-cell;
+			}
+			div.triple {
+				line-height: 1.8em;
+				font-family: verdana, arial, helvetica, sans-serif;
+				font-size: 13px;
+				display:table-row;
+			}
+			div.padded {
+				padding: 5px;
+			}
+			div.gutter paper-icon-button {
+			    padding: 4px;
+			    margin-left: 2px;
+			    width: 23px;
+			    height: 23px;
+			    float: left;
+            	--paper-icon-button: {
+            		color: #AAA;
+            	}
+            	--paper-icon-button-hover: {
+            		color: var(--paper-green-600)
+            	}
+            	--paper-icon-button-ink-color: var(--paper-green-200)
+			}
+			.section a:hover {
+				text-decoration: underline;
+			}
+			.no-run-link .run-link {
+				display: none;
+			}
+			iron-flex-layout.list {
+				display: block;
+			}
+			.pure-table {
+				border-collapse: collapse;
+				border-spacing: 0;
+				empty-cells: show;
+				border: 1px solid #cbcbcb;
+			}
+			.pure-table thead {
+				background-color: #e0e0e0;
+				color: #000;
+				text-align: left;
+				vertical-align: bottom;
+			}
+			.pure-table thead {
+				color: #000;
+				text-align: left;
+			}
+			.pure-table td, .pure-table th {
+				padding: .5em 1em;
+			}
+			.pure-table td, .pure-table th {
+				border-left: 1px solid #cbcbcb;
+				border-bottom-width: 0;
+				border-right-width: 0;
+				border-top-width: 0;
+				font-size: inherit;
+				margin: 0;
+				overflow: visible;
+			}
+			.pure-table td {
+				background-color: transparent;
+			}
+			.pure-table td, .pure-table th {
+				border-left: 1px solid #cbcbcb;
+				border-bottom-width: 0;
+				border-right-width: 0;
+				border-top-width: 0;
+				font-size: inherit;
+				margin: 0;
+				overflow: visible;
+			}
+			.rev-hyp-title {
+				display: flex;
+    			justify-content: space-between;
+			}
+			.edit-button {
+				float: right;
+				border: 1px solid gray;
+    			padding: 2px 3px;
+    			display: flex;
+			}
+			.shinyviz {
+				border-width: 0px;
+				width: 100%;
+				height: 1000px;
+			}
+			.relative-div {
+			    position: relative;
+			}
+			
+			table.results-table thead th {
+			    text-align: start;
+                padding: 0px 10px;
+			}
+
+			table.results-table td {
+			    text-align: start;
+                padding: 0px 10px;
+			}
+		</style>
+		<div class="vertical layout section">
+			<p:PaperButton ui:field="runButton" styleName="edit-button">
+				<iron-icon icon="input"/>
+				RUN
+			</p:PaperButton>
+			<p:PaperButton ui:field="editBindingsButton" styleName="edit-button">
+				<iron-icon icon="settings-applications" />
+				EDIT BINDINGS
+			</p:PaperButton>
+
+			<div ui:field="header"/>
+
+			<g:HTMLPanel ui:field="narrative"> </g:HTMLPanel>
+
+			<div ui:field="hypothesisSection">
+				<label class="small-grey">Hypothesis</label>
+				<div class="bordered-list padded">
+					<div style="display:flex; justify-content: space-between;">
+					   <a ui:field="hypothesisLink"/>
+					   <g:CheckBox ui:field='showHypothesisGraph' value="false">
+						  <label>Show semantic representation</label>
+						</g:CheckBox>
+					</div>
+					<tr:TripleViewer ui:field="hypothesis"/>
+				</div>
+			</div>
+			
+			<div ui:field="LOISection">
+				<label class="small-grey">Triggered Line of Inquiry</label>
+
+				<div class="bordered-list padded">
+					<div style="display: flex; justify-content: space-between;">
+					   <div><a ui:field="loiLink"/></div>
+						<span>
+							<g:CheckBox ui:field='showdq' value="false">
+								<label>Show data query</label>
+							</g:CheckBox>
+							<g:CheckBox ui:field='showdata'>
+								<label>Show data</label>
+							</g:CheckBox>
+						</span>
+					</div>
+					<g:HTMLPanel ui:field="DataQuerySection">
+						<b>Data query to execute:</b>
+						<tr:SparqlInput ui:field="dataQuery"/>
+					   <br/>
+					</g:HTMLPanel>
+					<g:HTMLPanel ui:field="DataSection">
+						<b>Data Retrieved:</b>
+						<g:Label ui:field="DataLabel"></g:Label>
+						<div ui:field="dataDiv" style="white-space: nowrap; overflow: scroll;"/>
+						<br/>
+						<p:PaperButton ui:field="downloadbutton"><iron-icon icon="save" />Download table as CSV</p:PaperButton>
+					</g:HTMLPanel>
+				</div>
+			</div>
+
+			<div ui:field="WFSection">
+                <div style="display:flex;justify-content: space-between;align-items: center;">
+					<label class="small-grey">Triggered Workflows</label>
+					<div ui:field="workflowButtons"></div>
+                </div>
+				<div class="bordered-list">
+					<lw:ListWidget ui:field="workflowlist" styleName="list" />
+				</div>
+			</div>
+			
+			<div ui:field="MetaWFSection">
+				<label class="small-grey">Triggered Meta-Workflows</label>
+				<div class="bordered-list">
+					<lw:ListWidget ui:field="metaworkflowlist" styleName="list" />
+				</div>
+			</div>
+			
+			<g:HTMLPanel ui:field="revHypothesisSection" />
+		</div>
+
+		<p:PaperDialog ui:field="editBindingsDialog" noCancelOnOutsideClick="true" noCancelOnEscKey="true">
+			<tloi:BindingsEditor ui:field="bindingseditor"/>
+		</p:PaperDialog>
+	</g:HTMLPanel>
+</ui:UiBinder>

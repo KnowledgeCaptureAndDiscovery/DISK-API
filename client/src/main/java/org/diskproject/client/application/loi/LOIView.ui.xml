@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:g="urn:import:com.google.gwt.user.client.ui" 
+	xmlns:l='urn:import:org.diskproject.client.components.loader'
+	xmlns:lw='urn:import:org.diskproject.client.components.list'
+	xmlns:loi='urn:import:org.diskproject.client.components.loi'
+	xmlns:p='urn:import:com.vaadin.polymer.paper.widget'>
+
+	<g:HTMLPanel>
+		<style is="custom-style">
+		    .clickable {
+		      cursor: pointer;
+		    }
+            .list .item {
+                @apply(--layout-horizontal);
+                margin: 16px 16px 0 16px;
+                padding: 20px;
+                border-radius: 8px;
+                background-color: #eee;
+                border: 1px solid #ddd;
+            }
+            .list iron-collapse.pad {
+                margin-left: 20px;
+            }
+            @media(max-width: 640px) {
+                .list iron-collapse.pad {
+                    margin-left: 10px;
+                }
+            }          
+            .list {
+            	border: 1px #e5e5e5;
+            }  
+            .list paper-item {
+                border-top: 1px dotted #e5e5e5;
+                padding: 2px;
+                font-size: 13px;
+                min-height: 32px;
+                cursor: pointer;
+            }
+            .list paper-item.both-borders {
+                border-bottom: 1px dotted #e5e5e5;
+            }
+            .list paper-item:first-of-type {
+                border-top: 0px;
+            }
+            iron-collapse {
+                border-left: 1px dotted #e5e5e5;
+            }
+            .list paper-item iron-icon {
+                margin-right: 8px;
+                margin-left: 8px;
+                min-width: 18px;
+                width: 18px;
+                height: 18px;
+            }
+            .list paper-item iron-icon.transparent {
+                opacity: 0;
+            }
+            .list paper-item:not(.inherited):hover {
+                background-color: #f5f5f5;
+            }
+            div.padded {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            div.content {
+                padding: 0px;
+            }            
+            .list paper-item.header {
+                font-weight: 500;
+                background-color: #f5f5f5;
+                cursor: default;
+                font-size: 13px;
+            }
+            paper-item.no-padding {
+            	padding: 0px;
+            }
+            paper-fab.addloiicon {
+            	position: fixed;
+            	right: 60px;
+            	top: 10px;
+                --paper-fab-background: var(--paper-green-500);
+            }
+            paper-fab.helploiicon {
+            	position: fixed;
+            	right: 10px;
+            	top: 10px;
+                --paper-fab-background: var(--paper-green-500);
+            }
+            paper-icon-button.green {
+            	color: var(--paper-green-500);
+            }
+            .list paper-item iron-icon.green {
+                background-color: transparent;
+                border: 0px;
+            }
+			.list paper-item iron-icon.blue {
+                background-color: transparent;
+                border: 0px;
+            }
+            summary::-webkit-details-marker {
+                display: none
+            }
+		</style>
+
+		<p:PaperFab ui:field="addicon" icon="add" mini="true" 
+			addStyleNames="addloiicon" title="Add Line of Inquiry" tabindex="0" />
+		<p:PaperFab ui:field="helpicon" icon="help-outline" mini="true" 
+			addStyleNames="helploiicon" title="Help: Line of Inquiry" tabindex="0" />
+
+		<g:HTMLPanel ui:field="description">
+		  <div style="padding: 4px 10px; font-size: 14px; color: #666">
+			 <div style="float:right">
+					<label>Order by</label>
+					<g:ListBox ui:field='order'>
+						<g:item value='dateasc'>Date</g:item>
+						<g:item value='datedesc'>Date (desc)</g:item>
+						<g:item value='authorasc'>Author</g:item>
+						<g:item value='authordesc'>Author (desc)</g:item>
+					</g:ListBox>
+			 </div>
+				<div style="margin-top: 5px;">
+  				A line of inquiry represents potential analyses that can be pursued to test a type of hypothesis.<br/>
+					A list of all the available Lines of Inquiry in the system is displayed below.
+					To add a <b>new Line of Inquiry</b> click on the top-right button.
+			 </div>
+		  </div>
+		</g:HTMLPanel>
+		<l:Loader ui:field="loader" />
+		<g:HTMLPanel ui:field="retryDiv">
+		  <div style="display: block; font-size: 1.1em; height: 40px; line-height: 40px; text-align: center;">
+			  An error has occurred while loading this page.
+			  <a class="clickable" ui:field="retryLink">Click here to retry.</a>
+		  </div>
+		</g:HTMLPanel>
+		<lw:ListWidget ui:field="loilist" styleName="list" />
+		<loi:LOIEditor ui:field="form" styleName="padded" />
+		
+		<div style="display:none">
+			<g:DialogBox modal="true" ui:field='helpDialog'>
+				<g:caption><b>Help:</b> Line of Inquiry</g:caption>
+				<g:HTMLPanel>
+					<div style="padding: 0 15px; text-align: justify;">
+						<h2>Representing Lines of Inquiry</h2>
+						<p>A <b>line of inquiry</b> represents potential analyses that can be pursued to test a type of hypothesis. A line of inquiry consists of:</p>
+						<ol>
+							<li>
+								A <b>hypothesis pattern</b>, which represents the type of hypotheses that can be explored with this line of inquiry.
+								An example of a hypothesis pattern is "Protein ?p is associated with cancer ?c".
+								This hypothesis pattern must be expressed in the same language as hypothesis statements, so that they can be matched against a user’s hypothesis.
+							</li>
+							<li>
+								A set of <b>query patterns</b>, representing the kinds of data relevant to testing the hypothesis pattern as a set of templates of queries to a data repository.
+								Several kinds of data may be relevant, so there may be several query patterns.
+								For example, "Retrieve data of mass spectrometry experiments of tumor samples from patients with cancer ?c".
+							</li>
+							<li>
+								A set of <b>workflows</b>, which are procedures that capture data analysis methods that are applied to the data retrieved by the query patterns in order to test the hypothesis pattern.
+								For example, a workflow to analyze mass spectrometry data could include steps such as matching proteins from either a patient’s custom database or on a reference human proteomic database to tandem mass spectrometry data.
+							</li>
+							<li>
+								A set of <b>workflow mappings</b>, indicating how the query patterns and the datasets retrieved should be used to instantiate the workflows above to create execution-ready workflows.
+							</li>
+							<li>
+							 A <b>meta-workflow</b>, which describes how to aggregate the results of each of the workflow executions done to analyze the data, and return a revised hypothesis statement as a result.
+							 For example, suppose that one of the workflows in the line of inquiry is for analyzing protein mass spectrometry data for n patients finding evidence for the protein ?p with a p-value p1 
+							 and another workflow is for protein fluorescence data for m patients giving a p- value p1, then the meta-workflow would indicate how to combine that evidence into a joint confidence value. 
+							</li>
+							<li>
+								A <b>meta-workflow mapping</b>, which describe how the results of the workflow executions are to be used to generate bindings for the inputs of the meta-workflow.
+							</li>
+						</ol>
+						<g:Button ui:field='closeDialog'>Close</g:Button>
+					</div>
+				</g:HTMLPanel>
+			</g:DialogBox>
+		</div>
+
+	</g:HTMLPanel>
+</ui:UiBinder>

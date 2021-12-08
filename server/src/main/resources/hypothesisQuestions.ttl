@@ -1,0 +1,67 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix disk: <http://disk-project.org/ontology/disk#> .
+@prefix : <http://disk-project.org/resources/question/> .
+@base <http://disk-project.org/resources/question> .
+
+:HQ1 a disk:Question ;
+	rdf:label "Is the effect size of Genotype in Brain Trait associated with Demographic Attribute" ;
+	disk:hasQuestionTemplate "Is the EffectSize of ?Genotype on ?BrainImagingTrait associated with ?DemographicAttribute" ;
+	disk:hasQuestionPattern "?EffectSize neuro:sourceGene ?Genotype\n?EffectSize neuro:targetCharacteristic ?BrainImagingTrait\n?EffectSize hyp:associatedWith ?DemographicAttribute" ;
+	disk:hasQuestionVariable :HQ1V1 ;
+	disk:hasQuestionVariable :HQ1V2 ;
+	disk:hasQuestionVariable :HQ1V3 .
+
+:HQ1V1 a disk:QuestionVariable ;
+	disk:hasVariableName "?Genotype" ;
+	disk:hasConstraints "?A ?geneticDatatypeProp ?Genotype . \n?Genotype a ?type . \n?type rdfs:label \"GeneticDataType (E)\" . \n?geneticDatatypeProp rdfs:label \"HasGeneticDataType (E)\"." .
+
+:HQ1V2 a disk:QuestionVariable ;
+	disk:hasVariableName "?BrainImagingTrait" ;
+	disk:hasFixedOptions "HippocampalVolume" .
+
+:HQ1V3 a disk:QuestionVariable ;
+	disk:hasVariableName "?DemographicAttribute" ;
+	disk:hasFixedOptions "AGE" .
+
+:HQ2 a disk:Question ;
+	rdf:label "Is Brain Characteristic associated with Neurological Disorder" ;
+	disk:hasQuestionTemplate "Is ?BrainCharacteristic associated with ?NeurologicalDisorder" ;
+	disk:hasQuestionPattern "?BrainCharacteristic hyp:associatedWith ?NeurologicalDisorder" ;
+	disk:hasQuestionVariable :HQ2V1 ;
+	disk:hasQuestionVariable :HQ2V2 .
+
+:HQ2V1 a disk:QuestionVariable ;
+	disk:hasVariableName "?BrainCharacteristic" ;
+	disk:hasConstraints "?BrainCharacteristic a neuro:BrainCharacteristic" .
+
+:HQ2V2 a disk:QuestionVariable ;
+	disk:hasVariableName "?NeurologicalDisorder" ;
+	disk:hasConstraints "?NeurologicalDisorder a neuro:NeurologicalDisorder" .
+
+:HQ3 a disk:Question ;
+	rdf:label "Is the effect size of Genotype on Brain imaging derived trait of Region associated with Demographic" ;
+	disk:hasQuestionTemplate "Is the EffectSize of ?Genotype on ?BrainImagingTrait of ?Region associated with ?DemographicAttribute" ;
+	disk:hasQuestionPattern "?EffectSize neuro:sourceGene ?Genotype\n?EffectSize neuro:targetCharacteristic ?BrainImagingTrait\n?EffectSize neuro:targetCharacteristic ?Region\n?EffectSize hyp:associatedWith ?DemographicAttribute" ;
+	disk:hasQuestionVariable :HQ3V1 ;
+	disk:hasQuestionVariable :HQ3V2 ;
+	disk:hasQuestionVariable :HQ3V3 ;
+	disk:hasQuestionVariable :HQ3V4 .
+
+:HQ3V1 a disk:QuestionVariable ;
+	disk:hasVariableName "?Genotype" ;
+	disk:hasConstraints "?A ?snpprop ?Genotype . ?snpprop rdfs:label \"SNP\" ." .
+
+:HQ3V2 a disk:QuestionVariable ;
+	disk:hasVariableName "?BrainImagingTrait" ;
+	disk:hasConstraints "?A ?traitprop ?BrainImagingTrait . ?traitprop rdfs:label \"Trait\" ." .
+
+:HQ3V3 a disk:QuestionVariable ;
+	disk:hasVariableName "?Region" ;
+	disk:hasConstraints "?A ?regprop ?Region . ?regprop rdfs:label \"BrainRegion\" ." .
+
+:HQ3V4 a disk:QuestionVariable ;
+	disk:hasVariableName "?DemographicAttribute" ;
+	disk:hasFixedOptions "AGE" .	

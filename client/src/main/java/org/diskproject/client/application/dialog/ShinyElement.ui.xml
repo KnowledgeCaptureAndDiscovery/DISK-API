@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+    xmlns:tr='urn:import:org.diskproject.client.components.triples'
+    xmlns:p='urn:import:com.vaadin.polymer.paper.widget'
+    xmlns:g="urn:import:com.google.gwt.user.client.ui">
+  <g:HTMLPanel>
+    <style is="custom-style">
+        .shiny-iframe {
+            border: 0px;
+            width: 80vw;
+            height: 80vh;
+        }
+        .loading-iframe {
+            position: absolute;
+			top: calc(50% - 25px);
+			right: calc(50% - 25px);
+			width: 50px;
+			height: 50px;
+        }
+    </style>
+    <p:PaperSpinner active="true" ui:field="loading" class="loading-iframe"/>
+	<iframe class="shiny-iframe" ui:field="iframe"></iframe>
+  </g:HTMLPanel>
+</ui:UiBinder>

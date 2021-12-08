@@ -1,0 +1,14 @@
+@prefix ont: <http://disk-project.org/ontology/omics#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix : <http://disk-project.org/portal/admin/omics/loi_123#> .
+@base <http://disk-project.org/portal/admin/omics/loi_123> .
+
+:LOI_123 a ont:LineOfInquiry ;
+	ont:hasPatternGraph <http://disk-project.org/portal/admin/omics/hypPattern_123> ;
+	ont:matchesWorkflow <http://wings-workflows.org/portal/admin/omics/workflows/OmicsWorkflow.owl> .
+	
+<http://wings-workflows.org/portal/admin/omics/workflows/OmicsWorkflow.owl#WorkflowVar> 
+	ont:bindsTo <http://disk-project.org/portal/admin/omics/hypPattern_123#PatternVar> .

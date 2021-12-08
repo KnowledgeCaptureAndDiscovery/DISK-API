@@ -1,0 +1,539 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+<ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder'
+	xmlns:g='urn:import:com.google.gwt.user.client.ui' 
+	xmlns:p='urn:import:com.vaadin.polymer.paper.widget'
+	xmlns:i='urn:import:com.vaadin.polymer.iron.widget'>
+
+	<ui:with field="nameTokens" type="org.diskproject.client.place.NameTokens" />
+	<ui:with field="config" type="org.diskproject.client.Config" />
+	
+
+	<g:HTMLPanel>
+	
+		<link rel="stylesheet" href="styles/main.css" />
+		<style is="custom-style">
+			paper-button.green {
+				color: green;
+			}
+			paper-button.maroon {
+				color: maroon;
+			}
+			paper-button.tan {
+				color: tan;
+			}
+			paper-input.nomargin {
+				margin-top: 0px;
+			}
+			
+			img.app-logo {
+			    min-width: 34px;
+			    max-height: 34px;
+			    box-sizing: border-box;
+			    /*margin: 6px;*/
+			}
+			h1.app-logo {
+			    font-size: 18px;
+			    padding: 0 0 0 16px;
+			    font-weight: 500;
+			    color: #606060;
+			    margin: 0;
+			}
+			a.app-logo {
+			    max-width: 125px;
+			    text-transform: none;
+			    text-decoration: none;
+			}
+			.container {
+				background-color: #fafafa;
+				color: #424242;
+			}
+			paper-toolbar {
+				background: none;
+				color: #424242;
+			}
+			paper-toolbar.app-logo {
+				border-bottom: 1px solid #e5e5e5;
+			}
+			paper-toolbar h3 {
+			    font-family: 'Roboto', 'Noto', sans-serif;
+			    -webkit-font-smoothing: antialiased;
+			    white-space: nowrap;
+			    overflow: hidden;
+			    text-overflow: ellipsis;
+			    font-size: 20px;
+			    font-weight: 500;
+			    line-height: 28px;
+			}
+			.content {
+				margin: 15px;
+				margin-top: 0px;				
+				background: white;
+				border-radius: 3px;
+				border: 1px solid #E5E5E5;
+				min-height: 15px;				
+				/*box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
+					0 1px 5px 0 rgba(0, 0, 0, 0.12),
+					0 3px 1px -2px rgba(0, 0, 0, 0.2);*/
+			}
+			.content:empty {
+				border: 0px;
+			}
+			nav iron-icon {
+				margin-right: 10px;
+				padding: 5px;
+				width: 24px;
+				height: 24px;
+				border-radius: 17px;
+			}
+			iron-icon.blue {
+				background-color: #F0F5FF;
+				color: #429ADE;
+				border: 1px solid #429ADE;
+			}
+			iron-icon.orange {
+				background-color: #FFF5E5;
+				color: #DE9A42;
+				border: 1px solid #DE9A42;
+			}
+			iron-icon.green {
+				background-color: #E5FFF5;
+				color: #229E6A;
+				border: 1px solid #42DE9A;
+			}
+			paper-icon-button.menu {
+				color: rgba(0,0,0,0.54);
+			}
+			@media(max-width: 640px) {
+				.content {
+					margin: 0px;
+					box-shadow: 0px;
+					border-radius: 0px;
+				}
+				paper-toolbar.compact paper-icon-button.menu {
+					margin-right: 5px;
+				}
+			}
+      .small-grey {
+                color: #737373;
+			    white-space: nowrap;
+			    overflow: hidden;
+			    text-overflow: ellipsis;
+			    font-family: 'Roboto', 'Noto', sans-serif;
+			    -webkit-font-smoothing: antialiased;
+			    font-weight: 400;
+			    line-height: 24px;
+			    font-size: 12px;
+			    margin-top:5px;
+			}
+			.large-grey {
+                color: #737373;
+			    white-space: nowrap;
+			    overflow: hidden;
+			    text-overflow: ellipsis;
+			    font-family: 'Roboto', 'Noto', sans-serif;
+			    -webkit-font-smoothing: antialiased;
+			    font-weight: 400;
+			    line-height: 24px;
+			    font-size: 14px;
+			    margin-top:5px;
+			}			
+			.error {
+				color: red;
+				border-bottom: 1px dotted red;
+			}
+			paper-dialog {
+				max-width: 800px;
+			}			
+			paper-input, paper-textarea, 
+			paper-dropdown-menu, vaadin-combo-box {
+				--paper-input-container-input: {
+					font-size: 14px;
+				};
+				--paper-input-container-label: {
+					font-size: 14px;
+				};
+				--paper-input-container-label-floating: {
+					font-size: 16px;
+				};
+			}
+			paper-listbox paper-item, 
+			paper-menu paper-item {
+				min-height: 36px;
+				font-size:14px;
+			}
+			paper-item .action-buttons {
+				margin-left:auto;
+				white-space:nowrap;
+				position:absolute;
+				right: 5px;
+				padding: 5px;
+				padding-left: 10px;
+				border-radius: 10px;
+				background: rgba(255, 255, 255, 0.75);
+				border: 1px solid rgba(0, 0, 0, 0.1);
+			}
+			paper-item .action-buttons paper-icon-button {
+				min-width: 18px;
+				width: 18px;
+				height: 18px;
+				padding: 0px;
+				margin-right:5px;
+			}
+			paper-item .action-buttons iron-icon {
+				min-width: 18px;
+				width: 18px;
+				height: 18px;
+				padding: 0px;
+				margin-right:5px;
+			}
+			
+			paper-icon-button.red-button {
+				--paper-icon-button: {
+					color: var(--paper-grey-400);
+				}
+				--paper-icon-button-hover: {
+					color: var(--paper-red-600);
+				}
+				--paper-icon-button-ink-color: var(--paper-red-200);
+	    }
+			
+			paper-button.blue-button {
+				--paper-button-ink-color: var(--paper-blue-200);
+			}
+			paper-button.blue-button:hover {
+				color: var(--paper-blue-600);
+			}
+			paper-button.blue-button {
+				color: var(--paper-grey-600);
+			}
+			paper-icon-button.blue-button {
+				--paper-icon-button: {
+					color: var(--paper-grey-400);
+				}
+				--paper-icon-button-hover: {
+					color: var(--paper-blue-600);
+				}
+				--paper-icon-button-ink-color: var(--paper-blue-200);
+			}
+			paper-icon-button.green-button {
+				--paper-icon-button: {
+					color: var(--paper-grey-400);
+				}
+				--paper-icon-button-hover: {
+					color: var(--paper-green-600);
+				}
+					--paper-icon-button-ink-color: var(--paper-green-200);
+			}
+			paper-icon-button.orange-button {
+				--paper-icon-button: {
+					color: var(--paper-grey-400);
+				}
+				--paper-icon-button-hover: {
+					color: var(--paper-orange-600);
+				}
+				--paper-icon-button-ink-color: var(--paper-orange-200);
+			}			
+			
+			.Codemirror-linenumber {
+				padding-left: 0px;
+			}
+			.CodeMirror-scroll {
+				overflow: hidden !important;
+			}
+			.information-gutter {
+				width: 8px;
+				height: 18px;
+				margin-left: 6px;
+			}
+			.CodeMirror-gutter-elt paper-icon-button {
+				padding: 0px;
+				width: 16px;
+				height: 16px;
+            	--paper-icon-button: {
+            		color: #AAA;
+            	}
+            	--paper-icon-button-hover: {
+            		color: var(--paper-green-600)
+            	}
+            	--paper-icon-button-ink-color: var(--paper-green-200)				
+			}
+			div.activeMenu {
+				background: #eceff1;
+			}
+			div.activeItemMenu {
+    			border-bottom: 1px solid #cfd8dc;
+    			padding-left: 0px;
+			}
+			.backbutton {
+				display: none;
+				margin-right: 0px;
+			}			
+			div.activeItemMenu iron-icon.backbutton {
+				display: inline-flex;
+			    align-items: center;
+			    justify-content: center;
+			    vertical-align: middle;
+			    width: 24px;
+			    height: 24px;
+			}
+			div.hiddenMenu {
+				display: none;
+			}
+			.SUCCESS, .SUCCESSFUL,
+			.SUCCESS a, .SUCCESSFUL a {
+            	color: green;
+			}
+			.FAILURE, .FAILED,
+			.FAILURE a, .FAILED a {
+            	color: maroon;
+			}
+			.QUEUED, .RUNNING,
+			.QUEUED a, .RUNNING a {
+            	color: #888;
+			}
+			.TORUN, .TORUN a {
+            	color: royalblue;
+			}
+			
+			.list paper-item .name,
+			.tree paper-item .name {
+					font-size: 14px;
+					font-weight: bold;
+			}
+
+			.workflow-description {
+			    display: grid;
+			    grid-template-columns: auto auto;
+			    grid-column-gap: 5px;
+			}
+			
+			.horizontal.layout {
+				display: flex;
+			}            
+			.layout.center {
+				align-items: center;
+			}
+			
+			.gwt-DialogBox {
+				z-index: 1001;
+			}
+
+			.gwt-PopupPanelGlass {
+				background-color: #000;
+				opacity: 0.3;
+				filter: alpha(opacity=30);
+			}
+
+			.gwt-DialogBox .Caption {
+				background: #F1F1F1;
+				padding: 4px 8px 4px 4px;
+				cursor: default;
+				font-family: Arial Unicode MS, Arial, sans-serif;
+				font-weight: bold;
+				border-bottom: 1px solid #bbbbbb;
+				border-top: 1px solid #D2D2D2;
+			}
+			.gwt-DialogBox .dialogContent {
+			}
+			.gwt-DialogBox .dialogMiddleCenter {
+				padding: 3px;
+				background: white;
+			}
+			.gwt-DialogBox .dialogBottomCenter {
+				background: url(customise/hborder.png) repeat-x 0px -2945px;
+				-background: url(customise/hborder_ie6.png) repeat-x 0px -2144px;
+			}
+			.gwt-DialogBox .dialogMiddleLeft {
+				background: url(customise/vborder.png) repeat-y -31px 0px;
+			}
+			.gwt-DialogBox .dialogMiddleRight {
+				background: url(customise/vborder.png) repeat-y -32px 0px;
+				-background: url(customise/vborder_ie6.png) repeat-y -32px 0px;
+			}
+			.gwt-DialogBox .dialogTopLeftInner {
+				width: 10px;
+				height: 8px;
+				zoom: 1;
+			}
+			.gwt-DialogBox .dialogTopRightInner {
+				width: 12px;
+				zoom: 1;
+			}
+			.gwt-DialogBox .dialogBottomLeftInner {
+				width: 10px;
+				height: 12px;
+				zoom: 1;
+			}
+			.gwt-DialogBox .dialogBottomRightInner {
+				width: 12px;
+				height: 12px;
+				zoom: 1;
+			}
+			.gwt-DialogBox .dialogTopLeft {
+				background: url(customise/circles.png) no-repeat -20px 0px;
+				-background: url(customise/circles_ie6.png) no-repeat -20px 0px;
+			}
+			.gwt-DialogBox .dialogTopRight {
+				background: url(customise/circles.png) no-repeat -28px 0px;
+				-background: url(customise/circles_ie6.png) no-repeat -28px 0px;
+			}
+			.gwt-DialogBox .dialogBottomLeft {
+				background: url(customise/circles.png) no-repeat 0px -36px;
+				-background: url(customise/circles_ie6.png) no-repeat 0px -36px;
+			}
+			.gwt-DialogBox .dialogBottomRight {
+				background: url(customise/circles.png) no-repeat -8px -36px;
+				-background: url(customise/circles_ie6.png) no-repeat -8px -36px;
+			}
+			* html .gwt-DialogBox .dialogTopLeftInner {
+				width: 10px;
+				overflow: hidden;
+			}
+			* html .gwt-DialogBox .dialogTopRightInner {
+				width: 12px;
+				overflow: hidden;
+			}
+			* html .gwt-DialogBox .dialogBottomLeftInner {
+				width: 10px;
+				height: 12px;
+				overflow: hidden;
+			}
+			* html .gwt-DialogBox .dialogBottomRightInner {
+				width: 12px;
+				height: 12px;
+				overflow: hidden;
+			}
+			.textfield {
+			 width: 200px;
+			}
+			.fog {
+				width: 100%;
+				height: 100vh;
+				background: rgba(255,255,255,0.9);
+				position: absolute;
+				z-index: 1000;
+				visibility: hidden;
+			}
+			.treenode {
+				width: 100%;
+				padding-right: 20px;
+			}
+			.listnode {
+				width: 100%;
+				padding-right: 20px;
+			}
+			
+			.treenode > .name {
+			  font-size: 15px;
+			}
+			.treenode > .description {
+					font-size: 12px;
+					color: #999;
+					/*font-style: italic;*/
+			}
+			}
+			.treenode > .footer {
+			  font-size: 12px;
+			}
+			.f-drawer {
+			   z-index: 0;
+            }
+		</style>
+		<paper-drawer-panel class="flex f-drawer" ui:field="drawer">
+			<paper-header-panel drawer="" mode="seamed">
+				<paper-toolbar class="app-logo">
+					<g:Anchor href="#{nameTokens.getHome}">
+						<div class="horizontal layout center app-logo">
+							<img src="customise/Logo.png" class="app-logo" />
+							<h1 class="app-logo">NeuroDISK</h1>
+						</div>
+					</g:Anchor>
+				</paper-toolbar>
+				<nav ui:field="menu">
+					<g:Anchor 
+					href="#{nameTokens.getHypotheses}/{config.getWingsUserid}/{config.getWingsDomain}">
+						<div class="layout horizontal center" ui:field="hypothesesMenu">
+							<iron-icon class="backbutton grey" icon="icons:chevron-left" />
+							<iron-icon class="orange" icon="icons:help" />
+							 Hypotheses
+						</div>
+					</g:Anchor>
+					<g:Anchor 
+					href="#{nameTokens.getLOIs}/{config.getWingsUserid}/{config.getWingsDomain}">
+						<div class="layout horizontal center" ui:field="loisMenu">
+							<iron-icon class="backbutton grey" icon="icons:chevron-left" />			
+							<iron-icon class="green" icon="icons:settings" />
+							 Lines of Inquiry
+						</div>
+					</g:Anchor>
+					<!-- g:Anchor 
+					href="#{nameTokens.getTLOIs}/{config.getWingsUserid}/{config.getWingsDomain}">
+						<div class="layout horizontal center" ui:field="tloisMenu">
+							<iron-icon class="backbutton grey" icon="icons:chevron-left" />			
+							<iron-icon class="orange" icon="icons:explore" />
+							 Triggered LOIs
+						</div>
+					</g:Anchor-->
+					<g:Anchor 
+					href="#{nameTokens.getTerminology}/{config.getWingsUserid}/{config.getWingsDomain}">
+						<div class="layout horizontal center" ui:field="terminologyMenu">
+							<iron-icon class="backbutton grey" icon="icons:chevron-left" />						
+							<iron-icon class="blue" icon="icons:book" />
+							 Terminology
+						</div>
+					</g:Anchor>
+					<g:Anchor 
+					href="#{nameTokens.getAssertions}/{config.getWingsUserid}/{config.getWingsDomain}">
+						<div class="layout horizontal center" ui:field="assertionsMenu">
+							<iron-icon class="backbutton grey" icon="icons:chevron-left" />						
+							<iron-icon class="blue" icon="icons:list" />
+							 Data
+						</div>
+					</g:Anchor>
+
+					<hr style="margin: 5px 10px;"/>
+					
+					<g:Anchor 
+					href="#{nameTokens.getMyHypotheses}/{config.getWingsUserid}/{config.getWingsDomain}">
+						<div class="layout horizontal center" ui:field="myHypothesesMenu">
+							<iron-icon class="backbutton grey" icon="icons:chevron-left" />
+							<iron-icon class="orange" icon="icons:help" />
+							 My Hypotheses
+						</div>
+					</g:Anchor>
+					<g:Anchor 
+					href="#{nameTokens.getMyTerminology}/{config.getWingsUserid}/{config.getWingsDomain}">
+						<div class="layout horizontal center" ui:field="myTerminologyMenu">
+							<iron-icon class="backbutton grey" icon="icons:chevron-left" />						
+							<iron-icon class="blue" icon="icons:book" />
+							 My Terminology
+						</div>
+					</g:Anchor>
+					
+					<div>
+						<g:SimplePanel ui:field="sidebar" />
+					</div>
+					<br />
+					
+					<div ui:field="userDiv" style="padding: 10px; position: fixed; bottom: 25px;"> 
+					</div>
+					<div style="padding: 10px; position: fixed; bottom: 0;"> 
+					 <g:Button ui:field='logoutButton'>Logout</g:Button>
+					</div>
+
+			</nav>		
+			</paper-header-panel>
+			<paper-header-panel main="" mode="scroll" class="container">
+				<paper-toolbar class="compact">
+					<paper-icon-button class="menu" icon="menu" paper-drawer-toggle="true" />
+					<g:SimplePanel ui:field="toolbar" />
+				</paper-toolbar>
+				<!-- Main Content -->
+				<g:SimplePanel styleName="content" ui:field="contentContainer" />
+			</paper-header-panel>
+		</paper-drawer-panel>
+
+		<paper-toast ui:field="toast" />
+	</g:HTMLPanel>
+</ui:UiBinder>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:p='urn:import:com.vaadin.polymer.paper.widget'
+	xmlns:i='urn:import:com.vaadin.polymer.iron.widget'
+	xmlns:v='urn:import:com.vaadin.polymer.vaadin.widget'
+	xmlns:g="urn:import:com.google.gwt.user.client.ui">
+    <g:HTMLPanel>
+		<style is="custom-style">
+			.search-main-container {
+				border: 1px solid #e5e5e5;
+				padding: 4px;
+				margin: 0px;
+			}
+			.search-row {
+		      	display: flex;
+		      	width: 100%;
+		      	align-items: center;
+		      	justify-content: space-between;
+		      	border-bottom: 1px solid #e5e5e5;
+		      	margin-bottom: 4px;
+		    }
+		    .search-row .input-search {
+		        width: calc(100% - 120px);
+		    }
+		    .search-row .gwt-ListBox {
+		        width: 120px;
+		        height: 1.3em;
+		        background: transparent;
+		        font-size: 1.2em;
+		    }
+		    .search-row .input-search .gwt-TextBox {
+		        width: calc(100% - 60px);
+		        padding: 0 25px;
+				font-size: 1.1em;
+				height: 1.3em;
+		    }
+		    .search-row .input-search iron-icon.search-icon {
+		    	width: 30px;
+		    	position: absolute;
+				left: 20px;
+		    }
+		    .search-row .input-search paper-icon-button {
+		    	padding: 0;
+				width: 24px;
+				height: 24px;
+				position: absolute;
+				right: 150px;
+		    }
+		    .searchable-result {
+		    	margin-bottom: 3px;
+		    }
+		</style>
+
+    	<div class="search-main-container">
+    		<div class="search-row">
+    		    <div class="input-search">
+					<iron-icon class="search-icon" icon="search"></iron-icon>
+					<g:TextBox ui:field="inputSearch"></g:TextBox>
+					<p:PaperIconButton icon="clear" ui:field="clearSearchButton"></p:PaperIconButton>
+    			</div>
+				<g:ListBox ui:field="orderMenu"></g:ListBox>
+    		</div>
+    		<div ui:field="itemContainer" class="item-container">
+    		</div>
+    	</div>
+    </g:HTMLPanel>
+</ui:UiBinder>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:g="urn:import:com.google.gwt.user.client.ui" 
+	xmlns:p='urn:import:com.vaadin.polymer.paper.widget'>
+
+	<p:PaperDropdownMenu ui:field="menu" >
+		<p:PaperListbox ui:field="listbox" />
+	</p:PaperDropdownMenu>
+</ui:UiBinder>

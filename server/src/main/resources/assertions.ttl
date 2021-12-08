@@ -1,0 +1,22 @@
+@prefix ont: <http://disk-project.org/ontology/omics#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix : <http://disk-project.org/portal/admin/omics/assertions#> .
+@base <http://disk-project.org/portal/admin/omics/assertions> .
+
+:DiagnosisA0123_1 a ont:Diagnosis ;
+	ont:diagnosedAt "2015-12-17T12:00:00Z"^^xsd:dateTime ;
+	ont:isDiagnosedWith ont:ColonCancer .
+
+:PatientA0123 a ont:Patient ;
+	ont:hasDiagnosis :DiagnosisA0123_1 .
+
+:TissueA0123_1 a ont:Tissue ;
+	ont:collectedFrom :PatientA0123 ;
+	ont:collectedAt "2015-12-09T16:20:00Z"^^xsd:dateTime .
+
+
+
+

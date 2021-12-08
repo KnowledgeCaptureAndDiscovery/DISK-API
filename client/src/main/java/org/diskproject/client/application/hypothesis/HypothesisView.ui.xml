@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:g="urn:import:com.google.gwt.user.client.ui" 
+	xmlns:l='urn:import:org.diskproject.client.components.loader'
+    xmlns:sp='urn:import:org.diskproject.client.components.searchpanel'
+	xmlns:t='urn:import:org.diskproject.client.components.tree'
+	xmlns:ls='urn:import:org.diskproject.client.components.list'
+	xmlns:h='urn:import:org.diskproject.client.components.hypothesis'
+	xmlns:p='urn:import:com.vaadin.polymer.paper.widget'>
+
+	<g:HTMLPanel>
+		<style is="custom-style">
+			.floating-right-button {
+			  float: right;
+              padding: 10px;
+              margin-top: 10px;
+			}
+		    .clickable {
+		      cursor: pointer;
+		    }
+            div.content {
+                padding: 0px;
+            }		
+            .tree .item {
+                @apply(--layout-horizontal);
+                margin: 16px 16px 0 16px;
+                padding: 20px;
+                border-radius: 8px;
+                background-color: #eee;
+                border: 1px solid #ddd;
+            }
+            .tree iron-flex-layout {
+            	display: block;
+            	/*@apply(--layout-horizontal);*/
+           	}
+           	.tree iron-flex-layout.pad .item {
+           		width: calc(100% - 20px);
+           	}
+            .tree iron-flex-layout.pad {
+                margin-left: 20px;
+            }
+            @media(max-width: 640px) {
+                .tree iron-flex-layout.pad {
+                    margin-left: 10px;
+                }
+            }
+            .tree iron-flex-layout.hidden {
+                display: none;
+            }
+            .tree paper-item {
+                border-top: 1px dotted #e5e5e5;
+                padding: 2px;
+                font-size: 13px;
+                min-height: 32px;
+                cursor: pointer;
+                width: 100%;
+            }
+            .tree paper-item.both-borders {
+                border-bottom: 1px dotted #e5e5e5;
+            }
+            .tree paper-item.no-borders {
+                border-top: 0px;
+            }
+            .tree iron-flex-layout.pad {
+                border-left: 1px dotted #e5e5e5;
+            }
+            .tree paper-item iron-icon {
+                margin-right: 8px;
+                min-width: 18px;
+                width: 18px;
+                height: 18px;
+            }  
+			.tree paper-item iron-icon.collapser {
+                font-weight: bold;
+                margin-left: 4px;
+                margin-right: 4px;
+                /*width: 0px;*/                
+            }
+            .tree paper-item iron-icon.collapser:hover {
+                color: orange;
+            }
+            .tree paper-item iron-icon.orange {
+                background-color: transparent;
+                border: 0px;
+            }
+            .tree paper-item iron-icon.transparent {
+                opacity: 0;
+            }
+            .tree paper-item:not(.inherited):hover {
+                background-color: #f5f5f5;
+            }
+            div.padded {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            .tree paper-item.header {
+                font-weight: 500;
+                background-color: #f5f5f5;
+                cursor: default;
+                font-size: 13px;
+            }
+            paper-dropdown-menu {
+            	width: 33%;
+            }
+            paper-item.no-padding {
+            	padding: 0px;
+            }
+            paper-fab.addicon {
+            	position: fixed;
+            	right: 60px;
+            	top: 10px;
+                --paper-fab-background: var(--paper-orange-500);
+            }
+            paper-fab.helploiicon {
+              position: fixed;
+              right: 10px;
+              top: 10px;
+                --paper-fab-background: var(--paper-green-500);
+            }
+            
+			.list paper-item iron-icon {
+                margin-right: 8px;
+                margin-left: 8px;
+                min-width: 18px;
+                width: 18px;
+                height: 18px;
+            }
+            
+			div.bordered-section {				
+				background: white;
+				border-radius: 3px;
+				border: 1px solid #E5E5E5;
+				min-height: 15px;
+				margin: 10px;
+			}
+
+			div.matchlist > div.bordered-section {
+				background: #FAFAFA;
+			}
+			
+			paper-item.tlois .action-buttons .query-action {
+				display:none;
+			}
+			.block {
+			    display: block;
+			}
+			.new-binding {
+			    margin-left: 20px;
+                width: calc(100% - 55px);
+			}
+			.aux {
+			  font-size: 14px;
+			  padding: 15px;
+			  display:none;
+			}
+			.aux[visible] {
+			  display: block;
+			}
+			.short-hyp-desc {
+				padding: 4px 10px;
+				font-size: 14px;
+				color: #666;
+				margin-top: 5px;
+			}
+			.info-button {
+				display: block;
+				font-size: 1.1em;
+				height: 40px;
+				line-height: 40px;
+				text-align: center;
+			}
+		</style>
+
+		<p:PaperFab ui:field="addicon" icon="add" mini="true" 
+			addStyleNames="addicon" title="Add Hypothesis" tabindex="0" />
+		<p:PaperFab ui:field="helpicon" icon="help-outline" mini="true" 
+			addStyleNames="helploiicon" title="Help: Line of Inquiry" tabindex="0" />
+
+        <g:HTMLPanel ui:field="description" styleName="short-hyp-desc">
+	    	A hypothesis is a set of assertions about entities in the problem domain.
+	    	A list of all the available Hypotheses in the system is displayed below.<br/>
+	    	To add a <b>new hypothesis</b> click on the top-right button.
+        </g:HTMLPanel>
+
+        <sp:SearchPanel ui:field="searchPanel"></sp:SearchPanel>
+        <l:Loader ui:field="loader" />
+
+        <g:HTMLPanel ui:field="emptyDiv" styleName="info-button">
+	        You dont have any hypothesis.
+	        <a class="clickable" ui:field="addLink">Click here</a> to create one.
+        </g:HTMLPanel>
+
+        <g:HTMLPanel ui:field="retryDiv" styleName="info-button">
+            An error has occurred while loading this page.
+            <a class="clickable" ui:field="retryLink">Click here to retry.</a>
+        </g:HTMLPanel>
+
+        <div ui:field="notloi" class="aux">No Line of Inquiry matches your hypothesis.</div>
+
+		<t:TreeWidget ui:field="tree" styleName="tree" />
+		<h:HypothesisEditor ui:field="form" styleName="padded" />
+		<g:HTMLPanel ui:field="matchlist" styleName="tree list matchlist" />
+		
+	<div style="display:none">
+      <g:DialogBox modal="true" ui:field='helpDialog'>
+        <g:caption><b>Help:</b> Hypotheses</g:caption>
+        <g:HTMLPanel>
+          <div style="padding: 0 15px; text-align: justify;">
+            <h2>Representing Hypotheses:</h2>
+            <p>A <b>hypothesis</b> h consists of:</p>
+            <ol>
+              <li>
+                A <b>hypothesis statement</b>, which is a set of assertions about entities in the domain.
+                For example, they express assertions such as “The mutant form of Protein ABCD is associated with colon cancer.”.
+              </li>
+              <li>
+                A <b>hypothesis qualifier</b>, which qualifies the veracity of the hypothesis based on the data and the analyses done so far.
+                A typical qualifier is a numeric confidence value.
+                For example, for the hypothesis statement above we could have a confidence value of 0.7.
+              </li>
+              <li>
+                A <b>hypothesis provenance</b>, which is a record of the analyses that were carried out to test the hypothesis statement.
+                For example the provenance may include an analysis of mass spectrometry data for 25 patients with colon cancer and 25 healthy controls followed by clustering,
+                cluster metrics and binary hypothesis testing.
+              </li>
+              <li>
+                A <b>hypothesis history</b>, which points to prior hypotheses that were revised to generate the current one.
+                In our example, a prior hypothesis could have a statement such as “Protein ABCD is associated with cancer.”
+              </li>
+            </ol>
+            <g:Button ui:field='closeDialog'>Close</g:Button>
+          </div>
+        </g:HTMLPanel>
+      </g:DialogBox>
+    </div>
+		
+	</g:HTMLPanel>
+</ui:UiBinder>
