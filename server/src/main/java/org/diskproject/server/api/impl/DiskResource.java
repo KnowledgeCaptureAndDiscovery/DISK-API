@@ -1,12 +1,12 @@
 package org.diskproject.server.api.impl;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -59,6 +59,9 @@ public class DiskResource implements DiskService {
   @Path("server/config")
   @Override
   public Map<String, String> getConfig() {
+    String username = (String) request.getAttribute("username");
+    System.out.println( "user: " + username);
+
     try {
       PropertyListConfiguration config = this.repo.getConfig();
       Map<String, String> vals = new HashMap<String, String>();

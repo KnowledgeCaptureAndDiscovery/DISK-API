@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import org.diskproject.client.Config;
 import org.diskproject.client.application.ApplicationSubviewImpl;
-import org.diskproject.client.authentication.AuthUser;
+import org.diskproject.client.authentication.KeycloakUser;
 import org.diskproject.client.components.hypothesis.HypothesisEditor;
 import org.diskproject.client.components.hypothesis.HypothesisItem;
 import org.diskproject.client.components.hypothesis.events.HypothesisSaveEvent;
@@ -155,7 +155,7 @@ public class MyHypothesesView extends ApplicationSubviewImpl
               loader.setVisible(false);
               if (result != null) {
                   hypothesisList = result.stream().filter(p ->
-                          p.getAuthor() != null && p.getAuthor().equals(AuthUser.getUsername())).collect(Collectors.toList());
+                          p.getAuthor() != null && p.getAuthor().equals(KeycloakUser.getUsername())).collect(Collectors.toList());
                   generateHypothesisItems();
               } else {
                   AppNotification.notifyFailure("Error loading hypothesis");

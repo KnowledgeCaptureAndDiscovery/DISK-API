@@ -3,7 +3,7 @@ package org.diskproject.client.application;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 
-import org.diskproject.client.authentication.AuthUser;
+import org.diskproject.client.authentication.KeycloakUser;
 import org.diskproject.client.place.NameTokens;
 
 import com.google.gwt.dom.client.DivElement;
@@ -106,7 +106,7 @@ public class ApplicationView extends ViewImpl implements
             menu.removeClassName("hiddenMenu");
           }
         }
-        userDiv.setInnerText("Logged in as " + AuthUser.getUsername());
+        userDiv.setInnerText("Logged in as " + KeycloakUser.getUsername());
         return null;
       }
     });
@@ -114,7 +114,7 @@ public class ApplicationView extends ViewImpl implements
   
   @UiHandler("logoutButton")
   void onLogoutButtonClicked(ClickEvent event) {
-	  AuthUser.kc.logout();
+	  KeycloakUser.kc.logout();
   }
 
   private void clearMenuClasses(DivElement menu) {

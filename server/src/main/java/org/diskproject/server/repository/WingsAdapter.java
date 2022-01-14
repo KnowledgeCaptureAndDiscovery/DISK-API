@@ -61,6 +61,7 @@ import edu.isi.kcap.ontapi.KBTriple;
 import edu.isi.kcap.ontapi.OntFactory;
 import edu.isi.kcap.ontapi.OntSpec;
 
+@SuppressWarnings("unused")
 public class WingsAdapter extends MethodAdapter {
 	static WingsAdapter singleton = null;
 

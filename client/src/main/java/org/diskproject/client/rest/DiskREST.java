@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.diskproject.client.Config;
-import org.diskproject.client.authentication.AuthUser;
+import org.diskproject.client.authentication.KeycloakUser;
 import org.diskproject.client.authentication.AuthenticatedDispatcher;
 import org.diskproject.shared.api.DiskService;
 import org.diskproject.shared.classes.common.Graph;
@@ -225,7 +225,7 @@ public class DiskREST {
 
   public static void addHypothesis(Hypothesis hypothesis,
       final Callback<Void, Throwable> callback) {
-	String user = AuthUser.getUsername();
+	String user = KeycloakUser.getUsername();
 	if (user.equals("guest")) {
 		AppNotification.notifyFailure("Guest account can not create Hypothesis");
 		return;
@@ -255,7 +255,7 @@ public class DiskREST {
 
   public static void updateHypothesis(Hypothesis hypothesis,
       final Callback<Void, Throwable> callback) {
-	String user = AuthUser.getUsername();
+	String user = KeycloakUser.getUsername();
 	if (user.equals("guest")) {
 		AppNotification.notifyFailure("Guest account can not update Hypothesis");
 		return;
@@ -275,7 +275,7 @@ public class DiskREST {
 
   public static void deleteHypothesis(String id,
       final Callback<Void, Throwable> callback) {
-	String user = AuthUser.getUsername();
+	String user = KeycloakUser.getUsername();
 	if (user.equals("guest")) {
 		AppNotification.notifyFailure("Guest account can not delete Hypothesis");
 		return;
@@ -294,7 +294,7 @@ public class DiskREST {
 
   public static void queryHypothesis(String id,
       final Callback<List<TriggeredLOI>, Throwable> callback) {
-	String user = AuthUser.getUsername();
+	String user = KeycloakUser.getUsername();
 	if (user.equals("guest")) {
 		AppNotification.notifyFailure("Guest account can not run hypotheses");
 		return;
@@ -343,7 +343,7 @@ public class DiskREST {
 
   public static void addLOI(LineOfInquiry loi,
       final Callback<Void, Throwable> callback) {
-	String user = AuthUser.getUsername();
+	String user = KeycloakUser.getUsername();
 	if (user.equals("guest")) {
 		AppNotification.notifyFailure("Guest account can not create lines of inquiry");
 		return;
@@ -368,7 +368,7 @@ public class DiskREST {
 
   public static void deleteLOI(String id,
       final Callback<Void, Throwable> callback) {
-	String user = AuthUser.getUsername();
+	String user = KeycloakUser.getUsername();
 	if (user.equals("guest")) {
 		AppNotification.notifyFailure("Guest account can not delete lines of inquiry");
 		return;
@@ -387,7 +387,7 @@ public class DiskREST {
   
   public static void updateLOI(LineOfInquiry loi,
       final Callback<Void, Throwable> callback) {
-	String user = AuthUser.getUsername();
+	String user = KeycloakUser.getUsername();
 	if (user.equals("guest")) {
 		AppNotification.notifyFailure("Guest account can not update lines of inquiry");
 		return;
@@ -397,7 +397,7 @@ public class DiskREST {
 	String date = fm.format(new Date());
 
 	GWT.log(date);
-	GWT.log(AuthUser.getUsername());
+	GWT.log(KeycloakUser.getUsername());
 	
 	if (loi.getDateCreated() == null) {
 		loi.setDateCreated(date);
@@ -423,7 +423,7 @@ public class DiskREST {
    */
   public static void addTriggeredLOI(TriggeredLOI tloi, 
       final Callback<Void, Throwable> callback) {
-	String user = AuthUser.getUsername();
+	String user = KeycloakUser.getUsername();
 	if (user.equals("guest")) {
 		AppNotification.notifyFailure("Guest account can not create triggered lines of inquiry");
 		return;
@@ -481,7 +481,7 @@ public class DiskREST {
 
   public static void deleteTriggeredLOI(String id,
       final Callback<Void, Throwable> callback) {
-	String user = AuthUser.getUsername();
+	String user = KeycloakUser.getUsername();
 	if (user.equals("guest")) {
 		AppNotification.notifyFailure("Guest account can not delete triggered lines of inquiry");
 		return;
@@ -504,7 +504,7 @@ public class DiskREST {
 
   public static void updateAssertions(Graph graph,
       final Callback<Void, Throwable> callback) {
-	String user = AuthUser.getUsername();
+	String user = KeycloakUser.getUsername();
 	if (user.equals("guest")) {
 		AppNotification.notifyFailure("Guest account can not update assertions");
 		return;

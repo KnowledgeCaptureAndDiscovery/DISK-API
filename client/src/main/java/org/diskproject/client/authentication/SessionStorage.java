@@ -1,6 +1,5 @@
 package org.diskproject.client.authentication;
 
-import org.diskproject.client.rest.UserREST;
 import org.diskproject.shared.classes.users.UserSession;
 
 import com.google.gwt.core.client.Callback;
@@ -25,12 +24,12 @@ public class SessionStorage {
     if(session_string != null) {
       UserSession cachedSession = UserSession.getSession(session_string);
       // Check session validity
-      UserREST.validateSession(cachedSession, new Callback<UserSession, Throwable>() {
-        @Override
-        public void onSuccess(UserSession session) {}
-        @Override
-        public void onFailure(Throwable reason) {}
-      });
+      //UserREST.validateSession(cachedSession, new Callback<UserSession, Throwable>() {
+      //  @Override
+      //  public void onSuccess(UserSession session) {}
+      //  @Override
+      //  public void onFailure(Throwable reason) {}
+      //});
     }
   }
   

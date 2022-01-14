@@ -2898,7 +2898,7 @@ public class DiskRepository extends KBRepository {
     
     public List<TriggeredLOI> runHypothesisAndLOI (String username, String domain, String hypid, String loiid) {
         List<TriggeredLOI> hyptlois = queryHypothesis(username, domain, hypid);
-        TriggeredLOI match = null;
+        //TriggeredLOI match = null;
         for (TriggeredLOI tloi: hyptlois) {
             if (tloi.getStatus() == null && tloi.getLoiId().equals(loiid)) {
                 //Set basic metadata
@@ -2907,7 +2907,7 @@ public class DiskRepository extends KBRepository {
                 SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss yyyy-MM-dd");
                 tloi.setDateCreated(formatter.format(date));
                 addTriggeredLOI(username, domain, tloi);
-                match = tloi;
+                //match = tloi;
                 break;
             }
         }

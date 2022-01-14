@@ -31,10 +31,8 @@ import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 import com.google.gwt.core.client.Callback;
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.AnchorElement;
 import com.google.gwt.dom.client.DivElement;
-import com.google.gwt.dom.client.IFrameElement;
 import com.google.gwt.dom.client.Style.Display;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
@@ -701,7 +699,7 @@ public class TriggeredLOIViewer extends Composite {
 				  if (outputs != null && outputs.size() > 0) run.setOutputs(outputs);
 				  run.setFiles(result.getFiles());
 				  
-				  for (String key: outputs.keySet()) {
+				  /*for (String key: outputs.keySet()) {
 					  GWT.log(key + ": " + outputs.get(key));
 				  }
 				  
@@ -717,7 +715,7 @@ public class TriggeredLOIViewer extends Composite {
 					  String sp[] = outputs.get("shiny_visualization").split("#");
 					  String id = sp[sp.length-1];
 					  //loadShinyViz(id);
-				  }
+				  }*/
 				  
 				  node.setFullContent(bindings.getHTML());
 			  }

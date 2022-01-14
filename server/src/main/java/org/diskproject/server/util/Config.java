@@ -2,9 +2,6 @@ package org.diskproject.server.util;
 
 import java.io.File;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 
@@ -14,16 +11,16 @@ public class Config {
 
   PropertyListConfiguration props = null;
   
-  public static void load(HttpServletRequest request) {
-    singleton = new Config(request);
+  public static void load() {
+    singleton = new Config();
   }
   
   public static Config get() {
     return singleton;
   }
   
-  public Config(HttpServletRequest request) {
-    this.props = loadServerConfiguration(request);
+  public Config () {
+    this.props = loadServerConfiguration();
   }
   
   public PropertyListConfiguration getProperties() {
@@ -35,20 +32,14 @@ public class Config {
     return this.props;
   }
   
-  private PropertyListConfiguration loadServerConfiguration(HttpServletRequest request) {
+  private PropertyListConfiguration loadServerConfiguration() {
     String configFile = null;
-    if(request != null) {
-      ServletContext app = request.getSession().getServletContext();
-      configFile = app.getInitParameter("config.file");
-    }
-    if (configFile == null) {
-        String home = System.getProperty("user.home");
-        if (home != null && !home.equals(""))
-            configFile = home + File.separator + ".disk"
-                    + File.separator + "server.properties";
-        else
-            configFile = "/etc/disk/server.properties";
-    }
+    String home = System.getProperty("user.home");
+    if (home != null && !home.equals(""))
+        configFile = home + File.separator + ".disk"
+                + File.separator + "server.properties";
+    else
+        configFile = "/etc/disk/server.properties";
     // Create configFile if it doesn't exist (portal.properties)
     File cfile = new File(configFile);
     if (!cfile.exists()) {
@@ -56,8 +47,7 @@ public class Config {
             System.err.println("Cannot create config file directory : " + cfile.getParent());
             return null;
         }
-        if (request != null)
-            createDefaultServerConfig(request, configFile);
+        createDefaultServerConfig(configFile);
     }
     // Load properties from configFile
     PropertyListConfiguration props = new PropertyListConfiguration();
@@ -70,9 +60,9 @@ public class Config {
     return props;
   }
   
-  private void createDefaultServerConfig(HttpServletRequest request, String configFile) {
-    String server = request.getScheme() + "://" + request.getServerName() + ":"
-            + request.getServerPort() + request.getContextPath();
+  private void createDefaultServerConfig(String configFile) {
+    //FIXME: Update to new config file.
+    String server = "";
     String storageDir = null;
     String home = System.getProperty("user.home");
     if (home != null && !home.equals(""))

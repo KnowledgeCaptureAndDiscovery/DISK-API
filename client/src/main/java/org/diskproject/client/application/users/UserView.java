@@ -2,7 +2,6 @@ package org.diskproject.client.application.users;
 
 import org.diskproject.client.application.ApplicationSubviewImpl;
 import org.diskproject.client.authentication.SessionStorage;
-import org.diskproject.client.rest.UserREST;
 import org.diskproject.shared.classes.users.UserCredentials;
 import org.diskproject.shared.classes.users.UserSession;
 
@@ -137,27 +136,27 @@ public class UserView extends ApplicationSubviewImpl
     else
       rolegroup.setVisible(true);*/
 
-    UserREST.getUser(this.username, new Callback<UserCredentials, Throwable>() {
-      @Override
-      public void onFailure(Throwable reason) {}
-      @Override
-      public void onSuccess(UserCredentials user) {
-        if (user == null) {
-          //heading.setText("Register new user");
-        } else {
-          isupdate = true;
-          /*if (isadmin && !loggedinuser.equals(username))
-            deletebutton.setVisible(true);*/
-          password1.setValue(user.getPassword());
-          password2.setValue(user.getPassword());
-          fullname.setValue(user.getFullname());
-          email.setValue(user.getEmail());
-          affiliation.setValue(user.getAffiliation());
-          /*adminrole.setValue(user.getRoles().contains("admin"));
-          importrole.setValue(user.getRoles().contains("importer"));*/
-        }
-      }
-    });
+    //UserREST.getUser(this.username, new Callback<UserCredentials, Throwable>() {
+    //  @Override
+    //  public void onFailure(Throwable reason) {}
+    //  @Override
+    //  public void onSuccess(UserCredentials user) {
+    //    if (user == null) {
+    //      //heading.setText("Register new user");
+    //    } else {
+    //      isupdate = true;
+    //      /*if (isadmin && !loggedinuser.equals(username))
+    //        deletebutton.setVisible(true);*/
+    //      password1.setValue(user.getPassword());
+    //      password2.setValue(user.getPassword());
+    //      fullname.setValue(user.getFullname());
+    //      email.setValue(user.getEmail());
+    //      affiliation.setValue(user.getAffiliation());
+    //      /*adminrole.setValue(user.getRoles().contains("admin"));
+    //      importrole.setValue(user.getRoles().contains("importer"));*/
+    //    }
+    //  }
+    //});
   }
   
   /*

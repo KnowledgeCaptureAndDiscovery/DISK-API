@@ -217,7 +217,7 @@ public class LOIEditor extends Composite implements HasLOIHandlers {
 		boolean ok1 = this.name.validate();
 		boolean ok2 = this.description.validate();
 		boolean ok3 = this.hypothesisQuery.validate();
-		boolean ok4 = true || this.dataQuery.validate();
+		boolean ok4 = true;// || this.dataQuery.validate();
 		String db = this.dataSource.getSelectedValue();
 
 		if(!ok1 || !ok2 || !ok3 || !ok4 || db == null) {
