@@ -3,7 +3,6 @@ package org.diskproject.client.place;
 public class NameTokens {
   public static final String home = "home";
   public static final String loader = "loader";
-  public static final String users = "users";
   public static final String hypotheses = "hypotheses";
   public static final String lois = "lois";
   public static final String tlois = "tlois";
@@ -26,10 +25,6 @@ public class NameTokens {
 
   public static String getLoader() {
     return loader;
-  }
-  
-  public static String getUsers() {
-    return users;
   }
 
   public static String getHypotheses() {

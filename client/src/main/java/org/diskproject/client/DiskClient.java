@@ -46,10 +46,6 @@ public class DiskClient implements EntryPoint {
             public void onSuccess(Map<String, String> config) {
               GWT.log("Loading Module");
               Polymer.startLoading();
-        
-              // This checks the local storage... FIXME
-              //SessionStorage.loadSession();
-        
               Polymer.importHref(Arrays.asList(
                   "iron-icons/iron-icons.html",
                   "paper-styles/color.html",

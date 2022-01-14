@@ -28,7 +28,7 @@ import org.apache.commons.lang.SerializationUtils;
 import org.diskproject.server.adapters.DataAdapter;
 import org.diskproject.server.adapters.DataResult;
 import org.diskproject.server.adapters.MethodAdapter;
-import org.diskproject.server.adapters.sparqlAdapter;
+import org.diskproject.server.adapters.SparqlAdapter;
 //import org.diskproject.server.repository.GmailService.MailMonitor;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.DataQuery;
@@ -226,7 +226,7 @@ public class DiskRepository extends KBRepository {
 
             switch (curType) {
                 case "sparql":
-                    DataAdapter curAdapter = new sparqlAdapter(curURI, name, curUser, curPass);
+                    DataAdapter curAdapter = new SparqlAdapter(curURI, name, curUser, curPass);
                     if (curNamespace != null && curPrefix != null) {
                         curAdapter.setPrefix(curPrefix, curNamespace);
                         //this.vocabularies.put(curURI, this.initializeVocabularyFromDataAdapter();

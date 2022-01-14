@@ -9,7 +9,6 @@ import org.diskproject.client.application.loi.LOIView;
 import org.diskproject.client.application.terminology.MyTerminologyView;
 import org.diskproject.client.application.terminology.TerminologyView;
 import org.diskproject.client.application.tloi.TriggeredLOIView;
-import org.diskproject.client.application.users.UserView;
 import org.diskproject.client.place.NameTokens;
 
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
@@ -39,7 +38,6 @@ public class ApplicationPresenter extends
   @Inject
   public ApplicationPresenter(EventBus eventBus, final MyView view, MyProxy proxy,
       final PlaceManager placemanager, final ApplicationView appview,
-      final UserView userview, 
       final HypothesisView hypview,
       final LOIView loiview,
       final AssertionView assview,
@@ -78,9 +76,7 @@ public class ApplicationPresenter extends
         }
       
         ApplicationSubview sectionview = null;
-        if(nametoken.equals(NameTokens.users))
-          sectionview = userview;
-        else if(nametoken.equals(NameTokens.hypotheses))
+        if(nametoken.equals(NameTokens.hypotheses))
           sectionview = hypview;
         else if(nametoken.equals(NameTokens.assertions))
           sectionview = assview;

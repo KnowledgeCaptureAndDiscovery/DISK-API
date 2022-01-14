@@ -8,7 +8,6 @@ import org.diskproject.server.filters.AcceptHeaderFilter;
 import org.diskproject.server.filters.CORSResponseFilter;
 import org.diskproject.server.filters.KeycloakAuthenticationFilter;
 import org.diskproject.server.repository.DiskRepository;
-import org.diskproject.server.users.UserDatabase;
 import org.diskproject.server.util.Config;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
@@ -28,7 +27,6 @@ class DiskServer extends ResourceConfig {
   @PreDestroy
   public void onDestroy() {
     // Cleanup tasks
-    UserDatabase.shutdownDB();
     DiskRepository.get().shutdownExecutors();
   }
 

@@ -18,11 +18,11 @@ import edu.isi.kcap.ontapi.OntSpec;
 import edu.isi.kcap.ontapi.SparqlQuerySolution;
 import edu.isi.kcap.ontapi.jena.KBAPIJena;
 
-public class sparqlAdapter extends DataAdapter {
+public class SparqlAdapter extends DataAdapter {
     private final KBAPI plainKb = new KBAPIJena(OntSpec.PLAIN);
     private final static Pattern varPattern = Pattern.compile("\\?(.+?)\\b");
     
-    public sparqlAdapter (String endpoint, String name, String username, String password) {
+    public SparqlAdapter (String endpoint, String name, String username, String password) {
         super(endpoint, name, username, password);
     }
     

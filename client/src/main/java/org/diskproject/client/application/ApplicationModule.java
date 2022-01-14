@@ -14,8 +14,6 @@ import org.diskproject.client.application.loi.LOIPresenter;
 import org.diskproject.client.application.loi.LOIView;
 import org.diskproject.client.application.tloi.TriggeredLOIPresenter;
 import org.diskproject.client.application.tloi.TriggeredLOIView;
-import org.diskproject.client.application.users.UserPresenter;
-import org.diskproject.client.application.users.UserView;
 
 import org.diskproject.client.application.terminology.MyTerminologyPresenter;
 import org.diskproject.client.application.terminology.MyTerminologyView;
@@ -40,8 +38,6 @@ public class ApplicationModule extends AbstractPresenterModule {
         HomeView.class, HomePresenter.MyProxy.class);
     bindPresenter(LoaderPresenter.class, LoaderPresenter.MyView.class,
         LoaderView.class, LoaderPresenter.MyProxy.class);
-    bindPresenter(UserPresenter.class, UserPresenter.MyView.class,
-        UserView.class, UserPresenter.MyProxy.class);
     bindPresenter(HypothesisPresenter.class, HypothesisPresenter.MyView.class,
         HypothesisView.class, HypothesisPresenter.MyProxy.class);
     bindPresenter(LOIPresenter.class, LOIPresenter.MyView.class,
