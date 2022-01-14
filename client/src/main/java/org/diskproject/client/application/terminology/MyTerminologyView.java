@@ -95,13 +95,12 @@ public class MyTerminologyView extends ApplicationSubviewImpl implements
 		triples.loadVocabulary("neuro", KBConstants.NEUROURI(), vocabLoaded);
 		triples.loadVocabulary("hyp", KBConstants.HYPURI(), vocabLoaded);
 		triples.loadVocabulary("disk", KBConstants.DISKURI(), vocabLoaded);
-		triples.loadUserVocabulary("", userid, domain, vocabLoaded);
 	}
 
 	private Callback<String, Throwable> vocabLoaded = new Callback<String, Throwable>() {
 		public void onSuccess(String result) {
 			loadcount++;
-			if (loadcount == 5) {
+			if (loadcount == 4) {
 				String[] prefixes = {"bio", "neuro", "hyp", "disk", ""};
 				vocab = new Vocabulary();
 				for (String p: prefixes)
@@ -172,7 +171,7 @@ public class MyTerminologyView extends ApplicationSubviewImpl implements
 			if (graph != null) {
 				loadedTriples = graph.getTriples();
 				loadTableData(loadedTriples);
-				if (loadcount == 5) showAssertions();
+				if (loadcount == 4) showAssertions();
 			}
 		  }
 		  @Override
@@ -281,11 +280,8 @@ public class MyTerminologyView extends ApplicationSubviewImpl implements
 		DiskREST.updateAssertions(graph, new Callback<Void, Throwable>() {
 			@Override
 			public void onSuccess(Void result) {
-				triples.loadUserVocabulary("", userid, domain, true,
-						vocabLoaded);
 				AppNotification.stopShowing();
 				AppNotification.notifySuccess("Saved", 1000);
-				loadcount--;
 			}
 
 			@Override

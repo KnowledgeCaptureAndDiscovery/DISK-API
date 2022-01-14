@@ -141,10 +141,10 @@ public class LOIEditor extends Composite implements HasLOIHandlers {
         	}
         }
 
-        if(loi.getHypothesisQuery() != null && loadcount==9) {
+        if(loi.getHypothesisQuery() != null && loadcount==7) {
             hypothesisQuery.setValue(loi.getHypothesisQuery());
         }
-        if(loi.getDataQuery() != null && loadcount==9) {
+        if(loi.getDataQuery() != null && loadcount==7) {
             dataQuery.setValue(loi.getDataQuery());    
         }
         if (loi.getRelevantVariables() != null) {
@@ -169,22 +169,20 @@ public class LOIEditor extends Composite implements HasLOIHandlers {
         hypothesisQuery.loadVocabulary("neuro", KBConstants.NEUROURI(), vocabLoaded);
         hypothesisQuery.loadVocabulary("hyp", KBConstants.HYPURI(), vocabLoaded);
         hypothesisQuery.loadVocabulary("disk", KBConstants.DISKURI(), vocabLoaded);
-        hypothesisQuery.loadUserVocabulary("user", userid, domain, vocabLoaded);
 
         dataQuery.loadVocabulary("bio", KBConstants.OMICSURI(), vocabLoaded);
         dataQuery.loadVocabulary("neuro", KBConstants.NEUROURI(), vocabLoaded);
         dataQuery.loadVocabulary("hyp", KBConstants.HYPURI(), vocabLoaded);
-        dataQuery.loadUserVocabulary("user", userid, domain, vocabLoaded);
     }
 
     private Callback<String, Throwable> vocabLoaded = 
         new Callback<String, Throwable>() {
             public void onSuccess(String result) {
                 loadcount++;
-                if (loi != null && loi.getHypothesisQuery() != null && loadcount==9) {
+                if (loi != null && loi.getHypothesisQuery() != null && loadcount==7) {
                     hypothesisQuery.setValue(loi.getHypothesisQuery());
                 }
-                if (loi != null && loi.getDataQuery() != null && loadcount==9) {
+                if (loi != null && loi.getDataQuery() != null && loadcount==7) {
                     dataQuery.setValue(loi.getDataQuery());
                 }
             }

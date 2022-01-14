@@ -332,12 +332,12 @@ public class TripleInput extends GWTCodeMirror {
       loadTerms(prefix, result);
   }
   
-  public void loadUserVocabulary(final String prefix, String userid, String domain,
+  /*public void loadUserVocabulary(final String prefix, String userid, String domain,
       final Callback<String, Throwable> callback) {
     this.loadUserVocabulary(prefix, userid, domain, false, callback);
-  }
+  }*/
   
-  public void loadUserVocabulary(final String prefix, String userid, String domain,
+  /*public void loadUserVocabulary(final String prefix, String userid, String domain,
       boolean reload,
       final Callback<String, Throwable> callback) {
     DiskREST.getUserVocabulary(new Callback<Vocabulary, Throwable>() {
@@ -346,11 +346,11 @@ public class TripleInput extends GWTCodeMirror {
         vocabularies.put(prefix, result);
         util.addNamespacePrefix(prefix, result.getNamespace());
         loadTerms(prefix, result);
-        /*GWT.log("user vocabulary loaded:");
+        GWT.log("user vocabulary loaded:");
         Map<String, Individual> indvs = result.getIndividuals();
         for (String key: indvs.keySet()) {
           GWT.log(key + ": " + indvs.get(key).getName());
-        }*/
+        }
           
         if(callback != null)
           callback.onSuccess(prefix);
@@ -363,7 +363,7 @@ public class TripleInput extends GWTCodeMirror {
           callback.onFailure(reason);
       }      
     }, userid, domain, reload);
-  }
+  }*/
   
   //TODO: Can read prefixes here.
   void loadTerms(String prefix, Vocabulary vocab) {

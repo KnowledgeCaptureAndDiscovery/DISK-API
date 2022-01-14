@@ -35,11 +35,12 @@ import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-
 @Path("")
 @Produces("application/json")
 @Consumes("application/json")
 public class DiskResource implements DiskService {
+
+  private static String USERNAME = "admin", DOMAIN = "test";
 
   @Context
   HttpServletResponse response;
@@ -64,8 +65,8 @@ public class DiskResource implements DiskService {
     try {
       PropertyListConfiguration config = this.repo.getConfig();
       Map<String, String> vals = new HashMap<String, String>();
-      vals.put("username", config.getProperty("username").toString());
-      vals.put("domain", config.getProperty("domain").toString());
+      vals.put("username", USERNAME);
+      vals.put("domain", DOMAIN);
       vals.put("wings.server", config.getProperty("wings.server").toString());
       return vals;
     } catch (Exception e) {
@@ -96,8 +97,8 @@ public class DiskResource implements DiskService {
     }
   }
 
-  @GET
-  @Path("{username}/{domain}/vocabulary")
+  /*@GET
+  @Path("vocabulary")
   @Override
   public Vocabulary getUserVocabulary(
       @PathParam("username") String username, 
@@ -108,7 +109,7 @@ public class DiskResource implements DiskService {
       // e.printStackTrace();
       throw new RuntimeException("Exception: " + e.getMessage());
     }
-  }
+  }*/
 
   @GET
   @Path("vocabulary/reload")
@@ -144,206 +145,170 @@ public class DiskResource implements DiskService {
    * Hypothesis
    */
   @POST
-  @Path("{username}/{domain}/hypotheses")
+  @Path("hypotheses")
   @Override
   public void addHypothesis(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @JsonProperty("hypothesis") Hypothesis hypothesis) {
-    this.repo.addHypothesis(username, domain, hypothesis);
+    this.repo.addHypothesis(USERNAME, DOMAIN, hypothesis);
   }
       
   @GET
-  @Path("{username}/{domain}/hypotheses")
+  @Path("hypotheses")
   @Override
-  public List<TreeItem> listHypotheses(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain) {
-    return this.repo.listHypotheses(username, domain);
+  public List<TreeItem> listHypotheses() {
+    return this.repo.listHypotheses(USERNAME, DOMAIN);
   }
   
   @GET
-  @Path("{username}/{domain}/hypotheses/{id}")
+  @Path("hypotheses/{id}")
   @Override
   public Hypothesis getHypothesis(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id) {
-    return this.repo.getHypothesis(username, domain, id);
+    return this.repo.getHypothesis(USERNAME, DOMAIN, id);
   }
   
   @PUT
-  @Path("{username}/{domain}/hypotheses/{id}")
+  @Path("hypotheses/{id}")
   @Override
   public void updateHypothesis(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id,
       @JsonProperty("hypothesis") Hypothesis hypothesis) {
-    this.repo.updateHypothesis(username, domain, id, hypothesis);
+    this.repo.updateHypothesis(USERNAME, DOMAIN, id, hypothesis);
   }
   
   @DELETE
-  @Path("{username}/{domain}/hypotheses/{id}")
+  @Path("hypotheses/{id}")
   @Override
   public void deleteHypothesis(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id) {
-    this.repo.deleteHypothesis(username, domain, id);
+    this.repo.deleteHypothesis(USERNAME, DOMAIN, id);
   }
   
   @GET
-  @Path("{username}/{domain}/hypotheses/{id}/query")
+  @Path("hypotheses/{id}/query")
   @Override
   public List<TriggeredLOI> queryHypothesis(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id) {
-    return this.repo.queryHypothesis(username, domain, id);
+    return this.repo.queryHypothesis(USERNAME, DOMAIN, id);
   }
 
   @GET
-  @Path("{username}/{domain}/hypotheses/{id}/tlois")
+  @Path("hypotheses/{id}/tlois")
   @Override
   public Map<String, List<TriggeredLOI>> getHypothesisTLOIs(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id) {
-    return this.repo.getHypothesisTLOIs(username, domain, id);
+    return this.repo.getHypothesisTLOIs(USERNAME, DOMAIN, id);
   }
 
   /**
    * Assertions
    */
   @POST
-  @Path("{username}/{domain}/assertions")
+  @Path("assertions")
   @Override
   public void addAssertion(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain, 
       @JsonProperty("assertions") Graph assertions) {
-    this.repo.addAssertion(username, domain, assertions);
+    this.repo.addAssertion(USERNAME, DOMAIN, assertions);
   }
   
   @GET
-  @Path("{username}/{domain}/assertions")
+  @Path("assertions")
   @Override
-  public Graph listAssertions(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain) {
-    return this.repo.listAssertions(username, domain);
+  public Graph listAssertions() {
+    return this.repo.listAssertions(USERNAME, DOMAIN);
   }
   
   @DELETE
-  @Path("{username}/{domain}/assertions")
+  @Path("assertions")
   @Override
   public void deleteAssertion(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @JsonProperty("assertions") Graph assertions) {
-    this.repo.deleteAssertion(username, domain, assertions);
+    this.repo.deleteAssertion(USERNAME, DOMAIN, assertions);
   }
   
   @PUT
-  @Path("{username}/{domain}/assertions")
+  @Path("assertions")
   @Override
   public void updateAssertions (
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain, 
       @JsonProperty("assertions") Graph assertions) {
-    this.repo.updateAssertions(username, domain, assertions);
+    this.repo.updateAssertions(USERNAME, DOMAIN, assertions);
   }
   
   /**
    * Lines of Inquiry
    */
   @POST
-  @Path("{username}/{domain}/lois")
+  @Path("lois")
   @Override
   public void addLOI(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain, 
       @JsonProperty("loi") LineOfInquiry loi) {
-    this.repo.addLOI(username, domain, loi);
+    this.repo.addLOI(USERNAME, DOMAIN, loi);
   }
 
   @GET
-  @Path("{username}/{domain}/lois")
+  @Path("lois")
   @Override
-  public List<TreeItem> listLOIs(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain) {
-    return this.repo.listLOIs(username, domain);
+  public List<TreeItem> listLOIs() {
+    return this.repo.listLOIs(USERNAME, DOMAIN);
   }
 
   @GET
-  @Path("{username}/{domain}/lois/{id}")
+  @Path("lois/{id}")
   @Override
   public LineOfInquiry getLOI(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain, 
       @PathParam("id") String id) {
-    return this.repo.getLOI(username, domain, id);
+    return this.repo.getLOI(USERNAME, DOMAIN, id);
   }
 
   @PUT
-  @Path("{username}/{domain}/lois/{id}")
+  @Path("lois/{id}")
   @Override
   public void updateLOI(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id,
       @JsonProperty("loi") LineOfInquiry loi) {
-    this.repo.updateLOI(username, domain, id, loi);
+    this.repo.updateLOI(USERNAME, DOMAIN, id, loi);
   }
   
   @DELETE
-  @Path("{username}/{domain}/lois/{id}")
+  @Path("lois/{id}")
   @Override
   public void deleteLOI(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id) {
-    this.repo.deleteLOI(username, domain, id);
+    this.repo.deleteLOI(USERNAME, DOMAIN, id);
   }
   
   /*
    * Triggered LOIs
    */
   @POST
-  @Path("{username}/{domain}/tlois")
+  @Path("tlois")
   @Override
-  public void addTriggeredLOI(@PathParam("username") String username, 
-      @PathParam("domain") String domain,
+  public void addTriggeredLOI(
       @JsonProperty("tloi") TriggeredLOI tloi) {
-    this.repo.addTriggeredLOI(username, domain, tloi);
+    this.repo.addTriggeredLOI(USERNAME, DOMAIN, tloi);
   }
   
   @GET
-  @Path("{username}/{domain}/tlois")
+  @Path("tlois")
   @Override
-  public List<TriggeredLOI> listTriggeredLOIs(@PathParam("username") String username, 
-      @PathParam("domain") String domain) {
-    return this.repo.listTriggeredLOIs(username, domain);
+  public List<TriggeredLOI> listTriggeredLOIs() {
+    return this.repo.listTriggeredLOIs(USERNAME, DOMAIN);
   }
   
   @GET
-  @Path("{username}/{domain}/tlois/{id}")
+  @Path("tlois/{id}")
   @Override
-  public TriggeredLOI getTriggeredLOI(@PathParam("username") String username, 
-      @PathParam("domain") String domain,
+  public TriggeredLOI getTriggeredLOI(
       @PathParam("id") String id) {
-    return this.repo.getTriggeredLOI(username, domain, id);
+    return this.repo.getTriggeredLOI(USERNAME, DOMAIN, id);
   }
   
   @DELETE
-  @Path("{username}/{domain}/tlois/{id}")
+  @Path("tlois/{id}")
   @Override
-  public void deleteTriggeredLOI(@PathParam("username") String username, 
-      @PathParam("domain") String domain,
+  public void deleteTriggeredLOI(
       @PathParam("id") String id) {
-    this.repo.deleteTriggeredLOI(username, domain, id);
+    this.repo.deleteTriggeredLOI(USERNAME, DOMAIN, id);
   }
  
   /*
@@ -351,44 +316,35 @@ public class DiskResource implements DiskService {
    */
   @GET
   @Override
-  @Path("{username}/{domain}/workflows")
-  public List<Workflow> listWorkflows(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain) {
-    return WingsAdapter.get().getWorkflowList(username, domain);
+  @Path("workflows")
+  public List<Workflow> listWorkflows() {
+    return WingsAdapter.get().getWorkflowList(USERNAME, DOMAIN);
   }
 
   @GET
   @Override
-  @Path("{username}/{domain}/workflows/{id}")
-  public List<Variable> getWorkflowVariables(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
-      @PathParam("id") String id) {
-    return WingsAdapter.get().getWorkflowVariables(username, domain, id);    
+  @Path("workflows/{id}")
+  public List<Variable> getWorkflowVariables( @PathParam("id") String id) {
+    return WingsAdapter.get().getWorkflowVariables(USERNAME, DOMAIN, id);    
   }
   
   @GET
   @Override
-  @Path("{username}/{domain}/runs/{id}")
+  @Path("runs/{id}")
   public WorkflowRun monitorWorkflow(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id) {
     // Check execution status
-    return WingsAdapter.get().getWorkflowRunStatus(username, domain, id);
+    return WingsAdapter.get().getWorkflowRunStatus(USERNAME, DOMAIN, id);
   }  
 
   @GET
-  @Path("{username}/{domain}/externalQuery")
+  @Path("externalQuery")
   @Override
   public Map<String, List<String>> queryExternalStore(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain, 
       @QueryParam("endpoint") String endpoint,
       @QueryParam("variables") String variables,
       @QueryParam("query") String query) {
-	return repo.queryExternalStore(username, domain, endpoint, variables, query);
+	return repo.queryExternalStore(USERNAME, DOMAIN, endpoint, variables, query);
   }
   
   
@@ -396,20 +352,16 @@ public class DiskResource implements DiskService {
    * Question
    */
   @GET
-  @Path("{username}/{domain}/questions")
+  @Path("questions")
   @Override
-  public List<Question> listQuestions(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain) {
+  public List<Question> listQuestions() {
     return this.repo.listHypothesesQuestions();
   }
 
   @GET
-  @Path("{username}/{domain}/question/{id}/options")
+  @Path("question/{id}/options")
   @Override
   public List<List<String>> listOptions(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
 	  @PathParam("id") String id) {
     return this.repo.listVariableOptions(id);
   };
@@ -418,56 +370,46 @@ public class DiskResource implements DiskService {
    * CUSTOM
    */
   @GET
-  @Path("{username}/{domain}/executions/{hid}/{lid}")
+  @Path("executions/{hid}/{lid}")
   @Override
   public List<TriggeredLOI> getExecutions(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("hid") String hid, 
       @PathParam("lid") String lid) {
-	return this.repo.getTLOIsForHypothesisAndLOI(username, domain, hid, lid);
+	return this.repo.getTLOIsForHypothesisAndLOI(USERNAME, DOMAIN, hid, lid);
   }
 
   @GET
-  @Path("{username}/{domain}/execute/{hid}/{lid}")
+  @Path("execute/{hid}/{lid}")
   @Override
   public List<TriggeredLOI> runHypothesisAndLOI(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("hid") String hid, 
       @PathParam("lid") String lid) {
-	return this.repo.runHypothesisAndLOI(username, domain, hid, lid);
+	return this.repo.runHypothesisAndLOI(USERNAME, DOMAIN, hid, lid);
   }
   
   
   @GET
-  @Path("{username}/{domain}/runhypotheses")
+  @Path("runhypotheses")
   @Override
-  public Boolean runHypotheses(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain) {
-	return this.repo.runAllHypotheses(username, domain);
+  public Boolean runHypotheses() {
+	return this.repo.runAllHypotheses(USERNAME, DOMAIN);
   }
 
   @GET
-  @Path("{username}/{domain}/tloi/{tloiid}/narratives")
+  @Path("tloi/{tloiid}/narratives")
   @Override
   public Map<String, String> getNarratives(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("tloiid") String tloiid) {
-	return this.repo.getNarratives(username, domain, tloiid);
+	return this.repo.getNarratives(USERNAME, DOMAIN, tloiid);
   }
   
   @GET
-  @Path("{username}/{domain}/wings-data/{dataid}")
+  @Path("wings-data/{dataid}")
   @Produces("application/json")
   @Override
   public String getDataFromWings(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("dataid") String dataid) {
-	String result = this.repo.getDataFromWings(username, domain, dataid);
+	String result = this.repo.getDataFromWings(USERNAME, DOMAIN, dataid);
 	if (result == null) {
 		System.out.println("ERROR: " + dataid + " not available on WINGS.");
 		result = "";

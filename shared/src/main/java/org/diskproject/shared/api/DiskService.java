@@ -47,12 +47,6 @@ public interface DiskService extends DirectRestService {
   public Map<String, Vocabulary> getVocabularies();
   
   @GET
-  @Path("{username}/{domain}/vocabulary")
-  public Vocabulary getUserVocabulary(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain);
-
-  @GET
   @Path("vocabulary/reload")
   @Produces("text/html")
   public String reloadVocabularies();
@@ -61,82 +55,60 @@ public interface DiskService extends DirectRestService {
    * Hypothesis
    */
   @POST
-  @Path("{username}/{domain}/hypotheses")
+  @Path("hypotheses")
   public void addHypothesis(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @JsonProperty("hypothesis") Hypothesis hypothesis);
   
   @GET
-  @Path("{username}/{domain}/hypotheses")
-  public List<TreeItem> listHypotheses(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain);
+  @Path("hypotheses")
+  public List<TreeItem> listHypotheses();
   
   @GET
-  @Path("{username}/{domain}/hypotheses/{id}")
+  @Path("hypotheses/{id}")
   public Hypothesis getHypothesis(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id);
   
   @PUT
-  @Path("{username}/{domain}/hypotheses/{id}")
+  @Path("hypotheses/{id}")
   public void updateHypothesis(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id,
       @JsonProperty("hypothesis") Hypothesis hypothesis);
   
   @DELETE
-  @Path("{username}/{domain}/hypotheses/{id}")
+  @Path("hypotheses/{id}")
   public void deleteHypothesis(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id);
   
   @GET
-  @Path("{username}/{domain}/hypotheses/{id}/query")
+  @Path("hypotheses/{id}/query")
   public List<TriggeredLOI> queryHypothesis(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id);
   
   @GET
-  @Path("{username}/{domain}/hypotheses/{id}/tlois")
+  @Path("hypotheses/{id}/tlois")
   public Map<String, List<TriggeredLOI>> getHypothesisTLOIs(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id);
 
   /*
    * Assertions
    */
   @POST
-  @Path("{username}/{domain}/assertions")
+  @Path("assertions")
   public void addAssertion(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @JsonProperty("assertions") Graph assertions);
   
   @GET
-  @Path("{username}/{domain}/assertions")
-  public Graph listAssertions(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain);
+  @Path("assertions")
+  public Graph listAssertions();
   
   @DELETE
-  @Path("{username}/{domain}/assertions")
+  @Path("assertions")
   public void deleteAssertion(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @JsonProperty("assertions") Graph assertions);
 
   @PUT
-  @Path("{username}/{domain}/assertions")
+  @Path("assertions")
   public void updateAssertions (
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain, 
       @JsonProperty("assertions") Graph assertions);
 
   /*
@@ -144,64 +116,50 @@ public interface DiskService extends DirectRestService {
    */
 
   @POST
-  @Path("{username}/{domain}/lois")  
+  @Path("lois")  
   public void addLOI(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @JsonProperty("loi") LineOfInquiry loi);
 
   @GET
-  @Path("{username}/{domain}/lois")  
-  public List<TreeItem> listLOIs(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain);
+  @Path("lois")  
+  public List<TreeItem> listLOIs();
 
   @GET
-  @Path("{username}/{domain}/lois/{id}")  
+  @Path("lois/{id}")  
   public LineOfInquiry getLOI(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id);
 
   @PUT
-  @Path("{username}/{domain}/lois/{id}")
+  @Path("lois/{id}")
   public void updateLOI(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id,
       @JsonProperty("loi") LineOfInquiry loi);
 
   @DELETE
-  @Path("{username}/{domain}/lois/{id}")  
+  @Path("lois/{id}")  
   public void deleteLOI(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id);
 
   /*
    * Triggered LOIs
    */
   @POST
-  @Path("{username}/{domain}/tlois")
-  public void addTriggeredLOI(@PathParam("username") String username, 
-      @PathParam("domain") String domain,
+  @Path("tlois")
+  public void addTriggeredLOI(
       @JsonProperty("tloi") TriggeredLOI tloi);
   
   @GET
-  @Path("{username}/{domain}/tlois")
-  public List<TriggeredLOI> listTriggeredLOIs(@PathParam("username") String username, 
-      @PathParam("domain") String domain);
+  @Path("tlois")
+  public List<TriggeredLOI> listTriggeredLOIs();
 
   @GET
-  @Path("{username}/{domain}/tlois/{id}")
-  public TriggeredLOI getTriggeredLOI(@PathParam("username") String username, 
-      @PathParam("domain") String domain,
+  @Path("tlois/{id}")
+  public TriggeredLOI getTriggeredLOI(
       @PathParam("id") String id);
 
   @DELETE
-  @Path("{username}/{domain}/tlois/{id}")
-  public void deleteTriggeredLOI(@PathParam("username") String username, 
-      @PathParam("domain") String domain,
+  @Path("tlois/{id}")
+  public void deleteTriggeredLOI(
       @PathParam("id") String id);
 
   
@@ -209,23 +167,17 @@ public interface DiskService extends DirectRestService {
    * Workflows
    */
   @GET
-  @Path("{username}/{domain}/workflows")
-  public List<Workflow> listWorkflows(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain);
+  @Path("workflows")
+  public List<Workflow> listWorkflows();
 
   @GET
-  @Path("{username}/{domain}/workflows/{id}")
+  @Path("workflows/{id}")
   public List<Variable> getWorkflowVariables(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id);
 
   @GET
-  @Path("{username}/{domain}/runs/{id}")
+  @Path("runs/{id}")
   public WorkflowRun monitorWorkflow(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id);
 
 
@@ -234,16 +186,12 @@ public interface DiskService extends DirectRestService {
    */
 
   @GET
-  @Path("{username}/{domain}/questions")
-  public List<Question> listQuestions(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain);
+  @Path("questions")
+  public List<Question> listQuestions();
   
   @GET
-  @Path("{username}/{domain}/question/{id}/options")
+  @Path("question/{id}/options")
   public List<List<String>> listOptions(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("id") String id);
   
   /*
@@ -251,52 +199,41 @@ public interface DiskService extends DirectRestService {
    */
   /* Re execute all hypotheses */
   @GET
-  @Path("{username}/{domain}/runhypotheses")
-  public Boolean runHypotheses(@PathParam("username") String username, 
-      @PathParam("domain") String domain);
+  @Path("runhypotheses")
+  public Boolean runHypotheses();
 
   /* Get TLOIs for Hypothesis ID and LOI ID */
   @GET
-  @Path("{username}/{domain}/executions/{hid}/{lid}")
+  @Path("executions/{hid}/{lid}")
   public List<TriggeredLOI> getExecutions(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("hid") String hid, 
       @PathParam("lid") String lid);
   
   
   @GET
-  @Path("{username}/{domain}/execute/{hid}/{lid}")
+  @Path("execute/{hid}/{lid}")
   public List<TriggeredLOI> runHypothesisAndLOI(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("hid") String hid, 
       @PathParam("lid") String lid);
 
   
   /* Get narratives for tloi id*/
   @GET
-  @Path("{username}/{domain}/tloi/{tloiid}/narratives")
+  @Path("tloi/{tloiid}/narratives")
   public Map<String, String> getNarratives(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("tloiid") String tloiid);
 
 
   @GET
-  @Path("{username}/{domain}/externalQuery")  
+  @Path("externalQuery")  
   public Map<String, List<String>> queryExternalStore(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @QueryParam("endpoint") String endpoint,
       @QueryParam("variables") String variables,
       @QueryParam("query") String query);
   
   @GET
   @Produces("application/json")
-  @Path("{username}/{domain}/wings-data/{dataid}")
+  @Path("wings-data/{dataid}")
   public String getDataFromWings(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain,
       @PathParam("dataid") String dataid);
 }

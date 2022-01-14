@@ -76,7 +76,7 @@ public class HypothesisEditor extends Composite
     description.setValue(hypothesis.getDescription());
     notes.setValue(hypothesis.getNotes());
     questionFiller.setQuestion(hypothesis.getQuestion(), hypothesis.getQuestionBindings());
-    if(hypothesis.getGraph() != null && loadcount==5)
+    if(hypothesis.getGraph() != null && loadcount==4)
       triples.setValue(hypothesis.getGraph().getTriples());
   }
   
@@ -90,7 +90,6 @@ public class HypothesisEditor extends Composite
     triples.loadVocabulary("hyp", KBConstants.HYPURI(), vocabLoaded);
     triples.loadVocabulary("neuro", KBConstants.NEUROURI(), vocabLoaded);
     triples.loadVocabulary("disk", KBConstants.DISKURI(), vocabLoaded);
-    triples.loadUserVocabulary("user", this.userid, this.domain, vocabLoaded);
     
   }
 
@@ -98,7 +97,7 @@ public class HypothesisEditor extends Composite
       new Callback<String, Throwable>() {
     public void onSuccess(String result) {
       loadcount++;
-      if (hypothesis != null && hypothesis.getGraph() != null && loadcount==5)
+      if (hypothesis != null && hypothesis.getGraph() != null && loadcount==4)
         triples.setValue(hypothesis.getGraph().getTriples());
 
 		String[] prefixes = {"neuro", "hyp", "user"};

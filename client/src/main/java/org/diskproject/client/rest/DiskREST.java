@@ -58,9 +58,8 @@ public class DiskREST {
     }
   };
   
-  private static Vocabulary user_vocabulary;
-  private static VocabularyCallbacks user_vocabulary_callbacks =
-      new VocabularyCallbacks();
+  //private static Vocabulary user_vocabulary;
+  //private static VocabularyCallbacks user_vocabulary_callbacks = new VocabularyCallbacks();
   
   private static Map<String, Vocabulary> vocabularies = 
       new HashMap<String, Vocabulary>();
@@ -160,7 +159,7 @@ public class DiskREST {
     }
   }
   
-  public static void getUserVocabulary(
+  /*public static void getUserVocabulary(
       final Callback<Vocabulary, Throwable> callback,
       String username, String domain,
       boolean reload) {
@@ -184,13 +183,13 @@ public class DiskREST {
             AppNotification.notifyFailure("Could not load user vocabulary");
             callback.onFailure(exception);
           }
-        }).call(getDiskService()).getUserVocabulary(username, domain);        
+        }).call(getDiskService()).getUserVocabulary();        
       }
       else {
         user_vocabulary_callbacks.add(callback);
       }
     }
-  }
+  }*/
   
   /*
    * Hypotheses
@@ -205,7 +204,7 @@ public class DiskREST {
       public void onSuccess(Method method, List<TreeItem> response) {
         callback.onSuccess(response);
       }
-    }).call(getDiskService()).listHypotheses(username, domain);
+    }).call(getDiskService()).listHypotheses();
   }
   
   public static void getHypothesis(String id, 
@@ -220,7 +219,7 @@ public class DiskREST {
     	  GWT.log("ERROR HERE!");
         callback.onFailure(exception);
       }
-    }).call(getDiskService()).getHypothesis(username, domain, id);
+    }).call(getDiskService()).getHypothesis(id);
   }
 
   public static void addHypothesis(Hypothesis hypothesis,
@@ -250,7 +249,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).addHypothesis(username, domain, hypothesis);
+    }).call(getDiskService()).addHypothesis(hypothesis);
   }
 
   public static void updateHypothesis(Hypothesis hypothesis,
@@ -269,8 +268,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).updateHypothesis(username, domain, 
-        hypothesis.getId(), hypothesis);
+    }).call(getDiskService()).updateHypothesis(hypothesis.getId(), hypothesis);
   }
 
   public static void deleteHypothesis(String id,
@@ -289,7 +287,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).deleteHypothesis(username, domain, id);
+    }).call(getDiskService()).deleteHypothesis(id);
   }  
 
   public static void queryHypothesis(String id,
@@ -308,7 +306,7 @@ public class DiskREST {
       public void onSuccess(Method method, List<TriggeredLOI> response) {
         callback.onSuccess(response);
       }
-    }).call(getDiskService()).queryHypothesis(username, domain, id);
+    }).call(getDiskService()).queryHypothesis(id);
   }
 
   /*
@@ -324,7 +322,7 @@ public class DiskREST {
       public void onSuccess(Method method, List<TreeItem> response) {
         callback.onSuccess(response);
       }
-    }).call(getDiskService()).listLOIs(username, domain);
+    }).call(getDiskService()).listLOIs();
   }
 
   public static void getLOI(String id, 
@@ -338,7 +336,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }
-    }).call(getDiskService()).getLOI(username, domain, id);
+    }).call(getDiskService()).getLOI( id);
   }
 
   public static void addLOI(LineOfInquiry loi,
@@ -363,7 +361,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).addLOI(username, domain, loi);
+    }).call(getDiskService()).addLOI( loi);
   }
 
   public static void deleteLOI(String id,
@@ -382,7 +380,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).deleteLOI(username, domain, id);
+    }).call(getDiskService()).deleteLOI( id);
   }
   
   public static void updateLOI(LineOfInquiry loi,
@@ -414,7 +412,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).updateLOI(username, domain, 
+    }).call(getDiskService()).updateLOI( 
         loi.getId(), loi);
   }  
   
@@ -449,7 +447,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).addTriggeredLOI(username, domain, tloi);
+    }).call(getDiskService()).addTriggeredLOI( tloi);
   }
   
   public static void listTriggeredLOIs(final Callback<List<TriggeredLOI>, Throwable> callback) {
@@ -462,7 +460,7 @@ public class DiskREST {
       public void onSuccess(Method method, List<TriggeredLOI> response) {
         callback.onSuccess(response);
       }
-    }).call(getDiskService()).listTriggeredLOIs(username, domain);
+    }).call(getDiskService()).listTriggeredLOIs();
   }
 
   public static void getTriggeredLOI(String id, 
@@ -476,7 +474,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }
-    }).call(getDiskService()).getTriggeredLOI(username, domain, id);
+    }).call(getDiskService()).getTriggeredLOI( id);
   }
 
   public static void deleteTriggeredLOI(String id,
@@ -495,7 +493,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).deleteTriggeredLOI(username, domain, id);
+    }).call(getDiskService()).deleteTriggeredLOI( id);
   }  
 
   /*
@@ -518,7 +516,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).updateAssertions(username, domain, graph);
+    }).call(getDiskService()).updateAssertions( graph);
   }
   
   public static void listAssertions(
@@ -532,7 +530,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).listAssertions(username, domain);
+    }).call(getDiskService()).listAssertions();
   }
   
   /*
@@ -558,7 +556,7 @@ public class DiskREST {
         GWT.log(stackTraceToString(exception));
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).listWorkflows(username, domain);
+    }).call(getDiskService()).listWorkflows();
   }
   
   public static void getWorkflowVariables(final String id, 
@@ -584,7 +582,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).getWorkflowVariables(username, domain, id);
+    }).call(getDiskService()).getWorkflowVariables( id);
   }
   
   public static void monitorWorkflow(final String id,
@@ -602,7 +600,7 @@ public class DiskREST {
 	        GWT.log(stackTraceToString(exception));
 	        callback.onFailure(exception);
 	      }      
-	    }).call(getDiskService()).monitorWorkflow(username, domain, id);
+	    }).call(getDiskService()).monitorWorkflow( id);
 	  } 
 
   /*
@@ -642,7 +640,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).queryExternalStore(username, domain, endpoint, query, variables);
+    }).call(getDiskService()).queryExternalStore( endpoint, query, variables);
   }
   
   /*
@@ -658,7 +656,7 @@ public class DiskREST {
       public void onSuccess(Method method, List<Question> response) {
         callback.onSuccess(response);
       }
-    }).call(getDiskService()).listQuestions(username, domain);
+    }).call(getDiskService()).listQuestions();
   }
 
   public static void listVariableOptions(String id, final Callback<List<List<String>>, Throwable> callback) {
@@ -674,7 +672,7 @@ public class DiskREST {
       public void onSuccess(Method method, List<List<String>> response) {
         callback.onSuccess(response);
       }
-    }).call(getDiskService()).listOptions(username, domain, qid);
+    }).call(getDiskService()).listOptions( qid);
   }
   
   /* Narratives */
@@ -690,7 +688,7 @@ public class DiskREST {
       public void onSuccess(Method method, Map<String, String> response) {
         callback.onSuccess(response);
       }
-    }).call(getDiskService()).getNarratives(username, domain, tloiid);
+    }).call(getDiskService()).getNarratives( tloiid);
   }
 
   public static void getDataFromWings(String dataid,
@@ -704,7 +702,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).getDataFromWings(username, domain, dataid);
+    }).call(getDiskService()).getDataFromWings( dataid);
   }
 
 	public static void getDataFromWingsAsJS(String dataid, final Callback<JavaScriptObject, Throwable> callback) {
@@ -748,6 +746,6 @@ public class DiskREST {
         public void onFailure(Method method, Throwable exception) {
           callback.onFailure(exception);
         }
-      }).call(getDiskService()).runHypothesisAndLOI(username, domain, hypid, loiid);
+      }).call(getDiskService()).runHypothesisAndLOI( hypid, loiid);
     }
 }
