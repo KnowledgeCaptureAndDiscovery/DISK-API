@@ -34,7 +34,7 @@
 		<!-- Local Wings Repository (for wings-ontapi & dependencies) -->
 		<repository>
 			<id>Local archiva.snapshots repository</id>
-			<url>http://www.wings-workflows.org/archiva/repository/internal/</url>
+			<url>https://www.wings-workflows.org/archiva/repository/internal/</url>
 		</repository>
 	</repositories>
 
