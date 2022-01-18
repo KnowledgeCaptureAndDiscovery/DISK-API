@@ -1,0 +1,11 @@
+version: '3.9'
+
+services:
+  web:
+    build:
+      context: .
+    ports:
+      - '11111:8080'
+    volumes:
+      - ./tomcat-users.xml:/usr/local/tomcat/conf/tomcat-users.xml
+      - ./context.xml:/usr/local/tomcat/webapps/manager/META-INF/context.xml

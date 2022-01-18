@@ -2,13 +2,17 @@ name: build
 
 on:
   push:
-    branches: '*'
+    branches:
+      - '*'
   pull_request:
-    branches: '*'
+    branches: 
+      - '*'
+
+env:
+  IMAGE_NAME: disk
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,5 +40,30 @@ jobs:
         path: |
           client/target/*.war
           server/target/*.war
-          shared/target/*.war
+          shared/target/*.jar
         retention-days: 1
+
+    - name: Build image
+      run: docker build . --tag $IMAGE_NAME
+    
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Push image
+      run: |
+        IMAGE_ID=ikcap/dis
+        IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+        VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+        [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+        [ "$VERSION" == "master" ] && VERSION=latest
+        echo IMAGE_ID=$IMAGE_ID
+        echo VERSION=$VERSION
+
+        docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+        docker push $IMAGE_ID:$VERSION
+
+        docker tag $IMAGE_NAME $IMAGE_ID:$GITHUB_SHA
+        docker push $IMAGE_ID:$GITHUB_SHA
