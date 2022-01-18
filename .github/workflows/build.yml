@@ -46,8 +46,8 @@ jobs:
 
     - name: Build image
       run: |
-        docker build docker/backend --tag ${IMAGE_NAME_BACKEND}
-        docker build docker/frontend --tag ${IMAGE_NAME_FRONTEND}
+        docker build -f docker/backend/Dockerfile . --tag ${IMAGE_NAME_BACKEND}
+        docker build -f docker/frontend/Dockerfile . --tag ${IMAGE_NAME_FRONTEND}
     
     - name: Login to DockerHub
       uses: docker/login-action@v1
