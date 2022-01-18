@@ -9,7 +9,8 @@ on:
       - '*'
 
 env:
-  IMAGE_NAME: disk
+  IMAGE_NAME_BACKEND: disk_backend
+  IMAGE_NAME_FRONTEND: disk_frontend
 
 jobs:
   build:
@@ -44,7 +45,9 @@ jobs:
         retention-days: 1
 
     - name: Build image
-      run: docker build . --tag $IMAGE_NAME
+      run: |
+        docker build docker/backend --tag ${IMAGE_NAME_BACKEND}
+        docker build docker/frontend --tag ${IMAGE_NAME_FRONTEND}
     
     - name: Login to DockerHub
       uses: docker/login-action@v1
@@ -54,16 +57,15 @@ jobs:
 
     - name: Push image
       run: |
-        IMAGE_ID=ikcap/disk
-        IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+        IMAGE_BACKEND_ID=ikcap/disk_backend
+        IMAGE_FRONTEND_ID=ikcap/disk_frontend
+        IMAGE_BACKEND_ID=$(echo $IMAGE_BACKEND_ID | tr '[A-Z]' '[a-z]')
+        IMAGE_FRONTEND_ID=$(echo $IMAGE_FRONTEND_ID | tr '[A-Z]' '[a-z]')
         VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
         [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
         [ "$VERSION" == "master" ] && VERSION=latest
-        echo IMAGE_ID=$IMAGE_ID
-        echo VERSION=$VERSION
 
-        docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
-        docker push $IMAGE_ID:$VERSION
-
-        docker tag $IMAGE_NAME $IMAGE_ID:$GITHUB_SHA
-        docker push $IMAGE_ID:$GITHUB_SHA
+        docker tag $IMAGE_NAME_BACKEND $IMAGE_BACKEND_ID:$GITHUB_SHA
+        docker tag $IMAGE_NAME_FRONTEND $IMAGE_FRONTEND_ID:$GITHUB_SHA
+        docker push $IMAGE_FRONTEND:$GITHUB_SHA
+        docker push $IMAGE_BACKEND_ID:$GITHUB_SHA
