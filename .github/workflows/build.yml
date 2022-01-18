@@ -67,5 +67,5 @@ jobs:
 
         docker tag $IMAGE_NAME_BACKEND $IMAGE_BACKEND_ID:$GITHUB_SHA
         docker tag $IMAGE_NAME_FRONTEND $IMAGE_FRONTEND_ID:$GITHUB_SHA
-        docker push $IMAGE_FRONTEND:$GITHUB_SHA
+        docker push $IMAGE_FRONTEND_ID:$GITHUB_SHA
         docker push $IMAGE_BACKEND_ID:$GITHUB_SHA
