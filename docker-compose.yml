@@ -1,11 +1,18 @@
 version: '3.9'
 
 services:
-  web:
+  nginx:
     build:
       context: .
+      dockerfile: docker/nginx/Dockerfile
     ports:
-      - '11111:8080'
+      - '8080:80'
+  server:
+    build:
+      context: .
+      dockerfile: docker/server/Dockerfile
+    ports:
+      - '8080'
     volumes:
       - ./tomcat-users.xml:/usr/local/tomcat/conf/tomcat-users.xml
       - ./context.xml:/usr/local/tomcat/webapps/manager/META-INF/context.xml
