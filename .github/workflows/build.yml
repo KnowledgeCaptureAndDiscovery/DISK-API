@@ -34,7 +34,7 @@ jobs:
       with:
         name: wars
         path: |
-          client/*.war
-          server/*.war
-          shared/*.war
+          client/target/*.war
+          server/target/*.war
+          shared/target/*.war
         retention-days: 1
