@@ -28,7 +28,7 @@ Installation
 
 6. Open http://[your-server-name]:8080/disk-client/index.html to access the Disk UI that connects with the local repository
 
-7. Customize the client by changing /path/to/tomcat/webapps/disk-client/customise/config.js
+7. Customize the client by changing /path/to/tomcat/webapps/disk-client/customize/config.js
 
 8. The default userid is "admin" with password "changeme!". Remember to change it :)
 
