@@ -1,26 +1,53 @@
-# Disk
+
+# DISK
+
+The DISK system automates the execution of scientific workflows triggered 
+on data changes. To do this DISK collects data from different data repositories
+and defines methods on different workflows systems. User defined goals are 
+periodically check for new data/methods available. When a method detects new data,
+a new workflow execution will be send. Each experiment execution is stored with its
+metadata and outputs for posterior analysis.
+
+## Installation
+
+We recommend to use `docker` to install DISK.
+
+### Docker
+
+Install DISK with docker
+
+```bash
+docker-compose up -d
+```
+
+### Build project
+
+To build from source, you need the following installed and available in your $PATH:
 
 
-Installation
-=============
-Requirements
-------------
-1. Java JDK 1.7+ (http://www.oracle.com/technetwork/java/javase/downloads/index.html)
-2. Maven 2/3 (http://maven.apache.org/)
-3. Tomcat 7+ (http://tomcat.apache.org/)
+- Java JDK 1.7+ (http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+- Maven 2/3 (http://maven.apache.org/)
+- Tomcat 7+ (http://tomcat.apache.org/)
 
-Installation
--------------
-1. $ mvn clean && mvn install
-	- This will create a disk-server-[version].war file in server/target
-	- It will also create a disk-client-[version].war file in client/target
+1. Install using maven
+```
+mvn clean && mvn install
+```
+- This will create a disk-server-[version].war file in server/target
+- It will also create a disk-client-[version].war file in client/target
 
 2. Move the war files to a Servlet container (Tomcat)
-	- $ mv /path/to/disk-server-<version>.war /path/to/tomcat/webapps/disk-server.war
-	- $ mv /path/to/disk-client-<version>.war /path/to/tomcat/webapps/disk-client.war
+
+```bash
+mv /path/to/disk-server-<version>.war /path/to/tomcat/webapps/disk-server.war
+mv /path/to/disk-client-<version>.war /path/to/tomcat/webapps/disk-client.war
+```
 
 3. Start tomcat
-	- $ /path/to/tomcat/bin/startup.sh
+
+```bash
+/path/to/tomcat/bin/startup.sh
+```
 
 4. Open http://[your-server-name]:8080/disk-server/vocabulary to check that the local repository server is working fine. It might take a little while to open it for the first time as it downloads vocabularies from the internet.
 
@@ -32,10 +59,11 @@ Installation
 
 8. The default userid is "admin" with password "changeme!". Remember to change it :)
 
+## Configuration
 
-## Change the version
+To run this project, you will need to add the following environment variables to your .env file
 
-```bash
-version="1.1.1"
-mvn --settings pom.xml org.codehaus.mojo:versions-maven-plugin:2.1:set -DnewVersion=${version}
-```
+`API_KEY`
+
+`ANOTHER_API_KEY`
+
