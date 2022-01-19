@@ -2,7 +2,7 @@
 FROM maven:3.8.4-jdk-8 AS build
 WORKDIR /home/app/
 COPY . /home/app/
-RUN mvn -f /home/app/pom.xml clean package
+RUN MAVEN_OPTS='-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn' mvn -f /home/app/pom.xml package
 
 FROM nginx
 
