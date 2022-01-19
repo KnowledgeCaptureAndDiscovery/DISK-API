@@ -10,7 +10,9 @@ metadata and outputs for posterior analysis.
 
 ## Installation
 
-We recommend to use `docker` to install DISK.
+You can install DISK using Docker or building from source.
+We recommend to use `docker` to install DISK. 
+
 
 ### Docker
 
@@ -19,6 +21,11 @@ Install DISK with docker
 ```bash
 docker-compose up -d
 ```
+
+### Building the project
+
+Please read the docs for the [building instructions](./building.md)
+
 ## Configuration
 
 1. Customize the client by changing the [config.js file](./config.js)
@@ -26,7 +33,14 @@ docker-compose up -d
 
 ## Usage
 
-1. Open http://localhost:8080/disk-server/vocabulary to check that the local repository server is working fine. It might take a little while to open it for the first time as it downloads vocabularies from the internet.
+### Check the server
 
-2. Open http://localhost:8080/disk-client/index.html to access the Disk UI that connects with the local repository
+Open http://localhost:8080/disk-server/vocabulary to check that the local repository server is working fine. It might take a little while to open it for the first time as it downloads vocabularies from the internet.
 
+### Check the client
+
+Open http://localhost:8080/disk-client/index.html to access the Disk UI that connects with the local repository
+
+## Documentation
+
+Full documentation is available at [https://disk.readthedocs.io/en/latest/](https://disk.readthedocs.io/en/latest/)
