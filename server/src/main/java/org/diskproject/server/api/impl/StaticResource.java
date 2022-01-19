@@ -12,7 +12,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.diskproject.shared.api.StaticService;
-
+ 
 @Path("public")
 public class StaticResource implements StaticService {
 	@Inject ServletContext context;
