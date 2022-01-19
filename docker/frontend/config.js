@@ -1,5 +1,5 @@
 var CONFIG = {
-        SERVER : "https://enigma-disk.wings.isi.edu/disk-server",
+        SERVER : "http://localhost:8080/disk-server",
         TITLE : "NeuroDISK",
         COLORS : {
                 base : "#5D7BA0", // Background color for Top Banner, and Headers

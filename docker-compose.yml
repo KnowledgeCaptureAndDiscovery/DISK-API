@@ -4,7 +4,9 @@ services:
   frontend:
     image: ikcap/disk_frontend:latest
     ports:
-      - '8080:80'
+      - '8080:80' 
+    volumes:
+      - ./docker/frontend/config.js:/usr/share/nginx/html/disk-portal/customize/config.js
   backend:
     image: ikcap/disk_backend:latest
     ports:
