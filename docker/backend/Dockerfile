@@ -8,4 +8,4 @@ RUN export MAVEN_OPTS='-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfe
 FROM tomcat:8.5.32
 LABEL author="Maximiliano Osorio <mosorio@isi.edu>" \
       maintainer="Maximiliano Osorio <mosorio@isi.edu>"
-COPY --from=build server/target/*.war /usr/local/tomcat/webapps/disk-server.war
+COPY --from=build /home/app/server/target/*.war /usr/local/tomcat/webapps/disk-server.war
