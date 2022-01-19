@@ -2,11 +2,11 @@ version: '3.9'
 
 services:
   frontend:
-    image: ikcap/disk_frontend:latest
+    image: ikcap/disk_frontend:docker
     ports:
       - '8080:80'
   backend:
-    image: ikcap/disk_backend:latest
+    image: ikcap/disk_backend:docker
     ports:
       - '8080'
     volumes:
