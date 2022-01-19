@@ -7,3 +7,4 @@ WORKDIR /usr/share/nginx/html
 RUN mkdir disk-portal \
     && cd disk-portal \
     && unzip /tmp/disk-portal.war
+COPY docker/frontend/default.conf /etc/nginx/conf.d/default.conf
