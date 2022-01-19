@@ -61,15 +61,19 @@ jobs:
         IMAGE_FRONTEND_ID=ikcap/disk_frontend
         IMAGE_BACKEND_ID=$(echo $IMAGE_BACKEND_ID | tr '[A-Z]' '[a-z]')
         IMAGE_FRONTEND_ID=$(echo $IMAGE_FRONTEND_ID | tr '[A-Z]' '[a-z]')
+
+        # VERSION is the branch name (main is latest)
         VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
         [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
         [ "$VERSION" == "main" ] && VERSION=latest
 
+        # Push images as branch name
         docker tag $IMAGE_NAME_BACKEND $IMAGE_BACKEND_ID:$VERSION
         docker tag $IMAGE_NAME_FRONTEND $IMAGE_FRONTEND_ID:$VERSION
         docker push $IMAGE_FRONTEND_ID:$VERSION
         docker push $IMAGE_BACKEND_ID:$VERSION
         
+        # Push images with commit
         docker tag $IMAGE_NAME_BACKEND $IMAGE_BACKEND_ID:$GITHUB_SHA
         docker tag $IMAGE_NAME_FRONTEND $IMAGE_FRONTEND_ID:$GITHUB_SHA
         docker push $IMAGE_FRONTEND_ID:$GITHUB_SHA
