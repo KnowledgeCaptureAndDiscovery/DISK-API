@@ -44,6 +44,7 @@ jobs:
         VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
         [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
         [ "$VERSION" == "main" ] && VERSION=latest
+        docker tag $IMAGE_NAME_BACKEND $IMAGE_BACKEND_ID:$VERSION
         docker push $IMAGE_BACKEND_ID:$VERSION
         docker tag $IMAGE_NAME_BACKEND $IMAGE_BACKEND_ID:$GITHUB_SHA
         docker push $IMAGE_BACKEND_ID:$GITHUB_SHA
@@ -55,6 +56,7 @@ jobs:
         VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
         [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
         [ "$VERSION" == "main" ] && VERSION=latest
+        docker tag $IMAGE_NAME_FRONTEND $IMAGE_FRONTEND_ID:$VERSION
         docker push $IMAGE_FRONTEND_ID:$VERSION
         docker tag $IMAGE_NAME_FRONTEND $IMAGE_FRONTEND_ID:$GITHUB_SHA
         docker push $IMAGE_FRONTEND_ID:$GITHUB_SHA
