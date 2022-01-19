@@ -22,10 +22,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Build image
+    - name: Build frontend image
+      run: |
+        docker build -f docker/frontend/Dockerfile . --tag ${IMAGE_NAME_FRONTEND}
+    
+    - name: Build backend image
       run: |
         docker build -f docker/backend/Dockerfile . --tag ${IMAGE_NAME_BACKEND}
-        docker build -f docker/frontend/Dockerfile . --tag ${IMAGE_NAME_FRONTEND}
     
     - name: Login to DockerHub
       uses: docker/login-action@v1
@@ -33,20 +36,25 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Push image
+
+    - name: Push backend image
       run: |
         IMAGE_BACKEND_ID=ikcap/disk_backend
-        IMAGE_FRONTEND_ID=ikcap/disk_frontend
         IMAGE_BACKEND_ID=$(echo $IMAGE_BACKEND_ID | tr '[A-Z]' '[a-z]')
+        VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+        [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+        [ "$VERSION" == "main" ] && VERSION=latest
+        docker push $IMAGE_BACKEND_ID:$VERSION
+        docker tag $IMAGE_NAME_BACKEND $IMAGE_BACKEND_ID:$GITHUB_SHA
+        docker push $IMAGE_BACKEND_ID:$GITHUB_SHA
+
+    - name: Push fronted image
+      run: |
+        IMAGE_FRONTEND_ID=ikcap/disk_frontend
         IMAGE_FRONTEND_ID=$(echo $IMAGE_FRONTEND_ID | tr '[A-Z]' '[a-z]')
         VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
         [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
         [ "$VERSION" == "main" ] && VERSION=latest
-
         docker push $IMAGE_FRONTEND_ID:$VERSION
-        docker push $IMAGE_BACKEND_ID:$VERSION
-        
-        docker tag $IMAGE_NAME_BACKEND $IMAGE_BACKEND_ID:$GITHUB_SHA
         docker tag $IMAGE_NAME_FRONTEND $IMAGE_FRONTEND_ID:$GITHUB_SHA
         docker push $IMAGE_FRONTEND_ID:$GITHUB_SHA
-        docker push $IMAGE_BACKEND_ID:$GITHUB_SHA
