@@ -1,16 +1,12 @@
 version: '3.9'
 
 services:
-  nginx:
-    build:
-      context: .
-      dockerfile: docker/nginx/Dockerfile
+  frontend:
+    image: ikcap/disk_frontend:latest
     ports:
       - '8080:80'
-  server:
-    build:
-      context: .
-      dockerfile: docker/server/Dockerfile
+  backend:
+    image: ikcap/disk_backend:latest
     ports:
       - '8080'
     volumes:
