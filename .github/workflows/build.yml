@@ -1,0 +1,71 @@
+name: build
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches: 
+      - '*'
+
+env:
+  IMAGE_NAME_BACKEND: disk_backend
+  IMAGE_NAME_FRONTEND: disk_frontend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 8
+      uses: actions/setup-java@v2
+      with:
+        java-version: '8'
+        distribution: 'adopt'
+        server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
+        settings-path: ${{ github.workspace }} # location for the settings.xml file
+        cache: 'maven'
+
+    - name: Build with Maven
+      run: mvn install -f pom.xml
+      env:
+        MAVEN_OPTS: -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: wars
+        path: |
+          client/target/*.war
+          server/target/*.war
+          shared/target/*.jar
+        retention-days: 1
+
+    - name: Build image
+      run: |
+        docker build -f docker/backend/Dockerfile . --tag ${IMAGE_NAME_BACKEND}
+        docker build -f docker/frontend/Dockerfile . --tag ${IMAGE_NAME_FRONTEND}
+    
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Push image
+      run: |
+        IMAGE_BACKEND_ID=ikcap/disk_backend
+        IMAGE_FRONTEND_ID=ikcap/disk_frontend
+        IMAGE_BACKEND_ID=$(echo $IMAGE_BACKEND_ID | tr '[A-Z]' '[a-z]')
+        IMAGE_FRONTEND_ID=$(echo $IMAGE_FRONTEND_ID | tr '[A-Z]' '[a-z]')
+        VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+        [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+        [ "$VERSION" == "master" ] && VERSION=latest
+
+        docker tag $IMAGE_NAME_BACKEND $IMAGE_BACKEND_ID:$GITHUB_SHA
+        docker tag $IMAGE_NAME_FRONTEND $IMAGE_FRONTEND_ID:$GITHUB_SHA
+        docker push $IMAGE_FRONTEND_ID:$GITHUB_SHA
+        docker push $IMAGE_BACKEND_ID:$GITHUB_SHA

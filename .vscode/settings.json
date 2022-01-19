@@ -1,0 +1,6 @@
+{
+    "yaml.schemas": {
+        "file:///toc.schema.json": "/toc\\.yml/i",
+        "https://json.schemastore.org/github-workflow.json": "file:///home/mosorio/repos/DISK-WEB/.github/workflows/build.yml"
+    }
+}

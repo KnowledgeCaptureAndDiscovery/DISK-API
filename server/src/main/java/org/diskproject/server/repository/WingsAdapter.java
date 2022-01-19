@@ -70,9 +70,9 @@ public class WingsAdapter extends MethodAdapter {
 	private String internal_server;
 	private CookieStore cookieStore;
 	
-	public String wflowns = "http://www.wings-workflows.org/ontology/workflow.owl#";
-	public String execns = "http://www.wings-workflows.org/ontology/execution.owl#";
-	public String datans = "http://www.wings-workflows.org/ontology/data.owl#";
+	public String wflowns = "https://www.wings-workflows.org/ontology/workflow.owl#";
+	public String execns = "https://www.wings-workflows.org/ontology/execution.owl#";
+	public String datans = "https://www.wings-workflows.org/ontology/data.owl#";
 
 	public static WingsAdapter get() {
 		if (singleton == null)
@@ -418,8 +418,8 @@ public class WingsAdapter extends MethodAdapter {
 		// Get all successful runs for the template (and their variable
 		// bindings)
 		String query = "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n"
-				+ "PREFIX exec: <http://www.wings-workflows.org/ontology/execution.owl#>\n"
-				+ "PREFIX wflow: <http://www.wings-workflows.org/ontology/workflow.owl#>\n"
+				+ "PREFIX exec: <https://www.wings-workflows.org/ontology/execution.owl#>\n"
+				+ "PREFIX wflow: <https://www.wings-workflows.org/ontology/workflow.owl#>\n"
 				+ "\n"
 				+ "SELECT ?run\n"
 				+ "(group_concat(concat(strafter(str(?iv), \"#\"), \"=\", str(?b));separator=\"||\") as ?bindings)  \n"
