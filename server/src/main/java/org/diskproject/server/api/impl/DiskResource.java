@@ -70,7 +70,6 @@ public class DiskResource implements DiskService {
       vals.put("wings.server", config.getProperty("wings.server").toString());
       return vals;
     } catch (Exception e) {
-      // e.printStackTrace();
       throw new RuntimeException("Exception: " + e.getMessage());
     }
   }
@@ -118,7 +117,7 @@ public class DiskResource implements DiskService {
   public String reloadVocabularies() {
     try {
       this.repo.reloadKBCaches();
-      //this.repo.initializeKB();
+      System.out.println("Reload 1");
       response.sendRedirect("");
       return "";
     } catch (Exception e) {
@@ -132,7 +131,7 @@ public class DiskResource implements DiskService {
   public String APIReloadVocabularies() {
     try {
       this.repo.reloadKBCaches();
-      //this.repo.initializeKB();
+      System.out.println("Reload 2");
       return "OK";
     } catch (Exception e) {
       // e.printStackTrace();
@@ -149,14 +148,14 @@ public class DiskResource implements DiskService {
   @Override
   public void addHypothesis(
       @JsonProperty("hypothesis") Hypothesis hypothesis) {
-    this.repo.addHypothesis(USERNAME, DOMAIN, hypothesis);
+    this.repo.addHypothesis(USERNAME, hypothesis);
   }
       
   @GET
   @Path("hypotheses")
   @Override
   public List<TreeItem> listHypotheses() {
-    return this.repo.listHypotheses(USERNAME, DOMAIN);
+    return this.repo.listHypotheses(USERNAME);
   }
   
   @GET
@@ -164,7 +163,7 @@ public class DiskResource implements DiskService {
   @Override
   public Hypothesis getHypothesis(
       @PathParam("id") String id) {
-    return this.repo.getHypothesis(USERNAME, DOMAIN, id);
+    return this.repo.getHypothesis(USERNAME, id);
   }
   
   @PUT
@@ -173,7 +172,7 @@ public class DiskResource implements DiskService {
   public void updateHypothesis(
       @PathParam("id") String id,
       @JsonProperty("hypothesis") Hypothesis hypothesis) {
-    this.repo.updateHypothesis(USERNAME, DOMAIN, id, hypothesis);
+    this.repo.updateHypothesis(USERNAME, id, hypothesis);
   }
   
   @DELETE
@@ -181,7 +180,7 @@ public class DiskResource implements DiskService {
   @Override
   public void deleteHypothesis(
       @PathParam("id") String id) {
-    this.repo.deleteHypothesis(USERNAME, DOMAIN, id);
+    this.repo.removeHypothesis(USERNAME, id);
   }
   
   @GET
@@ -189,7 +188,7 @@ public class DiskResource implements DiskService {
   @Override
   public List<TriggeredLOI> queryHypothesis(
       @PathParam("id") String id) {
-    return this.repo.queryHypothesis(USERNAME, DOMAIN, id);
+    return this.repo.queryHypothesis(USERNAME, id);
   }
 
   @GET
@@ -197,7 +196,7 @@ public class DiskResource implements DiskService {
   @Override
   public Map<String, List<TriggeredLOI>> getHypothesisTLOIs(
       @PathParam("id") String id) {
-    return this.repo.getHypothesisTLOIs(USERNAME, DOMAIN, id);
+    return this.repo.getHypothesisTLOIs(USERNAME, id);
   }
 
   /**
@@ -208,7 +207,7 @@ public class DiskResource implements DiskService {
   @Override
   public void addAssertion(
       @JsonProperty("assertions") Graph assertions) {
-    this.repo.addAssertion(USERNAME, DOMAIN, assertions);
+    this.repo.addAssertion(USERNAME, assertions);
   }
   
   @GET
@@ -223,7 +222,7 @@ public class DiskResource implements DiskService {
   @Override
   public void deleteAssertion(
       @JsonProperty("assertions") Graph assertions) {
-    this.repo.deleteAssertion(USERNAME, DOMAIN, assertions);
+    this.repo.deleteAssertion(USERNAME, assertions);
   }
   
   @PUT
@@ -231,7 +230,7 @@ public class DiskResource implements DiskService {
   @Override
   public void updateAssertions (
       @JsonProperty("assertions") Graph assertions) {
-    this.repo.updateAssertions(USERNAME, DOMAIN, assertions);
+    this.repo.updateAssertions(USERNAME, assertions);
   }
   
   /**
@@ -242,14 +241,14 @@ public class DiskResource implements DiskService {
   @Override
   public void addLOI(
       @JsonProperty("loi") LineOfInquiry loi) {
-    this.repo.addLOI(USERNAME, DOMAIN, loi);
+    this.repo.addLOI(USERNAME, loi);
   }
 
   @GET
   @Path("lois")
   @Override
   public List<TreeItem> listLOIs() {
-    return this.repo.listLOIs(USERNAME, DOMAIN);
+    return this.repo.listLOIs(USERNAME);
   }
 
   @GET
@@ -257,7 +256,7 @@ public class DiskResource implements DiskService {
   @Override
   public LineOfInquiry getLOI(
       @PathParam("id") String id) {
-    return this.repo.getLOI(USERNAME, DOMAIN, id);
+    return this.repo.getLOI(USERNAME, id);
   }
 
   @PUT
@@ -266,7 +265,7 @@ public class DiskResource implements DiskService {
   public void updateLOI(
       @PathParam("id") String id,
       @JsonProperty("loi") LineOfInquiry loi) {
-    this.repo.updateLOI(USERNAME, DOMAIN, id, loi);
+    this.repo.updateLOI(USERNAME, id, loi);
   }
   
   @DELETE
@@ -274,7 +273,7 @@ public class DiskResource implements DiskService {
   @Override
   public void deleteLOI(
       @PathParam("id") String id) {
-    this.repo.deleteLOI(USERNAME, DOMAIN, id);
+    this.repo.removeLOI(USERNAME, id);
   }
   
   /*
@@ -285,14 +284,14 @@ public class DiskResource implements DiskService {
   @Override
   public void addTriggeredLOI(
       @JsonProperty("tloi") TriggeredLOI tloi) {
-    this.repo.addTriggeredLOI(USERNAME, DOMAIN, tloi);
+    this.repo.addTriggeredLOI(USERNAME, tloi);
   }
   
   @GET
   @Path("tlois")
   @Override
   public List<TriggeredLOI> listTriggeredLOIs() {
-    return this.repo.listTriggeredLOIs(USERNAME, DOMAIN);
+    return this.repo.listTriggeredLOIs(USERNAME);
   }
   
   @GET
@@ -300,7 +299,7 @@ public class DiskResource implements DiskService {
   @Override
   public TriggeredLOI getTriggeredLOI(
       @PathParam("id") String id) {
-    return this.repo.getTriggeredLOI(USERNAME, DOMAIN, id);
+    return this.repo.getTriggeredLOI(USERNAME, id);
   }
   
   @DELETE
@@ -308,7 +307,7 @@ public class DiskResource implements DiskService {
   @Override
   public void deleteTriggeredLOI(
       @PathParam("id") String id) {
-    this.repo.deleteTriggeredLOI(USERNAME, DOMAIN, id);
+    this.repo.removeTriggeredLOI(USERNAME, id);
   }
  
   /*
@@ -375,7 +374,7 @@ public class DiskResource implements DiskService {
   public List<TriggeredLOI> getExecutions(
       @PathParam("hid") String hid, 
       @PathParam("lid") String lid) {
-	return this.repo.getTLOIsForHypothesisAndLOI(USERNAME, DOMAIN, hid, lid);
+	return this.repo.getTLOIsForHypothesisAndLOI(USERNAME, hid, lid);
   }
 
   @GET
@@ -384,7 +383,7 @@ public class DiskResource implements DiskService {
   public List<TriggeredLOI> runHypothesisAndLOI(
       @PathParam("hid") String hid, 
       @PathParam("lid") String lid) {
-	return this.repo.runHypothesisAndLOI(USERNAME, DOMAIN, hid, lid);
+	return this.repo.runHypothesisAndLOI(USERNAME, hid, lid);
   }
   
   
@@ -392,7 +391,7 @@ public class DiskResource implements DiskService {
   @Path("runhypotheses")
   @Override
   public Boolean runHypotheses() {
-	return this.repo.runAllHypotheses(USERNAME, DOMAIN);
+	return this.repo.runAllHypotheses(USERNAME);
   }
 
   @GET
@@ -400,7 +399,7 @@ public class DiskResource implements DiskService {
   @Override
   public Map<String, String> getNarratives(
       @PathParam("tloiid") String tloiid) {
-	return this.repo.getNarratives(USERNAME, DOMAIN, tloiid);
+	return this.repo.getNarratives(USERNAME, tloiid);
   }
   
   @GET

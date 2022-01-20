@@ -28,6 +28,12 @@ public class LineOfInquiry {
     this.metaWorkflows = new ArrayList<WorkflowBindings>();
   }
 
+  public LineOfInquiry(String id, String name, String description){
+	  this.id = id;
+	  this.name = name;
+	  this.description = description;
+  }
+
   public LineOfInquiry(String id,
 		  String name, 
 		  String description, 
