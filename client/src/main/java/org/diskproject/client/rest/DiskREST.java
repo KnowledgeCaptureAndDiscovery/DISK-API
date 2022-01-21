@@ -93,27 +93,6 @@ public class DiskREST {
     return diskService;
   }
 
-  public static void getServerConfig(
-    final Callback<Map<String, String>, Throwable> callback) {      
-      if(Config.serverConfig != null) {
-        callback.onSuccess(Config.serverConfig);
-      }
-      else {
-        REST.withCallback(new MethodCallback<Map<String, String>>() {
-          @Override
-          public void onSuccess(Method method, Map<String, String> config) {
-            Config.serverConfig = config;
-            callback.onSuccess(config);
-          }
-          @Override
-          public void onFailure(Method method, Throwable exception) {
-            AppNotification.notifyFailure("Could not load configuration");
-            callback.onFailure(exception);
-          }
-        }).call(getDiskService()).getConfig();
-      }
-  }
-
   public static void setUsername(String username) {
     DiskREST.username = username;
   }

@@ -32,10 +32,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @Consumes("application/json")
 public interface DiskService extends DirectRestService {
   @GET
-  @Path("server/config")
-  public Map<String, String> getConfig();
-
-  @GET
   @Path("server/endpoints")
   public Map<String, String> getEndpoints();
   
@@ -84,11 +80,6 @@ public interface DiskService extends DirectRestService {
   public List<TriggeredLOI> queryHypothesis(
       @PathParam("id") String id);
   
-  @GET
-  @Path("hypotheses/{id}/tlois")
-  public Map<String, List<TriggeredLOI>> getHypothesisTLOIs(
-      @PathParam("id") String id);
-
   /*
    * Assertions
    */

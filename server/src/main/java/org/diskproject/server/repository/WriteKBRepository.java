@@ -883,8 +883,8 @@ public class WriteKBRepository extends KBRepository {
             //FIXME: This part refers to WINGS workflows, we need to change to methods
             KBAPI kb = userKB;
             for (WorkflowBindings bindings : bindingsList) {
-                String workflowid = WingsAdapter.get().WFLOWID("admin", "test", bindings.getWorkflow()); //FIXME
-                String workflowuri = WingsAdapter.get().WFLOWURI("admin", bindings.getWorkflow());
+                String workflowid = WingsAdapter.get().WFLOWID(bindings.getWorkflow());
+                String workflowuri = WingsAdapter.get().WFLOWURI(bindings.getWorkflow());
                 KBObject bindingobj = kb.createObjectOfClass(null, cmap.get("WorkflowBinding"));
                 kb.addPropertyValue(item, bindingprop, bindingobj);
 
@@ -956,7 +956,6 @@ public class WriteKBRepository extends KBRepository {
         }
     }
 
-
     
     private List<WorkflowBindings> loadWorkflowsBindings (String userDomain, String id) {
         return loadBindings(userDomain, id, pmap.get("hasWorkflowBinding"));
@@ -996,7 +995,7 @@ public class WriteKBRepository extends KBRepository {
                 KBObject workflowobj = kb.getPropertyValue(wbobj, pmap.get("hasWorkflow"));
                 if (workflowobj != null) {
                   bindings.setWorkflow(workflowobj.getName());
-                  String link = WingsAdapter.get().getWorkflowLink("admin", "test", workflowobj.getName()); //FIXME
+                  String link = WingsAdapter.get().getWorkflowLink(workflowobj.getName());
                   if (link != null)
                       bindings.setWorkflowLink(link);
                 }

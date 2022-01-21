@@ -1,6 +1,5 @@
 package org.diskproject.server.api.impl;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +17,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 
-import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.diskproject.server.repository.DiskRepository;
 import org.diskproject.server.repository.WingsAdapter;
 import org.diskproject.shared.api.DiskService;
@@ -56,25 +54,6 @@ public class DiskResource implements DiskService {
   }
   
   @GET
-  @Path("server/config")
-  @Override
-  public Map<String, String> getConfig() {
-    String username = (String) request.getAttribute("username");
-    System.out.println( "user: " + username);
-
-    try {
-      PropertyListConfiguration config = this.repo.getConfig();
-      Map<String, String> vals = new HashMap<String, String>();
-      vals.put("username", USERNAME);
-      vals.put("domain", DOMAIN);
-      vals.put("wings.server", config.getProperty("wings.server").toString());
-      return vals;
-    } catch (Exception e) {
-      throw new RuntimeException("Exception: " + e.getMessage());
-    }
-  }
-
-  @GET
   @Path("server/endpoints")
   @Override
   public Map<String, String> getEndpoints () {
@@ -88,27 +67,8 @@ public class DiskResource implements DiskService {
   @Path("vocabulary")
   @Override
   public Map<String, Vocabulary> getVocabularies() {
-    try {
-      return this.repo.getVocabularies();
-    } catch (Exception e) {
-      // e.printStackTrace();
-      throw new RuntimeException("Exception: " + e.getMessage());
-    }
+    return this.repo.getVocabularies();
   }
-
-  /*@GET
-  @Path("vocabulary")
-  @Override
-  public Vocabulary getUserVocabulary(
-      @PathParam("username") String username, 
-      @PathParam("domain") String domain) {
-    try {
-      return this.repo.getUserVocabulary(username, domain);
-    } catch (Exception e) {
-      // e.printStackTrace();
-      throw new RuntimeException("Exception: " + e.getMessage());
-    }
-  }*/
 
   @GET
   @Path("vocabulary/reload")
@@ -155,6 +115,8 @@ public class DiskResource implements DiskService {
   @Path("hypotheses")
   @Override
   public List<TreeItem> listHypotheses() {
+    String username = (String) request.getAttribute("username");
+    System.out.println( "user: " + username);
     return this.repo.listHypotheses(USERNAME);
   }
   
@@ -189,14 +151,6 @@ public class DiskResource implements DiskService {
   public List<TriggeredLOI> queryHypothesis(
       @PathParam("id") String id) {
     return this.repo.queryHypothesis(USERNAME, id);
-  }
-
-  @GET
-  @Path("hypotheses/{id}/tlois")
-  @Override
-  public Map<String, List<TriggeredLOI>> getHypothesisTLOIs(
-      @PathParam("id") String id) {
-    return this.repo.getHypothesisTLOIs(USERNAME, id);
   }
 
   /**
@@ -317,14 +271,14 @@ public class DiskResource implements DiskService {
   @Override
   @Path("workflows")
   public List<Workflow> listWorkflows() {
-    return WingsAdapter.get().getWorkflowList(USERNAME, DOMAIN);
+    return WingsAdapter.get().getWorkflowList();
   }
 
   @GET
   @Override
   @Path("workflows/{id}")
   public List<Variable> getWorkflowVariables( @PathParam("id") String id) {
-    return WingsAdapter.get().getWorkflowVariables(USERNAME, DOMAIN, id);    
+    return WingsAdapter.get().getWorkflowVariables(id);    
   }
   
   @GET
@@ -333,7 +287,7 @@ public class DiskResource implements DiskService {
   public WorkflowRun monitorWorkflow(
       @PathParam("id") String id) {
     // Check execution status
-    return WingsAdapter.get().getWorkflowRunStatus(USERNAME, DOMAIN, id);
+    return WingsAdapter.get().getWorkflowRunStatus(id);
   }  
 
   @GET

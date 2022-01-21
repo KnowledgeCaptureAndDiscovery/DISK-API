@@ -82,6 +82,7 @@ public class DiskRepository extends WriteKBRepository {
 
     private Map<String, List<List<String>>> optionsCache;
     private Map<String, DataAdapter> dataAdapters;
+    private Map<String, MethodAdapter> methodAdapters;
 
     public static void main(String[] args) {
         get();
@@ -100,10 +101,13 @@ public class DiskRepository extends WriteKBRepository {
     public DiskRepository() {
         setConfiguration(KBConstants.DISKURI(), KBConstants.DISKNS());
         dataAdapters = new HashMap<String, DataAdapter>();
+        methodAdapters = new HashMap<String, MethodAdapter>();
         optionsCache = new WeakHashMap<String, List<List<String>>>();
         //Set domain
         this.setDomain(this.server);
-        // Initialize KB
+        // Initialize
+        this.initializeDataAdapters();
+        this.initializeMethodAdapters();
         initializeKB();
         // Threads
         monitor = Executors.newScheduledThreadPool(0);
@@ -120,8 +124,6 @@ public class DiskRepository extends WriteKBRepository {
             dataThread.stop();
         if (monitorData != null)
             monitorData.shutdownNow();
-        /*if (gmail != null)
-            gmail.shutdown();*/
     }
 
     /**
@@ -144,7 +146,6 @@ public class DiskRepository extends WriteKBRepository {
             return;
         }
            
-        this.initializeDataAdapters();
         this.initializeVocabularies();
     }
 
@@ -172,7 +173,8 @@ public class DiskRepository extends WriteKBRepository {
     public PropertyListConfiguration getConfig() {
         return Config.get().getProperties();
     }
-
+    
+    // -- Data adapters
     private void initializeDataAdapters () {
         //Reads data adapters from config file.
         PropertyListConfiguration cfg = this.getConfig();
@@ -235,6 +237,51 @@ public class DiskRepository extends WriteKBRepository {
       }
       return endpoints;
     }
+
+    // -- Method adapters
+    private void initializeMethodAdapters () {
+        //Reads method adapters from config file.
+        PropertyListConfiguration cfg = this.getConfig();
+        Map<String, Map<String,String>> adapters = new HashMap<String, Map<String,String>>();
+        Iterator<String> a = cfg.getKeys("method-adapters");
+        while (a.hasNext()) {
+            String key = a.next();
+            String sp[] = key.split("\\.");
+            
+            if (sp != null && sp.length == 3) { // as the list is normalized length is how deep the property is
+                Map<String, String> map;
+                if (adapters.containsKey(sp[1]))
+                    map = adapters.get(sp[1]);
+                else {
+                    map = new HashMap<String, String>();
+                    adapters.put(sp[1], map);
+                }
+                map.put(sp[2], cfg.getProperty(key).toString());
+            }
+        }
+        
+        for (String name: adapters.keySet()) {
+            Map<String,String> cur = adapters.get(name);
+            String curURI = cur.get("endpoint"),
+                   curType = cur.get("type");
+            String curUser = null, curPass = null, curDomain = null, curInternalServer = null;
+            if (cur.containsKey("username")) curUser = cur.get("username");
+            if (cur.containsKey("password")) curPass = cur.get("password");
+            if (cur.containsKey("domain")) curDomain = cur.get("domain");
+            if (cur.containsKey("internal_server")) curInternalServer = cur.get("internal_server");
+
+            switch (curType) {
+                case "wings":
+                    MethodAdapter curAdapter = new WingsAdapter(name, curURI, curUser, curPass, curDomain, curInternalServer);
+                    this.methodAdapters.put(curURI, curAdapter);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
+    
     /**
      * Vocabulary Initialization
      */
@@ -1309,54 +1356,19 @@ public class DiskRepository extends WriteKBRepository {
         }
         
         Set<String> names = nameToUrl.keySet();
-        List<String> onWings = WingsAdapter.get().isFileListOnWings(username, "test", names); //FIXME
+        List<String> onWings = WingsAdapter.get().isFileListOnWings(names);
         
         names.removeAll(onWings);
 
         for (String newFilename: names) {
             String newFile = nameToUrl.get(newFilename);
             System.out.println("Uploading to WINGS: " + newFile + " as " + newFilename);
-            WingsAdapter.get().addRemoteDataToWings(username, newFile, newFilename);
+            WingsAdapter.get().addRemoteDataToWings(newFile, newFilename);
         }
 
         return urlToName;
     }
 
-    public Map<String, List<TriggeredLOI>> getHypothesisTLOIs (String username, String id) {
-        Map<String, List<TriggeredLOI>> map = new HashMap<String, List<TriggeredLOI>>();
-
-        String TLOIURI = this.TLOIURI(username);
-        String hypPrefix = this.HYPURI(username);
-        String hypURI = hypPrefix + "/" + id;
-        try {
-            this.start_read();
-            KBAPI TLOIKB = this.fac.getKB(TLOIURI, OntSpec.PLAIN, true);
-            KBObject hyp = TLOIKB.getResource(hypURI);
-
-            for (KBTriple t : TLOIKB.genericTripleQuery(null, pmap.get("hasParentHypothesis"), hyp)) {
-                KBObject obj = t.getSubject();
-                String tloiid = obj.getID();
-                String[] sp = tloiid.split("/");
-                KBAPI tloiGraph = this.fac.getKB(TLOIURI + '/' + sp[sp.length-1], OntSpec.PLAIN, true);
-
-                TriggeredLOI tloi = this.getTriggeredLOI(username, tloiid, TLOIKB, tloiGraph);
-                String loiId = tloi.getLoiId();
-                if (!map.containsKey(loiId)) {
-                    map.put(loiId, new ArrayList<TriggeredLOI>());
-                }
-                map.get(loiId).add(tloi);
-            }
-        } catch (ConcurrentModificationException e) {
-           System.out.println("ERROR: Concurrent modification exception on listHypothesisTLOIs");
-           return null;
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-          this.end();
-        }
-        return map;
-    }
-    
     public Boolean runAllHypotheses (String username) {
         List<String> hlist = new ArrayList<String>();
         String url = this.HYPURI(username);
@@ -1477,7 +1489,7 @@ public class DiskRepository extends WriteKBRepository {
                         .split("\n\",\"\n");
                 for (int j = 0; j < temp.length - 1; j += 2) {
                     //FIXME
-                    WingsAdapter.get().addOrUpdateData(username, "test", temp[j].substring(4),
+                    WingsAdapter.get().addOrUpdateData(temp[j].substring(4),
                             "/export/users/" + username + "/data/ontology.owl#File", temp[j + 1], true);
                 }
             }
@@ -1493,8 +1505,7 @@ public class DiskRepository extends WriteKBRepository {
             if (upload)
                 for (int j = 0; j < temp.length - 1; j += 2) {
                     //FIXME
-                    WingsAdapter.get().addOrUpdateData(username, "test", temp[j].substring(4), type, temp[j + 1],
-                            false);
+                    WingsAdapter.get().addOrUpdateData(temp[j].substring(4), type, temp[j + 1], false);
                 }
             return temp;
         } catch (Exception e) {
@@ -1672,77 +1683,6 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     /*
-     * Workflow bindings
-     */
-
-    private List<WorkflowBindings> getWorkflowBindingsFromKB(String username, KBAPI kb, KBObject loiitem,
-            KBObject bindingprop) {
-        List<WorkflowBindings> list = new ArrayList<WorkflowBindings>();
-        for (KBTriple t : kb.genericTripleQuery(loiitem, bindingprop, null)) {
-            KBObject wbobj = t.getObject();
-            WorkflowBindings bindings = new WorkflowBindings();
-
-            // Workflow Run details
-            WorkflowRun run = new WorkflowRun();
-            KBObject robj = kb.getPropertyValue(wbobj, pmap.get("hasId"));
-            if (robj != null)
-                run.setId(robj.getValue().toString());
-            KBObject statusobj = kb.getPropertyValue(wbobj, pmap.get("hasStatus"));
-            if (statusobj != null)
-                run.setStatus(statusobj.getValue().toString());
-            KBObject linkobj = kb.getPropertyValue(wbobj, pmap.get("hasRunLink"));
-            if (linkobj != null)
-                run.setLink(linkobj.getValue().toString());
-            bindings.setRun(run);
-
-            // Workflow details
-            KBObject workflowobj = kb.getPropertyValue(wbobj, pmap.get("hasWorkflow"));
-            if (workflowobj != null) {
-              bindings.setWorkflow(workflowobj.getName());
-              String link = WingsAdapter.get().getWorkflowLink(username, "test", workflowobj.getName()); //FIXME
-              if (link != null)
-                  bindings.setWorkflowLink(link);
-            }
-
-            // Variable binding details
-            for (KBObject vbobj : kb.getPropertyValues(wbobj, pmap.get("hasVariableBinding"))) {
-                KBObject varobj = kb.getPropertyValue(vbobj, pmap.get("hasVariable"));
-                KBObject bindobj = kb.getPropertyValue(vbobj, pmap.get("hasBindingValue"));
-                VariableBinding vbinding = new VariableBinding();
-                vbinding.setVariable(varobj.getName());
-                vbinding.setBinding(bindobj.getValueAsString());
-                bindings.getBindings().add(vbinding);
-            }
-
-            // Parameters details
-            for (KBObject vbobj : kb.getPropertyValues(wbobj, pmap.get("hasParameter"))) {
-                KBObject varobj = kb.getPropertyValue(vbobj, pmap.get("hasVariable"));
-                KBObject bindobj = kb.getPropertyValue(vbobj, pmap.get("hasBindingValue"));
-                VariableBinding param = new VariableBinding(varobj.getName(),bindobj.getValueAsString());
-                bindings.addParameter(param);
-            }
-
-            // Optional parameters details
-            for (KBObject vbobj : kb.getPropertyValues(wbobj, pmap.get("hasOptionalParameter"))) {
-                KBObject varobj = kb.getPropertyValue(vbobj, pmap.get("hasVariable"));
-                KBObject bindobj = kb.getPropertyValue(vbobj, pmap.get("hasBindingValue"));
-                VariableBinding optionalParam = new VariableBinding(varobj.getName(),bindobj.getValueAsString());
-                bindings.addOptionalParameter(optionalParam);
-            }
-
-            KBObject hypobj = kb.getPropertyValue(wbobj, pmap.get("hasHypothesisVariable"));
-            if (hypobj != null)
-                bindings.getMeta().setHypothesis(hypobj.getName());
-            KBObject revhypobj = kb.getPropertyValue(wbobj, pmap.get("hasRevisedHypothesisVariable"));
-            if (revhypobj != null)
-                bindings.getMeta().setRevisedHypothesis(revhypobj.getName());
-
-            list.add(bindings);
-        }
-        return list;
-    }
-
-    /*
      * Triggered Lines of Inquiries (TLOIs)
      */
 
@@ -1764,93 +1704,6 @@ public class DiskRepository extends WriteKBRepository {
 
     public boolean removeTriggeredLOI(String username, String id) {
         return deleteTLOI(username, id);
-    }
-
-    private TriggeredLOI getTriggeredLOI(String username, String id, KBAPI kb, KBAPI tloikb) {
-        TriggeredLOI tloi = new TriggeredLOI();
-        KBObject obj = kb.getIndividual(id);
-
-        try{
-            tloi.setId(obj.getName());
-        } catch (Exception e) {
-            System.out.println("ERROR trying to get " + id);
-            return null;
-        }
-        tloi.setName(kb.getLabel(obj));
-        tloi.setDescription(kb.getComment(obj));
-
-        KBObject lobj = kb.getPropertyValue(obj, pmap.get("hasLineOfInquiry"));
-        if (lobj != null)
-            tloi.setLoiId(lobj.getName());
-
-        KBObject pobj = kb.getPropertyValue(obj, pmap.get("hasParentHypothesis"));
-        if (pobj != null)
-            tloi.setParentHypothesisId(pobj.getName());
-
-        for (KBObject robj : kb.getPropertyValues(obj, pmap.get("hasResultingHypothesis"))) {
-            String resHypId = robj.getName();
-            tloi.addResultingHypothesisId(resHypId);
-        }
-
-        KBObject stobj = kb.getPropertyValue(obj, pmap.get("hasTriggeredLineOfInquiryStatus"));
-        if (stobj != null)
-            tloi.setStatus(Status.valueOf(stobj.getValue().toString()));
-
-        KBObject dateobj = kb.getPropertyValue(obj, pmap.get("dateCreated"));
-        if (dateobj != null)
-            tloi.setDateCreated(dateobj.getValueAsString());
-        
-        KBObject dateModifiedObj = kb.getPropertyValue(obj, pmap.get("dateModified"));
-        if (dateModifiedObj != null)
-            tloi.setDateModified(dateModifiedObj.getValueAsString());
-        
-        KBObject authorobj = kb.getPropertyValue(obj, pmap.get("hasAuthor"));
-        if (authorobj != null)
-            tloi.setAuthor(authorobj.getValueAsString());
-
-        KBObject dqobj = kb.getPropertyValue(obj, pmap.get("hasDataQuery"));
-        if (dqobj != null)
-            tloi.setDataQuery(dqobj.getValueAsString());
-        
-        KBObject dataSourceObj = kb.getPropertyValue(obj, pmap.get("hasDataSource"));
-        if (dataSourceObj != null)
-            tloi.setDataSource(dataSourceObj.getValueAsString());
-
-        KBObject rvobj = kb.getPropertyValue(obj, pmap.get("hasRelevantVariables"));
-        if (rvobj != null)
-            tloi.setRelevantVariables(rvobj.getValueAsString());
-
-        KBObject explobj = kb.getPropertyValue(obj, pmap.get("dataQueryDescription"));
-        if (explobj != null)
-            tloi.setExplanation(explobj.getValueAsString());
-        
-        
-        KBObject confidenceObj = kb.getPropertyValue(obj, pmap.get("hasConfidenceValue"));
-        if (confidenceObj != null)
-            tloi.setConfidenceValue(Double.valueOf(confidenceObj.getValueAsString()));
-
-        ArrayList<KBObject> inputFilesObj = kb.getPropertyValues(obj, pmap.get("hasInputFile"));
-        if (inputFilesObj != null && inputFilesObj.size() > 0) {
-            for (KBObject inputf: inputFilesObj) {
-                tloi.addInputFile(inputf.getValueAsString());
-            }
-        }
-
-        ArrayList<KBObject> outputFilesObj = kb.getPropertyValues(obj, pmap.get("hasOutputFile"));
-        if (outputFilesObj != null && outputFilesObj.size() > 0) {
-            for (KBObject outputf: outputFilesObj) {
-                tloi.addOutputFile(outputf.getValueAsString());
-            }
-        }
-
-        if (tloikb != null) {
-            KBObject floiitem = tloikb.getIndividual(id);
-            tloi.setWorkflows(
-                    this.getWorkflowBindingsFromKB(username, tloikb, floiitem, pmap.get("hasWorkflowBinding")));
-            tloi.setMetaWorkflows(this.getWorkflowBindingsFromKB(username, tloikb, floiitem,
-                    pmap.get("hasMetaWorkflowBinding")));
-        }
-        return tloi;
     }
 
     private void updateTriggeredLOI(String username, String id, TriggeredLOI tloi) {
@@ -2043,44 +1896,18 @@ public class DiskRepository extends WriteKBRepository {
      */
 
     public List<TriggeredLOI> getTLOIsForHypothesisAndLOI (String username, String hypid, String loiid) {
+        // Get all TLOIs and filter out 
         List<TriggeredLOI> list = new ArrayList<TriggeredLOI>();
-
-        String TLOIURI = this.TLOIURI(username);
         String hypURI = this.HYPURI(username) + "/" + hypid;
         String loiURI = this.LOIURI(username) + "/" + loiid;
-        try {
-            this.start_read();
-            KBAPI TLOIKB = this.fac.getKB(TLOIURI, OntSpec.PLAIN, true);
-            KBObject hyp = TLOIKB.getResource(hypURI);
-            KBObject loi = TLOIKB.getResource(loiURI);
-            
-            Set<String> hypSet = new HashSet<String>();
-            Set<String> finalSet = new HashSet<String>();
 
-            for (KBTriple t : TLOIKB.genericTripleQuery(null, pmap.get("hasParentHypothesis"), hyp)) {
-                KBObject obj = t.getSubject();
-                String tloiid = obj.getID();
-                hypSet.add(tloiid);
+        for (TriggeredLOI tloi: listTLOIs(username)) {
+            String parentHypId = tloi.getParentHypothesisId();
+            String parentLOIId = tloi.getLoiId();
+            if (parentHypId != null && parentHypId.equals(hypURI) && 
+                parentLOIId != null && parentLOIId.equals(loiURI)) {
+                    list.add(tloi);
             }
-            for (KBTriple t : TLOIKB.genericTripleQuery(null, pmap.get("hasLineOfInquiry"), loi)) {
-                KBObject obj = t.getSubject();
-                String tloiid = obj.getID();
-                if (hypSet.contains(tloiid)) finalSet.add(tloiid);
-            }
-            for (String tloiid: finalSet) {    
-                String[] sp = tloiid.split("/");
-                KBAPI tloiGraph = this.fac.getKB(TLOIURI + '/' + sp[sp.length-1], OntSpec.PLAIN, true);
-
-                TriggeredLOI tloi = this.getTriggeredLOI(username, tloiid, TLOIKB, tloiGraph);
-                list.add(tloi);
-            }
-        } catch (ConcurrentModificationException e) {
-           System.out.println("ERROR: Concurrent modification exception on listHypothesisTLOIs");
-           return null;
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-          this.end();
         }
         return list;
     }
@@ -2123,19 +1950,18 @@ public class DiskRepository extends WriteKBRepository {
     public String getDataFromWings (String username, String domain, String id) {
         /* Wings IDs are URIs */
         WingsAdapter wings = WingsAdapter.get();
-        String dataid = wings.DOMURI(username, domain) + "/data/library.owl#" + id;
-        return wings.fetchDataFromWings(username, domain, dataid);
+        String dataid = wings.DOMURI() + "/data/library.owl#" + id;
+        return wings.fetchDataFromWings(dataid);
     }
 
     /* Retrieves the revised_hypothesis from wings and stores it as a disk-hypothesis (quad) */
     private String fetchOutputHypothesis(String username, WorkflowBindings bindings, TriggeredLOI tloi) {
         String varname = bindings.getMeta().getRevisedHypothesis();
-        Map<String, String> varmap = WingsAdapter.get().getRunVariableBindings(username, "test",
-                bindings.getRun().getId());
+        Map<String, String> varmap = WingsAdapter.get().getRunVariableBindings(bindings.getRun().getId());
         if (varmap.containsKey(varname)) {
             String dataid = varmap.get(varname);
             String dataname = dataid.replaceAll(".*#", "");
-            String content = WingsAdapter.get().fetchDataFromWings(username, "test", dataid);
+            String content = WingsAdapter.get().fetchDataFromWings(dataid);
 
             HashMap<String, Integer> workflows = new HashMap<String, Integer>();
             for (WorkflowBindings wb : tloi.getWorkflows()) {
@@ -2216,7 +2042,7 @@ public class DiskRepository extends WriteKBRepository {
                 // Start off workflows from tloi
                 for (WorkflowBindings bindings : wflowBindings) {
                     // Get workflow input details
-                    Map<String, Variable> inputs = wings.getWorkflowInputs(username, "test", bindings.getWorkflow()); //FIXME
+                    Map<String, Variable> inputs = wings.getWorkflowInputs(bindings.getWorkflow());
                     List<VariableBinding> vbindings = bindings.getBindings();
                     List<VariableBinding> params = bindings.getParameters();
                     List<VariableBinding> optionalparams = bindings.getOptionalParameters();
@@ -2266,7 +2092,7 @@ public class DiskRepository extends WriteKBRepository {
                                 System.err.println("Couldn't retrieve hypothesis type information");
                                 continue;
                             }
-                            String dataid = wings.addDataToWings(username, "test", hypId, hypVar.getType(), contents);
+                            String dataid = wings.addDataToWings(hypId, hypVar.getType(), contents);
                             if (dataid == null) {
                                 System.err.println("Couldn't add hypothesis to wings");
                                 continue;
@@ -2282,7 +2108,7 @@ public class DiskRepository extends WriteKBRepository {
                     }
                     // Execute workflow
                     System.out.println("Executing " + bindings.getWorkflow() + " with:\n" + vbindings);
-                    String runid = wings.runWorkflow(username, "test", bindings.getWorkflow(), sendbindings, inputs);
+                    String runid = wings.runWorkflow(bindings.getWorkflow(), sendbindings, inputs);
                     if (runid != null)
                         bindings.getRun().setId(runid);// .replaceAll("^.*#",
                                                         // ""));
@@ -2330,7 +2156,7 @@ public class DiskRepository extends WriteKBRepository {
                         continue;
                     }
                     String rname = runid.replaceAll("^.*#", "");
-                    WorkflowRun wstatus = WingsAdapter.get().getWorkflowRunStatus(this.username, "test", rname);//FIXME
+                    WorkflowRun wstatus = WingsAdapter.get().getWorkflowRunStatus(rname);
                     bindings.setRun(wstatus);
                     
                     //Add input files:
@@ -2361,7 +2187,7 @@ public class DiskRepository extends WriteKBRepository {
                             for (String outname: outputs.keySet()) {
                                 if (outname.equals("p_value") || outname.equals("pval") || outname.equals("p_val")) {
                                     String dataid = outputs.get(outname);
-                                    String wingsP = WingsAdapter.get().fetchDataFromWings(username, "test", dataid); //FIXME
+                                    String wingsP = WingsAdapter.get().fetchDataFromWings(dataid);
                                     Double pval = 0.0;
                                     try {
                                         //pval = Double.parseDouble(wingsP);
