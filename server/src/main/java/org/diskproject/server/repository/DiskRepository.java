@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.apache.commons.lang.SerializationUtils;
+import org.diskproject.server.adapters.AirFlowAdapter;
 import org.diskproject.server.adapters.DataAdapter;
 import org.diskproject.server.adapters.DataResult;
 import org.diskproject.server.adapters.MethodAdapter;
@@ -77,7 +78,6 @@ public class DiskRepository extends WriteKBRepository {
     ScheduledExecutorService monitor;
     ScheduledExecutorService monitorData;
     ExecutorService executor;
-    //static GmailService gmail;
     static DataMonitor dataThread;
 
     private Map<String, List<List<String>>> optionsCache;
@@ -228,16 +228,6 @@ public class DiskRepository extends WriteKBRepository {
         return null;
     }
     
-    public Map<String, String> getEndpoints () {
-      Map<String, String> endpoints = new HashMap<String, String>();
-      
-      for (String key: dataAdapters.keySet()) {
-          DataAdapter d = dataAdapters.get(key);
-          endpoints.put(d.getName(), d.getEndpointUrl());
-      }
-      return endpoints;
-    }
-
     // -- Method adapters
     private void initializeMethodAdapters () {
         //Reads method adapters from config file.
@@ -262,24 +252,33 @@ public class DiskRepository extends WriteKBRepository {
         
         for (String name: adapters.keySet()) {
             Map<String,String> cur = adapters.get(name);
-            String curURI = cur.get("endpoint"),
-                   curType = cur.get("type");
+            String curURI = cur.get("endpoint"), curType = cur.get("type");
             String curUser = null, curPass = null, curDomain = null, curInternalServer = null;
             if (cur.containsKey("username")) curUser = cur.get("username");
             if (cur.containsKey("password")) curPass = cur.get("password");
             if (cur.containsKey("domain")) curDomain = cur.get("domain");
             if (cur.containsKey("internal_server")) curInternalServer = cur.get("internal_server");
 
+            MethodAdapter curAdapter = null;
             switch (curType) {
                 case "wings":
-                    MethodAdapter curAdapter = new WingsAdapter(name, curURI, curUser, curPass, curDomain, curInternalServer);
-                    this.methodAdapters.put(curURI, curAdapter);
+                    curAdapter = new WingsAdapter(name, curURI, curUser, curPass, curDomain, curInternalServer);
                     break;
-
+                case "airflow":
+                    curAdapter = new AirFlowAdapter(name, curURI, curUser, curPass);
+                    break;
                 default:
                     break;
             }
+            if (curAdapter != null)
+                this.methodAdapters.put(curURI, curAdapter);
         }
+    }
+
+    private MethodAdapter getMethodAdapter (String url) {
+        if (this.methodAdapters.containsKey(url))
+            return this.methodAdapters.get(url);
+        return null;
     }
     
     /**
@@ -422,10 +421,6 @@ public class DiskRepository extends WriteKBRepository {
                 "(?<=[A-Za-z])(?=[^A-Za-z])"), " ");
         // Make first letter upper case
         return pname.substring(0, 1).toUpperCase() + pname.substring(1);
-    }
-
-    public Map<String, Vocabulary> getVocabularies() {
-        return this.vocabularies;
     }
 
     public Vocabulary getVocabulary(String uri) {
@@ -712,6 +707,23 @@ public class DiskRepository extends WriteKBRepository {
             }
         }
         return B;
+    }
+
+    /*
+     * API methods
+     */
+
+    public Map<String, String> getEndpoints () {
+      Map<String, String> endpoints = new HashMap<String, String>();
+      for (String key: dataAdapters.keySet()) {
+          DataAdapter d = dataAdapters.get(key);
+          endpoints.put(d.getName(), d.getEndpointUrl());
+      }
+      return endpoints;
+    }
+
+    public Map<String, Vocabulary> getVocabularies() {
+        return this.vocabularies;
     }
 
     /*
@@ -1824,7 +1836,6 @@ public class DiskRepository extends WriteKBRepository {
         return narratives;
     }
 
-    
     private String dataQueryNarrative(String dataQuery) {
       String dataQuery1 = dataQuery.replaceAll("^(//)n${1}",""); //this is necessary to replace the new line characters in query
       String[] querylist = dataQuery1.split("\\.");
@@ -1889,7 +1900,6 @@ public class DiskRepository extends WriteKBRepository {
     }
 
   }
-
 
     /*
      * Running

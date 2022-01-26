@@ -9,11 +9,7 @@ public class Variable {
 
 	  public Variable(){}
 	  
-	  public Variable(String name,
-	  String type,
-	  int dimensionality,
-	  boolean param,
-	  boolean input){
+	  public Variable(String name, String type, int dimensionality, boolean param, boolean input){
 		  this.name = name;
 		  this.type = type;
 		  this.dimensionality = dimensionality;
