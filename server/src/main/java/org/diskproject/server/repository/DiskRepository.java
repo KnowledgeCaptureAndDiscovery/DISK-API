@@ -126,8 +126,8 @@ public class DiskRepository extends WriteKBRepository {
             monitorData.shutdownNow();
     }
 
-    /**
-     * KB Initialization
+    /********************
+     * Initialization
      */
 
     public void initializeKB() {
@@ -281,10 +281,7 @@ public class DiskRepository extends WriteKBRepository {
         return null;
     }
     
-    /**
-     * Vocabulary Initialization
-     */
-
+    // -- Vocabulary Initialization
     private void initializeVocabularies () {
         this.vocabularies = new HashMap<String, Vocabulary>();
         try {
@@ -313,6 +310,10 @@ public class DiskRepository extends WriteKBRepository {
         this.fetchTypesAndIndividualsFromKB(kb, vocabulary);
         this.fetchPropertiesFromKB(kb, vocabulary);
         return vocabulary;
+    }
+
+    public Vocabulary getVocabulary(String uri) {
+        return this.vocabularies.get(uri);
     }
 
     private void fetchPropertiesFromKB(KBAPI kb, Vocabulary vocabulary) {
@@ -422,9 +423,121 @@ public class DiskRepository extends WriteKBRepository {
         // Make first letter upper case
         return pname.substring(0, 1).toUpperCase() + pname.substring(1);
     }
+    
+    /********************
+     * API methods
+     */
 
-    public Vocabulary getVocabulary(String uri) {
-        return this.vocabularies.get(uri);
+    public Map<String, String> getEndpoints () {
+      Map<String, String> endpoints = new HashMap<String, String>();
+      for (String key: dataAdapters.keySet()) {
+          DataAdapter d = dataAdapters.get(key);
+          endpoints.put(d.getName(), d.getEndpointUrl());
+      }
+      return endpoints;
+    }
+
+    public Map<String, Vocabulary> getVocabularies() {
+        return this.vocabularies;
+    }
+
+    /*
+     * Hypotheses
+     */
+
+    public boolean addHypothesis (String username, Hypothesis hypothesis) {
+        return writeHypothesis(username, hypothesis);
+    }
+
+    public boolean removeHypothesis (String username, String id) {
+        return this.deleteHypothesis(username, id);
+    }
+
+    public Hypothesis getHypothesis(String username, String id) {
+        return loadHypothesis(username, id);
+    }
+
+    public Hypothesis updateHypothesis(String username, String id, Hypothesis hypothesis) {
+        if (hypothesis.getId() != null && this.deleteHypothesis(username, id) && this.addHypothesis(username, hypothesis))
+            return hypothesis;
+        return null;
+    }
+
+    public List<TreeItem> listHypotheses(String username) {
+        List<TreeItem> list = new ArrayList<TreeItem>();
+        List<Hypothesis> hypothesisList = listHypothesesPreviews(username);
+
+        for (Hypothesis h : hypothesisList) {
+            TreeItem item = new TreeItem(h.getId(), h.getName(), h.getDescription(), h.getParentId(), h.getDateCreated(), h.getAuthor());
+            if (h.getDateModified() != null)
+                item.setDateModified(h.getDateModified());
+            list.add(item);
+        }
+        return list;
+    }
+
+    /*
+     * Lines of Inquiry
+     */
+
+    public boolean addLOI(String username, LineOfInquiry loi) {
+        return writeLOI(username, loi);
+    }
+
+    public boolean removeLOI(String username, String id) {
+        return deleteLOI(username, id);
+    }
+
+    public LineOfInquiry getLOI(String username, String id) {
+        return this.loadLOI(username, id);
+    }
+
+    public LineOfInquiry updateLOI(String username, String id, LineOfInquiry loi) {
+        if (loi.getId() != null && this.deleteLOI(username, id) && this.addLOI(username, loi))
+            return loi;
+        return null;
+    }
+
+    public List<TreeItem> listLOIs(String username) {
+        List<TreeItem> list = new ArrayList<TreeItem>();
+        List<LineOfInquiry> lois = this.listLOIPreviews(username);
+
+        for (LineOfInquiry l: lois) {
+            TreeItem item = new TreeItem(l.getId(), l.getName(), l.getDescription(), null, l.getDateCreated(), l.getAuthor());
+            if (l.getDateModified() != null) item.setDateModified(l.getDateModified());
+            list.add(item);
+        }
+        return list;
+    }
+
+    /*
+     * Triggered Lines of Inquiries (TLOIs)
+     */
+
+    public void addTriggeredLOI(String username, TriggeredLOI tloi) {
+        tloi.setStatus(Status.QUEUED);
+        writeTLOI(username, tloi);
+
+        TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, false);
+        executor.execute(wflowThread);
+    }
+
+    public boolean removeTriggeredLOI(String username, String id) {
+        return deleteTLOI(username, id);
+    }
+
+    public TriggeredLOI getTriggeredLOI(String username, String id) {
+        return loadTLOI(username, id);
+    }
+
+    private TriggeredLOI updateTriggeredLOI(String username, String id, TriggeredLOI tloi) {
+        if (tloi.getId() != null && this.deleteTLOI(username, id) && this.writeTLOI(username, tloi))
+            return tloi;
+        return null;
+    }
+
+    public List<TriggeredLOI> listTriggeredLOIs(String username) {
+        return listTLOIs(username);
     }
 
     /*
@@ -707,61 +820,6 @@ public class DiskRepository extends WriteKBRepository {
             }
         }
         return B;
-    }
-
-    /*
-     * API methods
-     */
-
-    public Map<String, String> getEndpoints () {
-      Map<String, String> endpoints = new HashMap<String, String>();
-      for (String key: dataAdapters.keySet()) {
-          DataAdapter d = dataAdapters.get(key);
-          endpoints.put(d.getName(), d.getEndpointUrl());
-      }
-      return endpoints;
-    }
-
-    public Map<String, Vocabulary> getVocabularies() {
-        return this.vocabularies;
-    }
-
-    /*
-     * Hypotheses
-     */
-
-    public List<TreeItem> listHypotheses(String username) {
-        List<TreeItem> list = new ArrayList<TreeItem>();
-        List<Hypothesis> hypothesisList = listHypothesesPreviews(username);
-
-        for (Hypothesis h : hypothesisList) {
-            TreeItem item = new TreeItem(h.getId(), h.getName(), h.getDescription(), h.getParentId(), h.getDateCreated(), h.getAuthor());
-            if (h.getDateModified() != null)
-                item.setDateModified(h.getDateModified());
-            list.add(item);
-        }
-        return list;
-    }
-
-    public Hypothesis getHypothesis(String username, String id) {
-        return loadHypothesis(username, id);
-    }
-
-    public Hypothesis updateHypothesis(String username, String id, Hypothesis hypothesis) {
-        if (hypothesis.getId() == null)
-            return null;
-
-        if (this.deleteHypothesis(username, id) && this.addHypothesis(username, hypothesis))
-            return hypothesis;
-        return null;
-    }
-
-    public boolean removeHypothesis(String username, String id) {
-        return this.deleteHypothesis(username, id);
-    }
-
-    public boolean addHypothesis(String username, Hypothesis hypothesis) {
-        return writeHypothesis(username, hypothesis);
     }
 
     /*
@@ -1656,75 +1714,6 @@ public class DiskRepository extends WriteKBRepository {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    /*
-     * Lines of Inquiry
-     */
-    public boolean addLOI(String username, LineOfInquiry loi) {
-        return writeLOI(username, loi);
-    }
-
-    public List<TreeItem> listLOIs(String username) {
-        List<TreeItem> list = new ArrayList<TreeItem>();
-        List<LineOfInquiry> lois = this.listLOIPreviews(username);
-
-        for (LineOfInquiry l: lois) {
-            TreeItem item = new TreeItem(l.getId(), l.getName(), l.getDescription(), null, l.getDateCreated(), l.getAuthor());
-            if (l.getDateModified() != null) item.setDateModified(l.getDateModified());
-            list.add(item);
-        }
-        return list;
-    }
-
-    public LineOfInquiry getLOI(String username, String id) {
-        return this.loadLOI(username, id);
-    }
-
-    public LineOfInquiry updateLOI(String username, String id, LineOfInquiry loi) {
-        if (loi.getId() == null)
-            return null;
-
-        if (this.deleteLOI(username, id) && this.addLOI(username, loi))
-            return loi;
-        return null;
-    }
-
-    public boolean removeLOI(String username, String id) {
-        return deleteLOI(username, id);
-    }
-
-    /*
-     * Triggered Lines of Inquiries (TLOIs)
-     */
-
-    public List<TriggeredLOI> listTriggeredLOIs(String username) {
-        return listTLOIs(username);
-    }
-
-    public TriggeredLOI getTriggeredLOI(String username, String id) {
-        return loadTLOI(username, id);
-    }
-
-    public void addTriggeredLOI(String username, TriggeredLOI tloi) {
-        tloi.setStatus(Status.QUEUED);
-        writeTLOI(username, tloi);
-
-        TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, false);
-        executor.execute(wflowThread);
-    }
-
-    public boolean removeTriggeredLOI(String username, String id) {
-        return deleteTLOI(username, id);
-    }
-
-    private void updateTriggeredLOI(String username, String id, TriggeredLOI tloi) {
-        if (tloi.getId() == null)
-            return;
-
-        this.deleteTLOI(username, id);
-        //TODO: add updated date to tloi
-        this.writeTLOI(username, tloi);
     }
 
     /*
