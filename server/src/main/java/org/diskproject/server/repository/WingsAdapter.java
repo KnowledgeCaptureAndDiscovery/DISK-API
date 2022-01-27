@@ -67,7 +67,9 @@ public class WingsAdapter extends MethodAdapter {
 
 	private Gson json;
 	private String server;
+	private String domain;
 	private String internal_server;
+
 	private CookieStore cookieStore;
 	
 	public String wflowns = "https://www.wings-workflows.org/ontology/workflow.owl#";
@@ -75,49 +77,52 @@ public class WingsAdapter extends MethodAdapter {
 	public String datans = "https://www.wings-workflows.org/ontology/data.owl#";
 
 	public static WingsAdapter get() {
-		if (singleton == null)
-			singleton = new WingsAdapter();
+	    if (singleton == null) System.out.println(" == oh no! ");
 		return singleton;
 	}
 
-	public WingsAdapter() {
-		this.server = Config.get().getProperties().getString("wings.server");
-		this.internal_server = Config.get().getProperties().getString("wings.internal_server");
+	public WingsAdapter (String name, String url, String username, String password, String domain, String internalServer) {
+	    super(name, url, username, password);
+		this.server = url;
+		this.internal_server = internalServer;
+		this.domain = domain;
 		this.cookieStore = new BasicCookieStore();
 		this.json = new Gson();
+		//FIXME: temporal
+		if (singleton == null) singleton = this;
 	}
 
-	public String DOMURI(String username, String domain) {
-		return this.internal_server + "/export/users/" + username + "/" + domain;
+	public String DOMURI() {
+		return this.internal_server + "/export/users/" + this.getUsername() + "/" + this.domain;
 	}
 
-	public String WFLOWURI(String username, String domain) {
-		return this.DOMURI(username, domain) + "/workflows";
+	public String WFLOWURI() {
+		return this.DOMURI() + "/workflows";
 	}
 
-	public String WFLOWURI(String username, String domain, String id) {
-		return this.DOMURI(username, domain) + "/workflows/" + id + ".owl";
+	public String WFLOWURI(String id) {
+		return this.DOMURI() + "/workflows/" + id + ".owl";
 	}
 
-	public String WFLOWID(String username, String domain, String id) {
-		return this.internal_server + "/export/users/" + username + "/" + domain + 
+	public String WFLOWID(String id) {
+		return this.internal_server + "/export/users/" + this.getUsername() + "/" + this.domain + 
 		    "/workflows/" + id + ".owl#" + id;
 	}
 
-	public String DATAID(String username, String domain, String id) {
-		return this.DOMURI(username, domain) + "/data/library.owl#" + id;
+	public String DATAID(String id) {
+		return this.DOMURI() + "/data/library.owl#" + id;
 	}
 
-	public String RUNURI(String username, String domain, String id) {
-		return this.DOMURI(username, domain) + "/executions/" + id + ".owl";
+	public String RUNURI(String id) {
+		return this.DOMURI() + "/executions/" + id + ".owl";
 	}
 
-	public String RUNID(String username, String domain, String id) {
-		return this.RUNURI(username, domain, id) + "#" + id;
+	public String RUNID(String id) {
+		return this.RUNURI(id) + "#" + id;
 	}
 
-	public List<Workflow> getWorkflowList(String username, String domain) {
-		String liburi = this.WFLOWURI(username, domain) + "/library.owl";
+	public List<Workflow> getWorkflowList() {
+		String liburi = this.WFLOWURI() + "/library.owl";
 		try {
 			List<Workflow> list = new ArrayList<Workflow>();
 			OntFactory fac = new OntFactory(OntFactory.JENA);
@@ -130,8 +135,7 @@ public class WingsAdapter extends MethodAdapter {
 				KBObject tobj = triple.getSubject();
 				Workflow wflow = new Workflow();
 				wflow.setName(tobj.getName());
-				wflow.setLink(this.getWorkflowLink(username, domain,
-						wflow.getName()));
+				wflow.setLink(this.getWorkflowLink(wflow.getName()));
 				list.add(wflow);
 			}
 			return list;
@@ -141,9 +145,8 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
-	public List<Variable> getWorkflowVariables(String username, String domain,
-			String id) {
-		String wflowuri = this.WFLOWURI(username, domain, id);
+	public List<Variable> getWorkflowVariables(String id) {
+		String wflowuri = this.WFLOWURI(id);
 		try {
 			List<Variable> list = new ArrayList<Variable>();
 			Map<String, Boolean> varmap = new HashMap<String, Boolean>();
@@ -189,8 +192,7 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
-	public Map<String, String> getRunVariableBindings(String username,
-			String domain, String runid) {
+	public Map<String, String> getRunVariableBindings(String runid) {
 		String runuri = runid.replace("#.*", "");
 		try {
 			OntFactory fac = new OntFactory(OntFactory.JENA);
@@ -217,16 +219,14 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
-	public Map<String, Variable> getWorkflowInputs(String username,
-			String domain, String id) {
-		String pageid = "users/" + username + "/" + domain
-				+ "/workflows/getInputsJSON";
+	public Map<String, Variable> getWorkflowInputs(String id) {
+		String pageid = "users/" + getUsername() + "/" + this.domain + "/workflows/getInputsJSON";
 
-		String wflowid = this.WFLOWID(username, domain, id);
+		String wflowid = this.WFLOWID(id);
 		List<NameValuePair> data = new ArrayList<NameValuePair>();
 		data.add(new BasicNameValuePair("template_id", wflowid));
 
-		String inputsjson = this.get(username, pageid, data);
+		String inputsjson = this.get(pageid, data);
 
 		Type type = new TypeToken<List<Map<String, Object>>>() {
 		}.getType();
@@ -250,16 +250,13 @@ public class WingsAdapter extends MethodAdapter {
 		return inputs;
 	}
 
-	private boolean login(String username) {
-		String password = Config.get().getProperties()
-				.getString("wings.passwords." + username);
-
+	private boolean login() {
 		CloseableHttpClient client = HttpClientBuilder.create()
         .setDefaultCookieStore(this.cookieStore).build();
 		HttpClientContext context = HttpClientContext.create();
 		try {
 		  // Get a default domains page
-			HttpGet securedResource = new HttpGet(this.server + "/users/" + username + "/domains");
+			HttpGet securedResource = new HttpGet(this.server + "/users/" + getUsername() + "/domains");
 			HttpResponse httpResponse = client
 					.execute(securedResource, context);
 			HttpEntity responseEntity = httpResponse.getEntity();
@@ -272,8 +269,8 @@ public class WingsAdapter extends MethodAdapter {
 			// Login with the username/password
 			HttpPost authpost = new HttpPost(this.server + "/j_security_check");
 			List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
-			nameValuePairs.add(new BasicNameValuePair("j_username", username));
-			nameValuePairs.add(new BasicNameValuePair("j_password", password));
+			nameValuePairs.add(new BasicNameValuePair("j_username", getUsername()));
+			nameValuePairs.add(new BasicNameValuePair("j_password", getPassword()));
 			authpost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 			try {
 				httpResponse = client.execute(authpost);
@@ -297,15 +294,14 @@ public class WingsAdapter extends MethodAdapter {
 		return false;
 	}
 
-	public WorkflowRun getWorkflowRunStatus(String username, String domain, String runid) {
+	public WorkflowRun getWorkflowRunStatus(String runid) {
 		try {
 			// Get data
-			String execid = RUNID(username, domain, runid);
+			String execid = RUNID(runid);
 			List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 			formdata.add(new BasicNameValuePair("run_id", execid));
-			String pageid = "users/" + username + "/" + domain
-					+ "/executions/getRunDetails";
-			String runjson = this.post(username, pageid, formdata);
+			String pageid = "users/" + getUsername() + "/" + this.domain + "/executions/getRunDetails";
+			String runjson = this.post(pageid, formdata);
 			if (runjson == null)
 				return null;
 			
@@ -368,7 +364,7 @@ public class WingsAdapter extends MethodAdapter {
 			}
 
 			// Creating link
-			String link = this.server + "/users/" + username + "/" + domain + "/executions";
+			String link = this.server + "/users/" + getUsername() + "/" + domain + "/executions";
 			link += "?run_id=" + URLEncoder.encode(execid, "UTF-8");
 
 			wflowstatus.setStatus(status);
@@ -412,8 +408,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	// TODO: Hackish function. Fix it !!!! *IMPORTANT*
-	private String getWorkflowRunWithSameBindings(String username,
-			String domain, String templateid, List<VariableBinding> vbindings) {
+	private String getWorkflowRunWithSameBindings(String templateid, List<VariableBinding> vbindings) {
 
 		// Get all successful runs for the template (and their variable
 		// bindings)
@@ -437,7 +432,7 @@ public class WingsAdapter extends MethodAdapter {
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 		formdata.add(new BasicNameValuePair("query", query));
 		formdata.add(new BasicNameValuePair("format", "json"));
-		String resultjson = get(username, pageid, formdata);
+		String resultjson = get(pageid, formdata);
 		if (resultjson == null || resultjson.equals(""))
 			return null;
 
@@ -519,93 +514,84 @@ public class WingsAdapter extends MethodAdapter {
 		return true;
 	}
 
-	public String getWorkflowLink(String username, String domain, String id) {
-		return this.server + "/users/" + username + "/" + domain
+	public String getWorkflowLink(String id) {
+		return this.server + "/users/" + this.getUsername() + "/" + this.domain
 				+ "/workflows/" + id + ".owl";
 	}
 
-	public String runWorkflow(String username, String domain, String wflowname,
-			List<VariableBinding> vbindings,
-			Map<String, Variable> inputVariables) {
+	public String runWorkflow(String wflowname, List<VariableBinding> vbindings, Map<String, Variable> inputVariables) {
 		try {
-			wflowname = WFLOWID(username,domain,wflowname);
-			String toPost = toPlanAcceptableFormat(username, domain, wflowname,
-					vbindings, inputVariables);
-			String getData = postWithSpecifiedMediaType(username, "users/"+username+"/"+domain+"/plan/getData",
+			wflowname = WFLOWID(wflowname);
+			String toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			String getData = postWithSpecifiedMediaType("users/"+getUsername()+"/"+domain+"/plan/getData",
 					toPost, "application/json", "application/json");
 			vbindings = addDataBindings(inputVariables, vbindings, getData, false);
-			toPost = toPlanAcceptableFormat(username, domain, wflowname, vbindings,
-					inputVariables);
-			String getParams = postWithSpecifiedMediaType(username, "users/"+username+"/"+domain+"/plan/getParameters", toPost,
-					"application/json", "application/json");
+			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			String getParams = postWithSpecifiedMediaType("users/"+getUsername()+"/"+domain+"/plan/getParameters",
+			        toPost, "application/json", "application/json");
 			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
-			toPost = toPlanAcceptableFormat(username, domain, wflowname, vbindings,
-					inputVariables);
+			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
 
-		// TODO: This should be called after getting expanded workflow.
-		// - Create mapping data from expanded workflow, and then check.
-		// - *NEEDED* to handle collections properly
+            // TODO: This should be called after getting expanded workflow.
+            // - Create mapping data from expanded workflow, and then check.
+            // - *NEEDED* to handle collections properly
 
-			String runid = getWorkflowRunWithSameBindings(username, domain,
-					wflowname, vbindings);
-		if (runid != null) {
-			System.out.println("Found existing run : " + runid);
-			return runid;
+			String runid = getWorkflowRunWithSameBindings(wflowname, vbindings);
+            if (runid != null) {
+                System.out.println("Found existing run : " + runid);
+                return runid;
+            }
+            String s = postWithSpecifiedMediaType("users/"+getUsername()+"/"+domain+"/plan/getExpansions",
+                    toPost, "application/json", "application/json");
+            JsonParser jsonParser = new JsonParser();
+
+            JsonObject expobj = (JsonObject) jsonParser.parse(s);
+            JsonObject dataobj = expobj.get("data").getAsJsonObject();
+
+            JsonArray templatesobj = dataobj.get("templates").getAsJsonArray();
+            if (templatesobj.size() == 0)
+                return null;
+            JsonObject templateobj = templatesobj.get(0).getAsJsonObject();
+            JsonObject seedobj = dataobj.get("seed").getAsJsonObject();
+
+            // Run the first Expanded workflow
+            List<NameValuePair> formdata = new ArrayList<NameValuePair>();
+            formdata.add(new BasicNameValuePair("template_id", wflowname));
+            formdata.add(new BasicNameValuePair("json", templateobj.get("template")
+                    .toString()));
+            formdata.add(new BasicNameValuePair("constraints_json", templateobj
+                    .get("constraints").toString()));
+            formdata.add(new BasicNameValuePair("seed_json", seedobj
+                    .get("template").toString()));
+            formdata.add(new BasicNameValuePair("seed_constraints_json", seedobj
+                    .get("constraints").toString()));
+            String pageid = "users/" + getUsername() + "/" + domain
+                    + "/executions/runWorkflow";
+            runid = post(pageid, formdata);
+            return runid;
+		} catch (Exception e) {
+		    e.printStackTrace();
 		}
-		String s = postWithSpecifiedMediaType(username, "users/"+username+"/"+domain+"/plan/getExpansions",
-				toPost, "application/json", "application/json");
-		JsonParser jsonParser = new JsonParser();
-
-		JsonObject expobj = (JsonObject) jsonParser.parse(s);
-		JsonObject dataobj = expobj.get("data").getAsJsonObject();
-
-		JsonArray templatesobj = dataobj.get("templates").getAsJsonArray();
-		if (templatesobj.size() == 0)
-			return null;
-		JsonObject templateobj = templatesobj.get(0).getAsJsonObject();
-		JsonObject seedobj = dataobj.get("seed").getAsJsonObject();
-
-		// Run the first Expanded workflow
-		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
-		formdata.add(new BasicNameValuePair("template_id", wflowname));
-		formdata.add(new BasicNameValuePair("json", templateobj.get("template")
-				.toString()));
-		formdata.add(new BasicNameValuePair("constraints_json", templateobj
-				.get("constraints").toString()));
-		formdata.add(new BasicNameValuePair("seed_json", seedobj
-				.get("template").toString()));
-		formdata.add(new BasicNameValuePair("seed_constraints_json", seedobj
-				.get("constraints").toString()));
-		String pageid = "users/" + username + "/" + domain
-				+ "/executions/runWorkflow";
-		runid = post(username, pageid, formdata);
-		return runid;
-	} catch (Exception e) {
-		e.printStackTrace();
+		return null;
 	}
-	return null;
-}
 
-	public String fetchDataFromWings(String username, String domain,
-			String dataid) {
-		String getpage = "users/" + username + "/" + domain + "/data/fetch";
+	public String fetchDataFromWings(String dataid) {
+		String getpage = "users/" + getUsername() + "/" + domain + "/data/fetch";
 
 		// Check for data already present on the server
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 		formdata.add(new BasicNameValuePair("data_id", dataid));
-		return this.get(username, getpage, formdata);
+		return this.get(getpage, formdata);
 	}
 
-	public String addOrUpdateData(String username, String domain, String id,
-			String type, String contents, boolean addServer) {
+	public String addOrUpdateData(String id, String type, String contents, boolean addServer) {
 		if(addServer)
 			type = this.server+type;
-		String postpage = "users/" + username + "/" + domain
-				+ "/data/addDataForType";
-		String uploadpage = "users/" + username + "/" + domain + "/upload";
-		String locationpage = "users/" + username + "/" + domain + "/data/setDataLocation";
+		String postpage = "users/" + getUsername() + "/" + domain + "/data/addDataForType";
+		String uploadpage = "users/" + getUsername() + "/" + domain + "/upload";
+		String locationpage = "users/" + getUsername() + "/" + domain + "/data/setDataLocation";
 
-		String dataid = this.DATAID(username, domain, id);
+		String dataid = this.DATAID(id);
 
 		String response = null;
 		try {
@@ -617,17 +603,18 @@ public class WingsAdapter extends MethodAdapter {
 			}
 			File f = new File(dir.getAbsolutePath() + "/" + id);
 			FileUtils.write(f, contents);
-			this.upload(username, uploadpage, "data", f);
+			this.upload(uploadpage, "data", f);
 			f.delete();
 
 			List<NameValuePair> data = new ArrayList<NameValuePair>();
 			data.add(new BasicNameValuePair("data_id", dataid));
 			data.add(new BasicNameValuePair("data_type", type));
-			response = post(username, postpage, data);
+			response = post(postpage, data);
 			List<NameValuePair> location = new ArrayList<NameValuePair>();
 			location.add(new BasicNameValuePair("data_id", dataid));
-			location.add(new BasicNameValuePair("location", "/scratch/data/wings/storage/default/users/"+username+"/"+domain+"/data/"+dataid.substring(dataid.indexOf('#')+1)));
-			response = post(username, locationpage, location);
+			location.add(new BasicNameValuePair("location", 
+			        "/scratch/data/wings/storage/default/users/"+getUsername()+"/"+domain+"/data/"+dataid.substring(dataid.indexOf('#')+1)));
+			response = post(locationpage, location);
 			if(response.equals("OK"))
 				System.out.println("Upload successful.");
 			else 
@@ -639,14 +626,10 @@ public class WingsAdapter extends MethodAdapter {
 		return response;
 	}
 
-	public String addDataToWings(String username, String domain, String id,
-			String type, String contents) {
-
-		String getpage = "users/" + username + "/" + domain
-				+ "/data/getDataJSON";
-		String postpage = "users/" + username + "/" + domain
-				+ "/data/addDataForType";
-		String uploadpage = "users/" + username + "/" + domain + "/upload";
+	public String addDataToWings(String id, String type, String contents) {
+		String getpage = "users/" + getUsername() + "/" + domain + "/data/getDataJSON";
+		String postpage = "users/" + getUsername() + "/" + domain + "/data/addDataForType";
+		String uploadpage = "users/" + getUsername() + "/" + domain + "/upload";
 
 		// Add unique md5 hash to id based on contents
 		String md5 = DigestUtils.md5Hex(contents.getBytes());
@@ -658,10 +641,10 @@ public class WingsAdapter extends MethodAdapter {
 			id += "-" + md5;
 
 		// Check for data already present on the server
-		String dataid = this.DATAID(username, domain, id);
+		String dataid = this.DATAID(id);
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 		formdata.add(new BasicNameValuePair("data_id", dataid));
-		String datajson = this.get(username, getpage, formdata);
+		String datajson = this.get(getpage, formdata);
 		if (datajson != null && !datajson.trim().equals("null")) {
 			// Already there
 			return dataid;
@@ -678,13 +661,13 @@ public class WingsAdapter extends MethodAdapter {
 			}
 			File f = new File(dir.getAbsolutePath() + "/" + id);
 			FileUtils.write(f, contents);
-			this.upload(username, uploadpage, "data", f);
+			this.upload(uploadpage, "data", f);
 			f.delete();
 
 			List<NameValuePair> data = new ArrayList<NameValuePair>();
 			data.add(new BasicNameValuePair("data_id", dataid));
 			data.add(new BasicNameValuePair("data_type", type));
-			String response = this.post(username, postpage, data);
+			String response = this.post(postpage, data);
 			if (response != null && response.equals("OK"))
 				return dataid;
 		} catch (Exception e) {
@@ -693,12 +676,12 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
-	public String addDataToWingsAsFile(String username, String domain, String id, String contents) {
-	    String type = this.internal_server + "/export/users/" + username + "/" + domain + "/data/ontology.owl#File";
+	public String addDataToWingsAsFile(String id, String contents) {
+	    String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
 
-		String postpage = "users/" + username + "/" + domain + "/data/addDataForType";
-		String uploadpage = "users/" + username + "/" + domain + "/upload";
-		String dataid = this.DATAID(username, domain, id);
+		String postpage = "users/" + getUsername() + "/" + domain + "/data/addDataForType";
+		String uploadpage = "users/" + getUsername() + "/" + domain + "/upload";
+		String dataid = this.DATAID(id);
 		
 		
 		String sha = DigestUtils.sha1Hex(contents.getBytes());
@@ -716,13 +699,13 @@ public class WingsAdapter extends MethodAdapter {
 			}
 			File f = new File(dir.getAbsolutePath() + "/" + id);
 			FileUtils.write(f, contents);
-			this.upload(username, uploadpage, "data", f);
+			this.upload(uploadpage, "data", f);
 			f.delete();
 
 			List<NameValuePair> data = new ArrayList<NameValuePair>();
 			data.add(new BasicNameValuePair("data_id", dataid));
 			data.add(new BasicNameValuePair("data_type", type));
-			String response = this.post(username, postpage, data);
+			String response = this.post(postpage, data);
 			if (response != null && response.equals("OK"))
 				return dataid;
 		} catch (Exception e) {
@@ -731,16 +714,16 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
-	public String addRemoteDataToWings(String username, String domain, String url) {
-	  String type = this.internal_server + "/export/users/" + username + "/" + domain + "/data/ontology.owl#File";
-	  String opurl = "users/" + username + "/" + domain + "/data/addRemoteDataForType";
+	public String addRemoteDataToWings(String url) {
+	  String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
+	  String opurl = "users/" + getUsername() + "/" + domain + "/data/addRemoteDataForType";
 	  List<NameValuePair> keyvalues = new ArrayList<NameValuePair>();
 	  keyvalues.add(new BasicNameValuePair("data_url", url));
 	  keyvalues.add(new BasicNameValuePair("data_type", type));
-	  return this.post(username, opurl, keyvalues);
+	  return this.post(opurl, keyvalues);
 	}
 
-	public String addRemoteDataToWings(String username, String domain, String url, String name) {
+	public String addRemoteDataToWings(String url, String name) {
 	    /* FIXME: Wings rename does not rename the file, only the id 
 	     * thus we cannot upload two files with the same name and then rename them.
 	     */
@@ -769,28 +752,14 @@ public class WingsAdapter extends MethodAdapter {
 	        }
 	    }
 	    
-		String dataid = addDataToWingsAsFile(username, domain, name, fileContents);
+		String dataid = addDataToWingsAsFile(name, fileContents);
 		return dataid;
-	    
-		/*String dataid = addRemoteDataToWings(username, domain, url);
-		String newid = this.internal_server + "/export/users/" + username + "/" + domain + "/data/library.owl#" + name;
-		
-		System.out.println("stored id: " + dataid);
-		System.out.println("new id: " + newid);
-
-		String opurl = "users/" + username + "/" + domain + "/data/renameData";
-		List<NameValuePair> keyvalues = new ArrayList<NameValuePair>();
-		keyvalues.add(new BasicNameValuePair("data_id", dataid));
-		keyvalues.add(new BasicNameValuePair("newid", newid));
-		String rpp = this.post(username, opurl, keyvalues);
-		System.out.println(">>>> " + rpp);
-		return rpp;*/
 	}
 	
-	public List<String> isFileListOnWings (String username, String domain, Set<String> filelist) {
+	public List<String> isFileListOnWings (Set<String> filelist) {
 		List<String> returnValue = new ArrayList<String>();
-		String filetype = this.internal_server + "/export/users/" + username + "/" + domain + "/data/ontology.owl#File";
-		String fileprefix = "<" + this.internal_server + "/export/users/" + username + "/" + domain + "/data/library.owl#";
+		String filetype = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
+		String fileprefix = "<" + this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/library.owl#";
 		
 		
 		// Only checking that the filename is already on WINGs
@@ -831,7 +800,7 @@ public class WingsAdapter extends MethodAdapter {
             List<NameValuePair> formdata = new ArrayList<NameValuePair>();
             formdata.add(new BasicNameValuePair("query", query));
             formdata.add(new BasicNameValuePair("format", "json"));
-            String resultjson = get(username, pageid, formdata);
+            String resultjson = get(pageid, formdata);
             if (resultjson == null || resultjson.equals(""))
                 return returnValue;
             
@@ -853,10 +822,10 @@ public class WingsAdapter extends MethodAdapter {
 
 	}
 
-	public boolean isFileOnWings (String username, String domain, String url) {
+	public boolean isFileOnWings (String url) {
 		String id = url.replaceAll("^.*\\/", "");
-		String filetype = this.internal_server + "/export/users/" + username + "/" + domain + "/data/ontology.owl#File";
-		String wingsid = this.internal_server + "/export/users/" + username + "/" + domain + "/data/library.owl#" + id;
+		String filetype = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
+		String wingsid = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/library.owl#" + id;
 		// Only checking that the filename is already on WINGs
 		String query = "SELECT DISTINCT ?prop WHERE {\n"
 					 + "  <" + wingsid + "> ?prop <" + filetype + "> .\n"
@@ -866,7 +835,7 @@ public class WingsAdapter extends MethodAdapter {
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 		formdata.add(new BasicNameValuePair("query", query));
 		formdata.add(new BasicNameValuePair("format", "json"));
-		String resultjson = get(username, pageid, formdata);
+		String resultjson = get(pageid, formdata);
 		if (resultjson == null || resultjson.equals(""))
 			return false;
 		
@@ -929,8 +898,7 @@ private String getJsonBindingValue(JsonElement el) {
 		return obj.get("value").getAsString();
 }
 
-private List<NameValuePair> createFormData(String username, String domain,
-		String templateid, List<VariableBinding> bindings,
+private List<NameValuePair> createFormData(String templateid, List<VariableBinding> bindings,
 		Map<String, Variable> inputs) {
 	List<NameValuePair> data = new ArrayList<NameValuePair>();
 	HashMap<String, String> paramDTypes = new HashMap<String, String>();
@@ -943,8 +911,7 @@ private List<NameValuePair> createFormData(String username, String domain,
 			data.add(new BasicNameValuePair(vbinding.getVariable(),
 					vbinding.getBinding()));
 		} else {
-			data.add(new BasicNameValuePair(vbinding.getVariable(), DATAID(
-					username, domain, vbinding.getBinding())));
+			data.add(new BasicNameValuePair(vbinding.getVariable(), DATAID(vbinding.getBinding())));
 		}
 	}
 	data.add(new BasicNameValuePair("__paramdtypes", json
@@ -952,8 +919,8 @@ private List<NameValuePair> createFormData(String username, String domain,
 	return data;
 }
 
-private String get(String username, String pageid, List<NameValuePair> data) {
-	this.login(username);
+private String get(String pageid, List<NameValuePair> data) {
+	this.login();
 	CloseableHttpClient client = HttpClientBuilder.create().setDefaultCookieStore(this.cookieStore).build();
 	try {
 		String url = this.server + "/" + pageid;
@@ -1066,8 +1033,7 @@ private List<VariableBinding> addDataBindings(
 	return vbl;
 }
 
-private String toPlanAcceptableFormat(String username, String domain,
-		String wfname, List<VariableBinding> vbl, Map<String, Variable> ivm) {
+private String toPlanAcceptableFormat(String wfname, List<VariableBinding> vbl, Map<String, Variable> ivm) {
 	String output = "";
 
 	// Set Template ID first
@@ -1092,7 +1058,7 @@ private String toPlanAcceptableFormat(String username, String domain,
 	boolean paramAdded = false;
 	String dataBindings = "\"dataBindings\": {";
 	boolean dataAdded = false;
-	String dataID = this.internal_server + "/export/users/" + username + "/" + domain
+	String dataID = this.internal_server + "/export/users/" + getUsername() + "/" + domain
 			+ "/data/library.owl#";
 	for (String key : ivm.keySet()) {
 		Variable v = ivm.get(key);
@@ -1137,9 +1103,9 @@ private String toPlanAcceptableFormat(String username, String domain,
 	return output;
 }
 
-private String postWithSpecifiedMediaType(String username, String pageid, String data,
+private String postWithSpecifiedMediaType(String pageid, String data,
 		String type, String type2) {
-  this.login(username);
+  this.login();
 	CloseableHttpClient client = HttpClientBuilder.create()
       .setDefaultCookieStore(this.cookieStore).build();
 	try {
@@ -1169,8 +1135,8 @@ private String postWithSpecifiedMediaType(String username, String pageid, String
 return null;
 }
 
-private String post(String username, String pageid, List<NameValuePair> data) {
-  this.login(username);
+private String post(String pageid, List<NameValuePair> data) {
+  this.login();
 	CloseableHttpClient client = HttpClientBuilder.create()
       .setDefaultCookieStore(this.cookieStore).build();
 
@@ -1198,8 +1164,8 @@ private String post(String username, String pageid, List<NameValuePair> data) {
 	return null;
 }
 
-private String upload(String username, String pageid, String type, File file) {
-  this.login(username);
+private String upload(String pageid, String type, File file) {
+  this.login();
   
 	CloseableHttpClient client = HttpClientBuilder.create()
       .setDefaultCookieStore(this.cookieStore).build();

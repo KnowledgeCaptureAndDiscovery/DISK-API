@@ -7,6 +7,7 @@ import org.diskproject.server.api.impl.StaticResource;
 import org.diskproject.server.filters.AcceptHeaderFilter;
 import org.diskproject.server.filters.CORSResponseFilter;
 import org.diskproject.server.filters.KeycloakAuthenticationFilter;
+import org.diskproject.server.filters.KeycloakAuthenticationFilter.KeycloakSessions;
 import org.diskproject.server.repository.DiskRepository;
 import org.diskproject.server.util.Config;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -16,6 +17,8 @@ class DiskServer extends ResourceConfig {
 
   public DiskServer() {
     Config.load();  
+    DiskRepository.get(); //To create the server first
+
     register(AcceptHeaderFilter.class);
     register(CORSResponseFilter.class);
     register(RolesAllowedDynamicFeature.class);
@@ -29,5 +32,4 @@ class DiskServer extends ResourceConfig {
     // Cleanup tasks
     DiskRepository.get().shutdownExecutors();
   }
-
 }
