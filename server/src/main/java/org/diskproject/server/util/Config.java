@@ -61,8 +61,6 @@ public class Config {
   }
   
   private void createDefaultServerConfig(String configFile) {
-    //FIXME: Update to new config file.
-    String server = "";
     String storageDir = null;
     String home = System.getProperty("user.home");
     if (home != null && !home.equals(""))
@@ -74,24 +72,20 @@ public class Config {
         System.err.println("Cannot create storage directory: " + storageDir);
 
     PropertyListConfiguration config = new PropertyListConfiguration();
+    config.addProperty("server", "THIS_SERVER_URL");
     config.addProperty("storage.local", storageDir);
     config.addProperty("storage.tdb", storageDir + File.separator + "TDB");
     config.addProperty("storage.db", storageDir + File.separator + "DB");
-    config.addProperty("server", server);
-    config.addProperty("username", "DEFAULT_USERNAME");
-    config.addProperty("domain", "DEFAULT_DOMAIN");
+    config.addProperty("keycloak.url", "YOUR_KEYCLOAK_URL");
+    config.addProperty("keycloak.realm", "YOUR_KEYCLOAK_REALM");
+    config.addProperty("data-adapters.EXAMPLE_ADAPTER.type", "ADD_HERE");
     config.addProperty("data-adapters.EXAMPLE_ADAPTER.endpoint", "ADD_HERE");
-    config.addProperty("data-adapters.EXAMPLE_ADAPTER.namespace", "ADD_HERE");
-    config.addProperty("data-adapters.EXAMPLE_ADAPTER.prefix", "ADD_HERE");
-    config.addProperty("wings.server", "https://www.wings-workflows.org/wings-omics-portal");
-    config.addProperty("wings.passwords.USERNAME_HERE", "PASSWORD_HERE");
-    config.addProperty("gmail.username", "USERNAME_HERE");
-    config.addProperty("gmail.code", "CODE_HERE");
-    config.addProperty("gmail.clientId", "CLIENT_ID_HERE");
-    config.addProperty("gmail.clientSecret", "CLIENT_SECRET_HERE");
-    config.addProperty("gmail.tokens.access", "Automatically_Generated");
-    config.addProperty("gmail.tokens.refresh", "Automatically_Generated");
-    config.addProperty("help_file", "FILE_LOCATION");
+    config.addProperty("data-adapters.EXAMPLE_ADAPTER.username", "ADD_HERE");
+    config.addProperty("data-adapters.EXAMPLE_ADAPTER.password", "ADD_HERE");
+    config.addProperty("method-adapters.EXAMPLE_ADAPTER.type", "ADD_HERE");
+    config.addProperty("method-adapters.EXAMPLE_ADAPTER.endpoint", "ADD_HERE");
+    config.addProperty("method-adapters.EXAMPLE_ADAPTER.username", "ADD_HERE");
+    config.addProperty("method-adapters.EXAMPLE_ADAPTER.password", "ADD_HERE");
 
     try {
     	config.setFileName("file://" + configFile);

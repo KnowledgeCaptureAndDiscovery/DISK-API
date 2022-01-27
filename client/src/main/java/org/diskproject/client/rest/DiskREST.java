@@ -57,7 +57,7 @@ public class DiskREST {
       return this.callbacks;
     }
   };
-  
+
   //private static Vocabulary user_vocabulary;
   //private static VocabularyCallbacks user_vocabulary_callbacks = new VocabularyCallbacks();
   
@@ -619,7 +619,7 @@ public class DiskREST {
       public void onFailure(Method method, Throwable exception) {
         callback.onFailure(exception);
       }      
-    }).call(getDiskService()).queryExternalStore( endpoint, query, variables);
+    }).call(getDiskService()).queryExternalStore(endpoint, variables, query);
   }
   
   /*
