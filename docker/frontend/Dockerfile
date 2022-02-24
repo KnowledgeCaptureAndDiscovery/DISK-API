@@ -1,14 +1,8 @@
 # syntax=docker/dockerfile:1
-FROM maven:3.8.4-jdk-8 AS build
-WORKDIR /home/app/
-COPY . /home/app/
-RUN mvn -q -f /home/app/pom.xml package
-
 FROM nginx
-
 RUN apt-get update \
     && apt-get install -yq unzip
-COPY --from=build /home/app/client/target/*.war /tmp/disk-portal.war
+COPY build/disk-project-*.war /tmp/disk-portal.war
 WORKDIR /usr/share/nginx/html
 RUN mkdir disk-portal \
     && cd disk-portal \
