@@ -22,7 +22,7 @@
 		<jackson.version>2.4.6</jackson.version>
 		<gson.version>2.6.2</gson.version>
 		<commons-configuration.version>1.10</commons-configuration.version>
-		<ontapi.version>1.2.2</ontapi.version>
+		<ontapi.version>1.2.4</ontapi.version>
 		<jbcrypt.version>0.3m</jbcrypt.version>
 		<java.version>1.8</java.version>
 		<httpclient.version>4.5.2</httpclient.version>
@@ -31,10 +31,10 @@
 	</properties>
 
 	<repositories>
-		<!-- Local Wings Repository (for wings-ontapi & dependencies) -->
 		<repository>
-			<id>Local archiva.snapshots repository</id>
-			<url>https://www.wings-workflows.org/archiva/repository/internal/</url>
+			<id>github</id>
+			<name>Github</name>
+			<url>https://maven.pkg.github.com/KnowledgeCaptureAndDiscovery/ontapi</url>
 		</repository>
 	</repositories>
 
