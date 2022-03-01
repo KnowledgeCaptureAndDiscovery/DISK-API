@@ -5,4 +5,4 @@ COPY build/disk-project*.war /usr/local/tomcat/webapps/disk-server.war
 RUN mkdir /root/.disk \
       && mkdir /root/.disk/storage \
       && mkdir /root/.disk/storage/TDB \
-      && mkdir /root/disk/.disk/storage/DB
+      && mkdir /root/.disk/storage/DB
