@@ -296,8 +296,10 @@ public class WriteKBRepository extends KBRepository {
 
         KBObject hypitem = userKB.getIndividual(hypothesisId);
         Graph graph = this.getKBGraph(hypothesisId);
-        if (hypitem == null || graph == null)
+        if (hypitem == null || graph == null) {
+            this.end();
             return null;
+        }
         
         Hypothesis hypothesis = new Hypothesis();
         hypothesis.setId(id);

@@ -400,6 +400,7 @@ public class HypothesisView extends ApplicationSubviewImpl
     hypothesis.setGraph(new Graph());
     form.setNamespace(this.getNamespace(id));    
     form.load(hypothesis);
+    emptyDiv.setVisible(false);
     
     History.newItem(this.getHistoryToken(NameTokens.hypotheses, id), false);
   }

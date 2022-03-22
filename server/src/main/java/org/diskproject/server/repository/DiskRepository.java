@@ -135,11 +135,16 @@ public class DiskRepository extends WriteKBRepository {
         if (fac == null)
             return;
         
+        String qonto = this.getConfig().getString("question-ontology");
+        if (qonto == null || qonto.equals("")) {
+            qonto = KBConstants.QUESTIONSURI();
+        }
+        
         try {
             this.neuroontkb = fac.getKB(KBConstants.NEUROURI(), OntSpec.PLAIN, false, true);
             this.hypontkb   = fac.getKB(KBConstants.HYPURI(), OntSpec.PLAIN, false, true);
             this.omicsontkb = fac.getKB(KBConstants.OMICSURI(), OntSpec.PLAIN, false, true);
-            this.questionkb = fac.getKB(KBConstants.QUESTIONSURI(), OntSpec.PLAIN, false, true);
+            this.questionkb = fac.getKB(qonto, OntSpec.PLAIN, false, true);
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Error reading KB");
@@ -284,6 +289,10 @@ public class DiskRepository extends WriteKBRepository {
     // -- Vocabulary Initialization
     private void initializeVocabularies () {
         this.vocabularies = new HashMap<String, Vocabulary>();
+        String qonto = this.getConfig().getString("question-ontology");
+        if (qonto == null || qonto.equals("")) {
+            qonto = KBConstants.QUESTIONSURI();
+        }
         try {
             this.start_read();
 
@@ -295,7 +304,9 @@ public class DiskRepository extends WriteKBRepository {
                     this.initializeVocabularyFromKB(this.omicsontkb, KBConstants.OMICSNS()));
             this.vocabularies.put(KBConstants.DISKURI(),
                     this.initializeVocabularyFromKB(this.ontkb, KBConstants.DISKNS()));
-            this.vocabularies.put(KBConstants.QUESTIONSURI(),
+
+            
+            this.vocabularies.put(qonto,
                     this.initializeVocabularyFromKB(this.questionkb, KBConstants.QUESTIONSNS()));
 
         } catch (Exception e) {
