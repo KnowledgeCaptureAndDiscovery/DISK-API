@@ -23,22 +23,6 @@ services:
       - ./context.xml:/usr/local/tomcat/webapps/manager/META-INF/context.xml
       - ./server.properties:/root/.disk/server.properties
       - disk-storage:/root/.disk/storage
-  database:
-    image: ikcap/disk_database
-    restart: always
-    env_file:
-      - .env
-    volumes:
-      - mysql:/var/lib/mysql
-  mediawiki:
-    image: ikcap/disk_wiki
-    env_file:
-      - .env
-    restart: always
-    ports:
-      - 9080:80
-    depends_on:
-      - database
   endpoint:
     image: ikcap/fuseki_docker
     ports:
