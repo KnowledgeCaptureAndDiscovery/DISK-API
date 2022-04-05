@@ -1,17 +1,17 @@
 package org.diskproject.shared.classes.util;
 
 public class KBConstants {
-  private static String diskuri = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/disk/release/1.2.1/ontology.ttl";
+  private static String diskuri = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/disk/release/1.2.2/ontology.ttl";
   private static String neurouri = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/enigma_hypothesis/release/2.0.1/ontology.ttl";
   private static String omicsuri = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/omics_hypothesis/release/0.0.1/ontology.ttl";
   private static String hypuri = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/hypothesis/release/0.0.2/ontology.owl";
-  private static String questionsuri = "https://raw.githubusercontent.com/KnowledgeCaptureAndDiscovery/DISK/master/portal/server/src/main/resources/hypothesisQuestions.xml";
+  private static String questionsuri = "https://knowledgecaptureanddiscovery.github.io/QuestionOntology/release/v1.0.0/ontology.xml";
 
   private static String owlns = "http://www.w3.org/2002/07/owl#";
   private static String rdfns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
   private static String rdfsns = "http://www.w3.org/2000/01/rdf-schema#";
   private static String xsdns = "http://www.w3.org/2001/XMLSchema#";
-  private static String questionsns = "http://disk-project.org/resources/question";
+  private static String questionsns = "https://w3id.org/sqo#";
 
   private static String dctermsns = "http://purl.org/dc/terms/";
   private static String dcns = "http://purl.org/dc/elements/1.1/";
