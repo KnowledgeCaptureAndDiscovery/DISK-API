@@ -558,6 +558,20 @@ public class DiskRepository extends WriteKBRepository {
 
         this.allQuestions = new HashMap<String, Question>();
         for (String url: urls) { 
+            try {
+                start_write();
+                KBAPI kb = fac.getKB(url, OntSpec.PLAIN, true, true);
+                kb.removeAllTriples();
+                kb.delete();
+                this.save(kb);
+                this.end();
+            } catch (Exception e) {
+                e.printStackTrace();
+                if (is_in_transaction()) {
+                    this.end();
+                }
+            }
+
             for (Question q: loadQuestionsFromKB(url)) {
                 this.allQuestions.put(q.getId(), q);
             }
@@ -638,6 +652,7 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     private List<List<String>> loadVariableOptions (String sid) {
+        System.out.print("Loading options for " + sid);
         String id = KBConstants.QUESTIONSNS() + "/" + sid;
 
         List<List<String>> options = new ArrayList<List<String>>();
