@@ -147,6 +147,7 @@ public class DiskRepository extends WriteKBRepository {
         }
            
         this.initializeVocabularies();
+        loadQuestionTemplates();
     }
 
     public void reloadKBCaches () {
@@ -544,21 +545,51 @@ public class DiskRepository extends WriteKBRepository {
      * Questions and option configuration
      */
 
-    public List<Question> listHypothesesQuestions () {
-        List<Question> all = new ArrayList<Question>();
-        KBAPI kb = this.questionkb;
-        if (kb != null)
+    private Map<String, Question> allQuestions;
+    
+    private void loadQuestionTemplates () {
+        List<String> urls = new ArrayList<String>();
+        
+        Iterator<String> a = this.getConfig().getKeys("question-templates");
+        while (a.hasNext()) {
+            String key = a.next();
+            urls.add(this.getConfig().getString(key));
+        }
+
+        this.allQuestions = new HashMap<String, Question>();
+        for (String url: urls) { 
+            for (Question q: loadQuestionsFromKB(url)) {
+                this.allQuestions.put(q.getId(), q);
+            }
+        }
+    }
+    
+    public List<Question> loadQuestionsFromKB (String url) {
+        System.out.println("Loading Question Templates: " + url);
+        List<Question> questions = new ArrayList<Question>();
         try {
+            KBAPI kb = fac.getKB(url, OntSpec.PLAIN, true, true);
+
             this.start_read();
-            KBObject hypcls = this.cmap.get("Question");
-            KBObject typeprop = kb.getProperty(KBConstants.RDFNS() + "type");
+            KBObject questionClass = this.questionkb.getIndividual(KBConstants.QUESTIONSNS() + "Question");
+            KBObject hasTemplate = this.questionkb.getProperty(KBConstants.QUESTIONSNS() + "hasQuestionTemplate");
+            KBObject hasPattern  = this.questionkb.getProperty(KBConstants.QUESTIONSNS() + "hasQuestionPattern");
+            KBObject hasVariable = this.questionkb.getProperty(KBConstants.QUESTIONSNS() + "hasQuestionVariable");
+
+            KBObject hasName = this.questionkb.getProperty(KBConstants.QUESTIONSNS() + "hasVariableName");
+            KBObject hasConstraints = this.questionkb.getProperty(KBConstants.QUESTIONSNS() + "hasConstraints");
+            KBObject hasFixedOptions = this.questionkb.getProperty(KBConstants.QUESTIONSNS() + "hasFixedOptions");
+            KBObject typeprop  = kb.getProperty(KBConstants.RDFNS() + "type");
             KBObject labelprop = kb.getProperty(KBConstants.RDFSNS() + "label");
-            for (KBTriple t : kb.genericTripleQuery(null, typeprop, hypcls)) {
+
+            // Load question classes and properties
+            for (KBTriple t : kb.genericTripleQuery(null, typeprop, questionClass)) {
+                System.out.println(t.toString());
                 KBObject question = t.getSubject();
                 KBObject name = kb.getPropertyValue(question, labelprop);
-                KBObject template = kb.getPropertyValue(question, pmap.get("hasQuestionTemplate"));
-                KBObject pattern = kb.getPropertyValue(question, pmap.get("hasQuestionPattern"));
-                ArrayList<KBObject> variables = kb.getPropertyValues(question, pmap.get("hasQuestionVariable"));
+                KBObject template = kb.getPropertyValue(question, hasTemplate);
+                KBObject pattern = kb.getPropertyValue(question, hasPattern);
+                ArrayList<KBObject> variables = kb.getPropertyValues(question, hasVariable);
 
                 if (name != null && template != null && pattern != null) {
                     List<QuestionVariable> vars = null;
@@ -566,9 +597,9 @@ public class DiskRepository extends WriteKBRepository {
                     if (variables != null && variables.size() > 0) {
                         vars = new ArrayList<QuestionVariable>();
                         for (KBObject var : variables) {
-                            KBObject vname = kb.getPropertyValue(var, pmap.get("hasVariableName"));
-                            KBObject vconstraints = kb.getPropertyValue(var, pmap.get("hasConstraints"));
-                            KBObject vfixedOptions = kb.getPropertyValue(var, pmap.get("hasFixedOptions"));
+                            KBObject vname = kb.getPropertyValue(var, hasName);
+                            KBObject vconstraints = kb.getPropertyValue(var, hasConstraints);
+                            KBObject vfixedOptions = kb.getPropertyValue(var, hasFixedOptions);
                             if (vname != null) {
                                 QuestionVariable q = new QuestionVariable(var.getID(), vname.getValueAsString(), 
                                         vconstraints == null ? null : vconstraints.getValueAsString());
@@ -581,19 +612,22 @@ public class DiskRepository extends WriteKBRepository {
                     }
 
                     Question q = new Question(question.getID(), name.getValueAsString(), template.getValueAsString(), pattern.getValueAsString(), vars);
-                    all.add(q);
+                    questions.add(q);
                     //System.out.println(q.toString());
                 }
             }
             this.end();
+            return questions;
         } catch (Exception e) {
             e.printStackTrace();
-            if (is_in_transaction()) {
-                System.out.println("Exception on transaction!");
-                this.end();
-            }
+            if (this.is_in_transaction()) this.end();
+            // TODO: handle exception
         }
-        return all;
+        return null;
+    }
+    
+    public List<Question> listHypothesesQuestions () {
+        return new ArrayList<Question>(this.allQuestions.values());
     }
 
     public List<List<String>> listVariableOptions (String sid) {

@@ -117,7 +117,7 @@ public class QuestionFiller extends Composite {
             List<QuestionVariable> variables = selectedQuestion.getVariables();
               
             //TODO: hack in filters
-            if (selectedQuestionId.equals("http://disk-project.org/resources/question/HQ3")) {
+            if (selectedQuestionId.equals("xhttp://disk-project.org/resources/question/HQ3")) {
                 filterSection.getStyle().setDisplay(Display.INITIAL);
             } else {
                 filterSection.getStyle().setDisplay(Display.NONE);
@@ -288,7 +288,7 @@ public class QuestionFiller extends Composite {
         String base = q.getPattern();
         //Hack in filters
         base = base.replaceAll("optional \\{.*\\}\n?", "");
-        if (q.getId().equals("http://disk-project.org/resources/question/HQ3")) {
+        if (q.getId().equals("http://disk-project.org/resources/question/XHQ3")) {
             String lessThan = filter1.getValue();
             String moreThan = filter2.getValue();
             if (lessThan != null && !lessThan.equals("")) {
