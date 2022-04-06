@@ -610,11 +610,15 @@ public class WriteKBRepository extends KBRepository {
 
                 KBObject authorobj = userKB.getPropertyValue(loiobj, pmap.get("hasAuthor"));
                 String author = (authorobj != null) ? authorobj.getValueAsString() : null;
+
+                KBObject hqueryobj = userKB.getPropertyValue(loiobj, pmap.get("hasHypothesisQuery"));
+                String hypothesisQuery = (hqueryobj != null) ? hqueryobj.getValueAsString() : null;
             
                 LineOfInquiry item = new LineOfInquiry(loiobj.getName(), name, description);
                 if (dateCreated != null) item.setDateCreated(dateCreated);
                 if (dateModified != null) item.setDateModified(dateModified);
                 if (author != null) item.setAuthor(author);
+                if (hypothesisQuery != null) item.setHypothesisQuery(hypothesisQuery);
 
                 list.add(item);
             }
