@@ -571,7 +571,6 @@ public class DiskRepository extends WriteKBRepository {
                     this.end();
                 }
             }
-
             for (Question q: loadQuestionsFromKB(url)) {
                 this.allQuestions.put(q.getId(), q);
             }
