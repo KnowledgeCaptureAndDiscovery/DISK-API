@@ -38,6 +38,7 @@ services:
       WINGS_MODE: dind
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - wings:/opt/wings
     ports:
       - 7080:8080
 volumes:
