@@ -558,6 +558,19 @@ public class DiskRepository extends WriteKBRepository {
 
         this.allQuestions = new HashMap<String, Question>();
         for (String url: urls) { 
+            try {
+                start_write();
+                KBAPI kb = fac.getKB(url, OntSpec.PLAIN, true, true);
+                kb.removeAllTriples();
+                kb.delete();
+                this.save(kb);
+                this.end();
+            } catch (Exception e) {
+                e.printStackTrace();
+                if (is_in_transaction()) {
+                    this.end();
+                }
+            }
             for (Question q: loadQuestionsFromKB(url)) {
                 this.allQuestions.put(q.getId(), q);
             }
@@ -638,6 +651,7 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     private List<List<String>> loadVariableOptions (String sid) {
+        System.out.print("Loading options for " + sid);
         String id = KBConstants.QUESTIONSNS() + "/" + sid;
 
         List<List<String>> options = new ArrayList<List<String>>();
@@ -864,24 +878,16 @@ public class DiskRepository extends WriteKBRepository {
         String hypuri = this.HYPURI(username) + "/" + id;
         // LOIID -> [{ variable -> value }]
         Map<String, List<Map<String, String>>> allMatches = new HashMap<String, List<Map<String,String>>>();
+        List<LineOfInquiry> lois = this.listLOIPreviews(username);
 
         //Starts checking all LOIs that match the hypothesis directly from the KB.
         try {
             this.start_read();
             KBAPI hypkb = this.fac.getKB(hypuri, OntSpec.PLAIN, true);
-            KBAPI loikb = this.fac.getKB(this.LOIURI(username), OntSpec.PLAIN, true);
-
-            KBObject hypcls = this.cmap.get("LineOfInquiry");
-            KBObject typeprop = loikb.getProperty(KBConstants.RDFNS() + "type");
-            for (KBTriple t : loikb.genericTripleQuery(null, typeprop, hypcls)) {
-                String loifullid = t.getSubject().getID();
-
-                KBAPI curkb = this.fac.getKB(loifullid, OntSpec.PLAIN, true);
-                KBObject loiobj = curkb.getIndividual(t.getSubject().getID());
-                KBObject hq = curkb.getPropertyValue(loiobj, pmap.get("hasHypothesisQuery"));
+            for (LineOfInquiry loi : lois) {
+                String hq = loi.getHypothesisQuery();
                 if (hq != null) {
-                    String query = this.getAllPrefixes()
-                                 + "SELECT DISTINCT * WHERE { \n" + hq.getValueAsString().replaceAll("\n", ".\n") + " }";
+                    String query = this.getAllPrefixes() + "SELECT DISTINCT * WHERE { \n" + hq.replaceAll("\n", ".\n") + " }";
                     ArrayList<ArrayList<SparqlQuerySolution>> allSolutions = hypkb.sparqlQuery(query);
                     for (List<SparqlQuerySolution> row: allSolutions) {
                         // One match per cell, store variables on cur.
@@ -900,13 +906,18 @@ public class DiskRepository extends WriteKBRepository {
                         }
                         // If there is at least one variable binded, add to match list.
                         if (cur.size() > 0) {
-                            String loiid = loifullid.replaceAll("^.*\\/", "");
+                            String loiid = loi.getId().replaceAll("^.*\\/", "");
                             if (!allMatches.containsKey(loiid))
                                 allMatches.put(loiid, new ArrayList<Map<String,String>>());
                             List<Map<String, String>> curList = allMatches.get(loiid);
                             curList.add(cur);
+                            /*for (String k : cur.keySet()) {
+                                System.out.println("> " + k + ": " + cur.get(k) );
+                            }*/
                         }
                     }
+                } else {
+                    System.out.println("no hyp query");
                 }
             }
             this.end();
@@ -920,6 +931,7 @@ public class DiskRepository extends WriteKBRepository {
             LineOfInquiry loi = this.getLOI(username, loiid);
             DataAdapter dataAdapter = getDataAdapter(loi.getDataSource());
             MethodAdapter methodAdapter = WingsAdapter.get();
+            System.out.println(loi.getId());
             if (dataAdapter != null) {
                 if (!results.containsKey(loi))
                     results.put(loi, new ArrayList<Map<String,String>>());
@@ -942,13 +954,19 @@ public class DiskRepository extends WriteKBRepository {
         System.out.println("Quering hypothesis: " + id);
         Map<LineOfInquiry, List<Map<String, String>>> matchingBindings = this.getLOIByHypothesisId(username, id);
         for (LineOfInquiry loi: matchingBindings.keySet()) {
+            System.out.println("Checking LOI: "+ loi.getId());
             //One hypothesis can match the same LOI in more than one way, the following for-loop handles that
             for (Map<String, String> values: matchingBindings.get(loi)) {
+                for (String k: values.keySet()) {
+                    System.out.println("> " + k + ": " + values.get(k) );
+                }
                 String dq = getQueryBindings(loi.getDataQuery(), varPattern, values);
-                    
+
                 String query = this.getAllPrefixes() + "SELECT DISTINCT ";
                 for (String qvar: loi.getAllWorkflowVariables()) query += qvar + " ";
                 query += "{\n" + dq + "}";
+                
+                System.out.println("Query: \n" + query);
 
                 List<DataResult> solutions = this.dataAdapters.get(loi.getDataSource()).query(query);
                 if (solutions.size() > 0) {
@@ -981,9 +999,9 @@ public class DiskRepository extends WriteKBRepository {
                     // check collections
                     Set<String> varNonCollection = loi.getAllWorkflowNonCollectionVariables();
 
-                    //System.out.println("dataBindings:");
+                    System.out.println("dataBindings:");
                     for (String key: dataVarBindings.keySet()) {
-                      //System.out.println(" " + key + ":");
+                      System.out.println(" " + key + ":");
                       String var = (key.charAt(0) != '?') ? '?' + key : key;
                       if (varNonCollection.contains(var)) {
                         //System.out.println("  Is not a collection");
