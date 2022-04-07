@@ -597,7 +597,7 @@ public class DiskRepository extends WriteKBRepository {
 
             // Load question classes and properties
             for (KBTriple t : kb.genericTripleQuery(null, typeprop, questionClass)) {
-                System.out.println(t.toString());
+                //System.out.println(t.toString());
                 KBObject question = t.getSubject();
                 KBObject name = kb.getPropertyValue(question, labelprop);
                 KBObject template = kb.getPropertyValue(question, hasTemplate);
