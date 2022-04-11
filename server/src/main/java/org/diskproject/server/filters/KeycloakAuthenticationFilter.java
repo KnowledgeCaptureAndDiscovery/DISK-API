@@ -9,6 +9,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
 
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.apache.http.HttpEntity;
@@ -35,7 +36,10 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
     String token = requestContext.getHeaderString("authorization");
     if (token != null) {
       KeycloakUser user = KeycloakSessions.getKeycloakUser(token);
-      requestContext.setProperty("username", user.username);
+      if (user.username != null)
+          requestContext.setProperty("username", user.username);
+      else
+          requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity("Access denied").build());
     }
   }
   

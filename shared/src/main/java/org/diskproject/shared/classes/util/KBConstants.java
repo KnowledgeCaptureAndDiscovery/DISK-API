@@ -4,7 +4,7 @@ public class KBConstants {
   private static String diskuri = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/disk/release/1.2.2/ontology.ttl";
   private static String neurouri = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/enigma_hypothesis/release/2.0.1/ontology.ttl";
   private static String omicsuri = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/omics_hypothesis/release/0.0.1/ontology.ttl";
-  private static String hypuri = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/hypothesis/release/0.0.2/ontology.owl";
+  private static String hypuri = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/hypothesis/release/0.0.3/ontology.xml";
   private static String questionsuri = "https://knowledgecaptureanddiscovery.github.io/QuestionOntology/release/v1.0.0/ontology.xml";
 
   private static String owlns = "http://www.w3.org/2002/07/owl#";

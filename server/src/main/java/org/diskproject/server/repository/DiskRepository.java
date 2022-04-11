@@ -170,11 +170,11 @@ public class DiskRepository extends WriteKBRepository {
         
         this.initializeKB();
     }
-    
+
     public PropertyListConfiguration getConfig() {
         return Config.get().getProperties();
     }
-    
+
     // -- Data adapters
     private void initializeDataAdapters () {
         //Reads data adapters from config file.
@@ -222,13 +222,13 @@ public class DiskRepository extends WriteKBRepository {
             }
         }
     }
-    
+
     private DataAdapter getDataAdapter (String url) {
         if (this.dataAdapters.containsKey(url))
             return this.dataAdapters.get(url);
         return null;
     }
-    
+
     // -- Method adapters
     private void initializeMethodAdapters () {
         //Reads method adapters from config file.
@@ -281,13 +281,12 @@ public class DiskRepository extends WriteKBRepository {
             return this.methodAdapters.get(url);
         return null;
     }
-    
+
     // -- Vocabulary Initialization
     private void initializeVocabularies () {
         this.vocabularies = new HashMap<String, Vocabulary>();
         try {
             this.start_read();
-
             this.vocabularies.put(KBConstants.NEUROURI(),
                     this.initializeVocabularyFromKB(this.neuroontkb, KBConstants.NEURONS()));
             this.vocabularies.put(KBConstants.HYPURI(),
@@ -298,7 +297,6 @@ public class DiskRepository extends WriteKBRepository {
                     this.initializeVocabularyFromKB(this.ontkb, KBConstants.DISKNS()));
             this.vocabularies.put(KBConstants.QUESTIONSURI(),
                     this.initializeVocabularyFromKB(this.questionkb, KBConstants.QUESTIONSNS()));
-
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -306,15 +304,15 @@ public class DiskRepository extends WriteKBRepository {
         }
     }
 
+    public Vocabulary getVocabulary(String uri) {
+        return this.vocabularies.get(uri);
+    }
+
     public Vocabulary initializeVocabularyFromKB(KBAPI kb, String ns) {
         Vocabulary vocabulary = new Vocabulary(ns);
         this.fetchTypesAndIndividualsFromKB(kb, vocabulary);
         this.fetchPropertiesFromKB(kb, vocabulary);
         return vocabulary;
-    }
-
-    public Vocabulary getVocabulary(String uri) {
-        return this.vocabularies.get(uri);
     }
 
     private void fetchPropertiesFromKB(KBAPI kb, Vocabulary vocabulary) {
@@ -331,12 +329,8 @@ public class DiskRepository extends WriteKBRepository {
 
             String label = this.createPropertyLabel(prop.getName());
             mprop.setLabel(label);
-
-            if (domcls != null)
-                mprop.setDomain(domcls.getID());
-
-            if (rangecls != null)
-                mprop.setRange(rangecls.getID());
+            if (domcls != null)   mprop.setDomain(domcls.getID());
+            if (rangecls != null) mprop.setRange(rangecls.getID());
 
             vocabulary.addProperty(mprop);
         }
@@ -349,7 +343,8 @@ public class DiskRepository extends WriteKBRepository {
             KBObject typeobj = t.getObject();
             String instid = inst.getID();
 
-            if (instid == null || instid.startsWith(vocabulary.getNamespace()) || typeobj.getNamespace().equals(KBConstants.OWLNS())) {
+            if (instid == null || instid.startsWith(vocabulary.getNamespace()) 
+                || typeobj.getNamespace().equals(KBConstants.OWLNS())) {
                 continue;
             }
 
@@ -546,6 +541,7 @@ public class DiskRepository extends WriteKBRepository {
      */
 
     private Map<String, Question> allQuestions;
+    private Map<String, QuestionVariable> allVariables;
     
     private void loadQuestionTemplates () {
         List<String> urls = new ArrayList<String>();
@@ -557,7 +553,9 @@ public class DiskRepository extends WriteKBRepository {
         }
 
         this.allQuestions = new HashMap<String, Question>();
+        this.allVariables = new HashMap<String, QuestionVariable>();
         for (String url: urls) { 
+            //Clear cache first
             try {
                 start_write();
                 KBAPI kb = fac.getKB(url, OntSpec.PLAIN, true, true);
@@ -571,6 +569,7 @@ public class DiskRepository extends WriteKBRepository {
                     this.end();
                 }
             }
+            //Load questions and add them to cache
             for (Question q: loadQuestionsFromKB(url)) {
                 this.allQuestions.put(q.getId(), q);
             }
@@ -622,11 +621,13 @@ public class DiskRepository extends WriteKBRepository {
                                 vars.add(q);
                             }
                         }
+                        // Store question variables
+                        for (QuestionVariable v: vars) 
+                            allVariables.put(v.getId(), v);
                     }
 
                     Question q = new Question(question.getID(), name.getValueAsString(), template.getValueAsString(), pattern.getValueAsString(), vars);
                     questions.add(q);
-                    //System.out.println(q.toString());
                 }
             }
             this.end();
@@ -651,107 +652,83 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     private List<List<String>> loadVariableOptions (String sid) {
-        System.out.print("Loading options for " + sid);
-        String id = KBConstants.QUESTIONSNS() + "/" + sid;
-
         List<List<String>> options = new ArrayList<List<String>>();
-        String varname = null, constraintQuery = null;
-        String[] fixedoptions = null;
-        
-        // Get questions options from KB.
-        try {
-            this.start_read();
-            KBObject qvar = this.questionkb.getIndividual(id);
-            if (qvar != null) {
-                KBObject qname = this.questionkb.getPropertyValue(qvar, pmap.get("hasVariableName"));
-                KBObject constraints = this.questionkb.getPropertyValue(qvar, pmap.get("hasConstraints"));
-                KBObject fixedOptions = this.questionkb.getPropertyValue(qvar, pmap.get("hasFixedOptions"));
-                
-                if (qname != null) {
-                    varname = qname.getValueAsString();
-                }
-
-                if (fixedOptions != null)
-                    fixedoptions = fixedOptions.getValueAsString().split(",");
-                
-                if (constraints != null)
-                    constraintQuery = constraints.getValueAsString();
-            }
-            this.end();
-        } catch (Exception e) {
-            if (is_in_transaction()) {
-                System.err.println("ERROR:loadVariableOptions Exception with a transaction open.");
-                this.end();
-            } else {
-                e.printStackTrace();
-            }
+        System.out.print("Loading options for " + sid);
+        QuestionVariable variable = null;
+        // FIXME: Find a better way to handle url prefix or change the request to include the full URI
+        if (allVariables.containsKey("http://disk-project.org/examples/" + sid)) {
+            variable = allVariables.get("http://disk-project.org/examples/" + sid);
+        } else if (allVariables.containsKey("http://disk-project.org/resources/question/" + sid)) {
+            variable = allVariables.get("http://disk-project.org/resources/question/" + sid);
         }
-        
-        // If there are fixed options, return these
-        if (fixedoptions != null) {
-            for (String val: fixedoptions) {
-                List<String> opt = new ArrayList<String>();
-                opt.add(val);
-                opt.add(val);
-                options.add(opt);
-            }
-        } else if (constraintQuery != null) {
-            //If there is a constraint query, send it to all data providers;
-            Map<String, List<DataResult>> solutions = new HashMap<String, List<DataResult>>();
-            for (DataAdapter adapter: this.dataAdapters.values()) {
-                //TODO: add some way to check if this adapter support this type of query. All SPARQL for the moment.
-                solutions.put(adapter.getName(), adapter.queryOptions(varname, constraintQuery));
-            }
-            
-            
-            // To check that all labels are only once
-            Map<String, List<List<String>>> labelToOption = new HashMap<String, List<List<String>>>();
-            
-            for (String dataSourceName: solutions.keySet()) {
-                for (DataResult solution: solutions.get(dataSourceName)) {
-                    String uri = solution.getValue(DataAdapter.VARURI);
-                    String label = solution.getValue(DataAdapter.VARLABEL);
-
-                    if (uri != null && label != null) {
-                        List<List<String>> sameLabelOptions = labelToOption.containsKey(label) ? labelToOption.get(label) : new ArrayList<List<String>>();
-                        List<String> thisOption = new ArrayList<String>();
-                        thisOption.add(uri);
-                        thisOption.add(label);
-                        thisOption.add(dataSourceName);
-                        sameLabelOptions.add(thisOption);
-                        labelToOption.put(label, sameLabelOptions);
-                    }
+        if (variable != null) {
+            String varname = variable.getVarName();
+            String constraintQuery = variable.getConstraints();
+            String[] fixedoptions = variable.getFixedOptions();
+            // If there are fixed options, return these
+            if (fixedoptions != null) {
+                for (String val: fixedoptions) {
+                    List<String> opt = new ArrayList<String>();
+                    opt.add(val);
+                    opt.add(val);
+                    options.add(opt);
                 }
-            }
-                    
-            //Add all options
-            for (List<List<String>> sameLabelOptions: labelToOption.values()) {
-                if (sameLabelOptions.size() == 1) {
-                    options.add(sameLabelOptions.get(0).subList(0, 2));
-                } else { //There's more than one option with the same label
-                    boolean allTheSame = true;
-                    String lastValue = sameLabelOptions.get(0).get(0); //Comparing IDs
-                    for (List<String> candOption: sameLabelOptions) {
-                        if (!lastValue.equals(candOption.get(0))) {
-                            allTheSame = false;
-                            break;
+            } else if (constraintQuery != null) {
+                //If there is a constraint query, send it to all data providers;
+                Map<String, List<DataResult>> solutions = new HashMap<String, List<DataResult>>();
+                for (DataAdapter adapter: this.dataAdapters.values()) {
+                    //TODO: add some way to check if this adapter support this type of query. All SPARQL for the moment.
+                    solutions.put(adapter.getName(), adapter.queryOptions(varname, constraintQuery));
+                }
+
+                // To check that all labels are only once
+                Map<String, List<List<String>>> labelToOption = new HashMap<String, List<List<String>>>();
+                
+                for (String dataSourceName: solutions.keySet()) {
+                    for (DataResult solution: solutions.get(dataSourceName)) {
+                        String uri = solution.getValue(DataAdapter.VARURI);
+                        String label = solution.getValue(DataAdapter.VARLABEL);
+
+                        if (uri != null && label != null) {
+                            List<List<String>> sameLabelOptions = labelToOption.containsKey(label) ? labelToOption.get(label) : new ArrayList<List<String>>();
+                            List<String> thisOption = new ArrayList<String>();
+                            thisOption.add(uri);
+                            thisOption.add(label);
+                            thisOption.add(dataSourceName);
+                            sameLabelOptions.add(thisOption);
+                            labelToOption.put(label, sameLabelOptions);
                         }
                     }
-                    
-                    if (allTheSame) {
+                }
+                        
+                //Add all options
+                for (List<List<String>> sameLabelOptions: labelToOption.values()) {
+                    if (sameLabelOptions.size() == 1) {
                         options.add(sameLabelOptions.get(0).subList(0, 2));
-                    } else {
+                    } else { //There's more than one option with the same label
+                        boolean allTheSame = true;
+                        String lastValue = sameLabelOptions.get(0).get(0); //Comparing IDs
                         for (List<String> candOption: sameLabelOptions) {
-                            List<String> newOption = new ArrayList<String>();
-                            newOption.add(candOption.get(0));
-                            newOption.add(candOption.get(1) + " (" + candOption.get(2) + ")");
-                            options.add(newOption);
+                            if (!lastValue.equals(candOption.get(0))) {
+                                allTheSame = false;
+                                break;
+                            }
+                        }
+                        
+                        if (allTheSame) {
+                            options.add(sameLabelOptions.get(0).subList(0, 2));
+                        } else {
+                            for (List<String> candOption: sameLabelOptions) {
+                                List<String> newOption = new ArrayList<String>();
+                                newOption.add(candOption.get(0));
+                                newOption.add(candOption.get(1) + " (" + candOption.get(2) + ")");
+                                options.add(newOption);
+                            }
                         }
                     }
                 }
             }
         }
-                
         return options;
     }
     
@@ -766,24 +743,14 @@ public class DiskRepository extends WriteKBRepository {
              + "PREFIX disk: <" + KBConstants.DISKNS() + ">\n";
     }
     
-    private String getDistinctSparqlQuery(String queryPattern, String assertionsUri, List<String> variables) {
-        return "PREFIX bio: <" + KBConstants.OMICSNS() + ">\n" + "PREFIX neuro: <" + KBConstants.NEURONS() + ">\n"
-                + "PREFIX hyp: <" + KBConstants.HYPNS() + ">\n" + "PREFIX xsd: <" + KBConstants.XSDNS() + ">\n"
-                + "PREFIX rdfs: <" + KBConstants.RDFSNS() + ">\n" + "PREFIX rdf: <" + KBConstants.RDFNS() + ">\n"                
-                + "PREFIX disk: <" + KBConstants.DISKNS() + ">\n" + "PREFIX user: <" + assertionsUri + "#>\n\n"
-                + "SELECT DISTINCT " + String.join(" ", variables)
-                + "\nWHERE { \n" + queryPattern + "}\n";
-    }
-
-    public Map<String, List<String>> queryExternalStore(String username, String domain,
-            String endpoint, String sparqlQuery, String variables) {
+    public Map<String, List<String>> queryExternalStore(String endpoint, String sparqlQuery, String variables) {
         //FIXME: change this to DataResults
         // Variable name -> [row0, row1, ...]
         Map<String, List<String>> dataVarBindings = new HashMap<String, List<String>>();
         
         //Check that the variables string contains valid sparql
         String queryVars;
-        if (variables == null || variables.contentEquals("")) {
+        if (variables == null || variables.contentEquals("") || variables.contains("*")) {
             queryVars = "*";
         } else {
             String[] vars = variables.replaceAll("\\s+", " ").split(" ");
@@ -822,7 +789,7 @@ public class DiskRepository extends WriteKBRepository {
             }
         }
 
-        System.out.println("DONE - " + solutions.size() + " solutions found."); //FIXME
+        System.out.println("External query to " + endpoint + " returned " + solutions.size() + " elements.");
         return dataVarBindings;
     }
 
@@ -850,24 +817,6 @@ public class DiskRepository extends WriteKBRepository {
             pattern += "\n";
         }
         return pattern;
-    }
-
-    public Set<String> interceptVariables (String queryA, String queryB) {
-        Set<String> A = new HashSet<String>();
-        Matcher a = varPattern.matcher(queryA);
-        while (a.find()) A.add(a.group());
-        
-        Set<String> B = new HashSet<String>();
-        Matcher b = varPattern.matcher(queryB);
-        while (b.find()) {
-            String v = b.group();
-            for (String v2: A) {
-                if (v.equals(v2)) {
-                    B.add(v);
-                }
-            }
-        }
-        return B;
     }
 
     /*
@@ -1028,122 +977,6 @@ public class DiskRepository extends WriteKBRepository {
         return checkExistingTLOIs(username, tlois);
   }
     
-    public List<TriggeredLOI> queryHypothesis2(String username, String id) {
-        List<TriggeredLOI> tlois = new ArrayList<TriggeredLOI>();
-        String hypuri = this.HYPURI(username ) + "/" + id;
-        String assertions = this.ASSERTIONSURI(username);
-
-        Map<LineOfInquiry, List<Map<String, String>>> matches = this.getHypothesisMatchingLOIs(username, id);
-        if (matches.size() == 0) return tlois;
-
-        try {
-            KBAPI queryKb = this.fac.getKB(OntSpec.PLAIN);
-            queryKb.importFrom(this.omicsontkb);
-            queryKb.importFrom(this.neuroontkb);
-            queryKb.importFrom(this.hypontkb);
-            queryKb.importFrom(this.fac.getKB(hypuri, OntSpec.PLAIN));
-            queryKb.importFrom(this.fac.getKB(assertions, OntSpec.PLAIN));
-            
-            for (LineOfInquiry loi: matches.keySet()) {
-              List<Map<String, String>> results = matches.get(loi);
-              
-              //Check if the data-source has a register adapter:
-              DataAdapter adapter = getDataAdapter(loi.getDataSource());
-              if (adapter == null) {
-                  System.out.println("Data source not registered: " + loi.getDataSource());
-                  continue;
-              }
-
-              for (Map<String, String> hypBinds: results) {
-                  // At least one binding must be non variable (starts with '?')
-                  boolean ok = false;
-                  for (String key: hypBinds.keySet()) {
-                      String val = hypBinds.get(key);
-                      if (val.charAt(0) != '?') ok = true;
-                  }
-                  if (!ok) continue;
-                
-                  //Creating a data query for hypothesis binding solution;
-                  String dq = getQueryBindings(loi.getDataQuery(), varPattern, hypBinds);
-                  dq = this.addQueryAssertions(dq, assertions);   //FIXME: this and the following line is not used anymore.
-                  dq = dq.replace("user:", "?");
-                  String dataQuery = this.getDistinctSparqlQuery(dq, assertions, new ArrayList<String>(loi.getAllWorkflowVariables()) );
-                  if (dataQuery.charAt(dataQuery.length()-1) == '\n')
-                      dataQuery = dataQuery.substring(0, dataQuery.length()-1);
-                
-                  //Sending the query
-                  List<DataResult> solutions = adapter.query(dataQuery);
-                
-                  if (solutions.size() == 0) {
-                      //System.out.println("No results on the external store for " + loi.getId());
-                      continue;
-                  }
-
-                // Store solutions in dataVarBindings
-                Map<String, List<String>> dataVarBindings = new HashMap<String, List<String>>();
-                Set<String> varNames =  solutions.get(0).getVariableNames();
-                for (String varname: varNames)
-                    dataVarBindings.put(varname, new ArrayList<String>());
-
-                for (DataResult solution: solutions) {
-                    for (String varname: varNames) {
-                        dataVarBindings.get(varname).add(solution.getValue(varname));
-                    }
-                }
-
-                //System.out.println("Results proceced");
-                // Add the parameters
-                for (String param: loi.getAllWorkflowParameters()) {
-                    if (param.charAt(0) == '?') param = param.substring(1);
-                    String bind = hypBinds.get(param);
-                    if (bind != null) {
-                        List<String> abind = new ArrayList<String>();
-                        abind.add(bind);
-                        dataVarBindings.put(param, abind);
-                    }
-                }
-                
-                // check collections
-                Set<String> varNonCollection = loi.getAllWorkflowNonCollectionVariables();
-
-                //System.out.println("dataBindings:");
-                for (String key: dataVarBindings.keySet()) {
-                  //System.out.println(" " + key + ":");
-                  String var = (key.charAt(0) != '?') ? '?' + key : key;
-                  if (varNonCollection.contains(var)) {
-                    //System.out.println("  Is not a collection");
-                    Set<String> fixed = new HashSet<String>(dataVarBindings.get(key));
-                    dataVarBindings.put(key, new ArrayList<String>(fixed));
-                  }
-                  /*for (String r: dataVarBindings.get(key)) {
-                    System.out.println("  -  " + r);
-                  }*/
-                }
-                
-                String endpoint = loi.getDataSource();
-                TriggeredLOI tloi = new TriggeredLOI(loi, id);
-                tloi.setWorkflows(
-                    this.getTLOIBindings(username, loi.getWorkflows(), dataVarBindings, endpoint)
-                    );
-                tloi.setMetaWorkflows(
-                    this.getTLOIBindings(username, loi.getMetaWorkflows(), dataVarBindings, endpoint));
-                tloi.setDataQuery(dq);
-                tloi.setRelevantVariables(loi.getRelevantVariables());
-                tloi.setExplanation(loi.getExplanation());
-                tlois.add(tloi);
-              }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-           if (this.is_in_transaction()) {
-               System.out.println("Exception on transaction, end()... ");
-               this.end();
-           }
-        }
-        
-        //return tlois;
-        return checkExistingTLOIs(username, tlois);
-  }
 
     private String addQueryAssertions (String queryPattern, String assertionUri) {
       Pattern ASSERTION_PATTERN = Pattern.compile("(user:[^\\s]+)");
@@ -1170,131 +1003,6 @@ public class DiskRepository extends WriteKBRepository {
         this.end();
       }
       return queryPattern + extra;
-    }
-    
-    public Map<LineOfInquiry, List<Map<String, String>>> getHypothesisMatchingLOIs (String username, String hypId) {
-        Map<LineOfInquiry, List<Map<String, String>>> matches = new HashMap<LineOfInquiry, List<Map<String,String>>>();
-        
-        String hypuri = this.HYPURI(username) + "/" + hypId;
-        String assertions = this.ASSERTIONSURI(username);
-
-        //Hypothesis hypothesis = this.getHypothesis(username, domain, hypId);
-
-        Map<String, String> nsmap = new HashMap<String, String>();
-        nsmap.put(KBConstants.OMICSNS(), "bio:");
-        nsmap.put(KBConstants.NEURONS(), "neuro:");
-        nsmap.put(KBConstants.HYPNS(), "hyp:");
-        nsmap.put(KBConstants.XSDNS(), "xsd:");
-        nsmap.put(assertions + "#", "user:");
-        nsmap.put(hypuri + "#", "?");
-
-        try {
-            // Union of kbs
-            //this.start_read();
-            KBAPI queryKb = this.fac.getKB(OntSpec.PLAIN);
-            KBAPI hypkb = this.fac.getKB(hypuri, OntSpec.PLAIN);
-            KBAPI userkb = this.fac.getKB(assertions, OntSpec.PLAIN);
-            queryKb.importFrom(this.omicsontkb);
-            queryKb.importFrom(this.neuroontkb);
-            queryKb.importFrom(this.hypontkb);
-            queryKb.importFrom(hypkb);
-            queryKb.importFrom(userkb);
-            //this.end();
-
-            for (TreeItem item : this.listLOIs(username)) {
-                LineOfInquiry loi = this.getLOI(username, item.getId());
-                //Check hypothesis and data query
-                String hypothesisQuery = loi.getHypothesisQuery();
-                String dataQuery = loi.getDataQuery();
-
-                if (hypothesisQuery == null || hypothesisQuery.equals("") || dataQuery == null || dataQuery.equals(""))
-                    continue;
-                
-                //Check variable bindings and parameters.
-                Set<String> variables = loi.getAllWorkflowVariables();
-                Set<String> parameters = loi.getAllWorkflowParameters();
-                
-                if (variables.size() == 0)
-                    continue;
-
-                // Variable bindings must be present on the data query
-                boolean ok = true;
-                for (String var: variables) {
-                    if (!dataQuery.contains(var)) {
-                        ok = false;
-                        System.out.println(var + " is not in the query.");
-                        break;
-                    }
-                }
-
-                if (!ok) continue;
-                
-                // Check that there are results for the bindings.
-                // This removes all lines that does not contains a variable.
-                hypothesisQuery = this.getQueryBindings(hypothesisQuery, null, null);
-                
-                // Get all variables used on the data query that are assigned on the hypothesis.
-                Set<String> setV = this.interceptVariables(hypothesisQuery, dataQuery);
-                // Add all parameters
-                for (String param: parameters) setV.add(param);
-                if (setV.size() == 0) continue;
-                List<String> usedVariables = new ArrayList<String>(setV);
-
-                // Creating the query.
-                String hypSparqlQuery = this.getDistinctSparqlQuery(hypothesisQuery, assertions, usedVariables);
-
-                this.start_read();
-                ArrayList<ArrayList<SparqlQuerySolution>> allSolutions = queryKb.sparqlQuery(hypSparqlQuery);
-                this.end();
-                if (allSolutions.size() == 0) continue;
-
-                for (ArrayList<SparqlQuerySolution> hypothesisSolutions : allSolutions) {
-                    Map<String, String> hypVarBindings = new HashMap<String, String>();
-                    for (SparqlQuerySolution solution : hypothesisSolutions) {
-                        String value;
-                        if (solution == null) continue;
-                        String var = solution.getVariable();
-                        KBObject obj = solution.getObject();
-                        if (var == null || obj == null) continue;
-                        if (obj.isLiteral())
-                            value = '"' + obj.getValueAsString() + '"';
-                        else {
-                            String valns = obj.getNamespace();
-                            if (nsmap.containsKey(valns))
-                                value = nsmap.get(valns) + obj.getName();
-                            else
-                                value = "<" + obj.getID() + ">";
-                        }
-                        hypVarBindings.put(var, value);
-                    }
-                    // Check that all parameters are set.
-                    ok = true;
-                    for (String p: parameters) {
-                        if (p.charAt(0) == '?') p = p.substring(1);
-                        if (hypVarBindings.get(p) == null) {
-                            System.out.println(p + " has no value!");
-
-                            ok = false;
-                            break;
-                        }
-                    }
-                    if (!ok) continue;
-                    List<Map<String, String>> l = matches.get(loi);
-                    if (l == null) {
-                        l = new ArrayList<Map<String,String>>();
-                        matches.put(loi, l);
-                    }
-                    l.add(hypVarBindings);
-                }
-            }
-        } catch (Exception e) {
-             e.printStackTrace();
-             if (this.is_in_transaction()) {
-                     System.out.println("Exception on transaction, end()... ");
-                     this.end();
-             }
-        }
-        return matches;
     }
 
     // This replaces all triggered lines of inquiry already executed. tlois should be from the same hypothesis.

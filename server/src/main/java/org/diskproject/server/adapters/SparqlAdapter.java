@@ -93,10 +93,11 @@ public class SparqlAdapter extends DataAdapter {
                        "PREFIX rdf:  <" + KBConstants.RDFNS() + ">\n" +
                        "SELECT DISTINCT " + varname + " " + labelVar + " WHERE {\n" +
                        queryPart;
+        
         if (!queryPart.contains(labelVar))
             query += "\n  OPTIONAL { " + varname + " rdfs:label " + labelVar + " . }";
         query += "\n}";
-        
+
         List<DataResult> solutions = this.query(query);
         List<DataResult> fixedSolutions = new ArrayList<DataResult>();
 
@@ -107,7 +108,7 @@ public class SparqlAdapter extends DataAdapter {
             String label = solution.getValue(name + "Label");
             if (label == null && valName != null) {
                 label = valName;
-            } else {
+            } else if (label == null) {
                 label = valUrl.replaceAll("^.*\\/", "");
                 //Try to remove mediawiki stuff
                 label = label.replaceAll("Property-3A", "");

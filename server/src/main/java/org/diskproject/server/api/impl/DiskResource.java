@@ -1,5 +1,6 @@
 package org.diskproject.server.api.impl;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 
 import org.diskproject.server.repository.DiskRepository;
@@ -77,29 +79,18 @@ public class DiskResource implements DiskService {
   public String reloadVocabularies() {
     try {
       this.repo.reloadKBCaches();
-      System.out.println("Reload 1");
-      response.sendRedirect("");
-      return "";
-    } catch (Exception e) {
-      // e.printStackTrace();
-      throw new RuntimeException("Exception: " + e.getMessage());
-    }
-  }
-  
-  @GET
-  @Path("vocabulary/reload")
-  public String APIReloadVocabularies() {
-    try {
-      this.repo.reloadKBCaches();
-      System.out.println("Reload 2");
       return "OK";
     } catch (Exception e) {
-      // e.printStackTrace();
-      throw new RuntimeException("Exception: " + e.getMessage());
+      e.printStackTrace();
+      try {
+        response.sendError(500);
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
     }
+    return "";
   }
-    
-    
+  
   /**
    * Hypothesis
    */
@@ -297,7 +288,7 @@ public class DiskResource implements DiskService {
       @QueryParam("endpoint") String endpoint,
       @QueryParam("variables") String variables,
       @QueryParam("query") String query) {
-	return repo.queryExternalStore(USERNAME, DOMAIN, endpoint, variables, query);
+	return repo.queryExternalStore(endpoint, query, variables);
   }
   
   
