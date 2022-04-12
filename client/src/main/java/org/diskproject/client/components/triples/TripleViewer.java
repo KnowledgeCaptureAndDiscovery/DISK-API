@@ -32,8 +32,8 @@ public class TripleViewer extends HTMLPanel {
   public void initialize(String username, String domain) {
     this.username = username;
     this.domain = domain;
-    tripleUtil.addNamespacePrefix("bio", KBConstants.OMICSNS());
-    tripleUtil.addNamespacePrefix("neuro", KBConstants.NEURONS());
+    //tripleUtil.addNamespacePrefix("bio", KBConstants.OMICSNS());
+    //tripleUtil.addNamespacePrefix("neuro", KBConstants.NEURONS());
     tripleUtil.addNamespacePrefix("hyp", KBConstants.HYPNS());
     tripleUtil.addNamespacePrefix("user", Config.getServerURL() + "/" + 
         username + "/" + domain + "/assertions#");

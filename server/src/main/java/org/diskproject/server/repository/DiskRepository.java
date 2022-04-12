@@ -70,8 +70,6 @@ public class DiskRepository extends WriteKBRepository {
     Pattern varCollPattern = Pattern.compile("\\[\\s*\\?(.+?)\\s*\\]");
 
     protected KBAPI hypontkb;
-    protected KBAPI omicsontkb;
-    protected KBAPI neuroontkb;
     protected KBAPI questionkb;
 
     Map<String, Vocabulary> vocabularies;
@@ -99,11 +97,12 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     public DiskRepository() {
-        setConfiguration(KBConstants.DISKURI(), KBConstants.DISKNS());
+        setConfiguration();
+
         dataAdapters = new HashMap<String, DataAdapter>();
         methodAdapters = new HashMap<String, MethodAdapter>();
         optionsCache = new WeakHashMap<String, List<List<String>>>();
-        //Set domain
+        //Set domain for writing the KB
         this.setDomain(this.server);
         // Initialize
         this.initializeDataAdapters();
@@ -131,14 +130,12 @@ public class DiskRepository extends WriteKBRepository {
      */
 
     public void initializeKB() {
-        super.initializeKB();
+        super.initializeKB(); // This initializes this.ontkb 
         if (fac == null)
             return;
         
         try {
-            this.neuroontkb = fac.getKB(KBConstants.NEUROURI(), OntSpec.PLAIN, false, true);
             this.hypontkb   = fac.getKB(KBConstants.HYPURI(), OntSpec.PLAIN, false, true);
-            this.omicsontkb = fac.getKB(KBConstants.OMICSURI(), OntSpec.PLAIN, false, true);
             this.questionkb = fac.getKB(KBConstants.QUESTIONSURI(), OntSpec.PLAIN, false, true);
         } catch (Exception e) {
             e.printStackTrace();
@@ -151,7 +148,7 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     public void reloadKBCaches () {
-        KBAPI[] kbs = {this.ontkb, this.hypontkb, this.omicsontkb, this.neuroontkb, this.hypontkb, this.questionkb};
+        KBAPI[] kbs = {this.ontkb, this.hypontkb, this.questionkb};
 
         try {
             this.start_write();
@@ -287,12 +284,8 @@ public class DiskRepository extends WriteKBRepository {
         this.vocabularies = new HashMap<String, Vocabulary>();
         try {
             this.start_read();
-            this.vocabularies.put(KBConstants.NEUROURI(),
-                    this.initializeVocabularyFromKB(this.neuroontkb, KBConstants.NEURONS()));
             this.vocabularies.put(KBConstants.HYPURI(),
                     this.initializeVocabularyFromKB(this.hypontkb, KBConstants.HYPNS()));
-            this.vocabularies.put(KBConstants.OMICSURI(),
-                    this.initializeVocabularyFromKB(this.omicsontkb, KBConstants.OMICSNS()));
             this.vocabularies.put(KBConstants.DISKURI(),
                     this.initializeVocabularyFromKB(this.ontkb, KBConstants.DISKNS()));
             this.vocabularies.put(KBConstants.QUESTIONSURI(),
@@ -737,8 +730,7 @@ public class DiskRepository extends WriteKBRepository {
      */    
     
     private String getAllPrefixes () {
-        return "PREFIX bio: <" + KBConstants.OMICSNS() + ">\nPREFIX neuro: <" + KBConstants.NEURONS() + ">\n"
-             + "PREFIX hyp: <" + KBConstants.HYPNS()   + ">\nPREFIX xsd: <" + KBConstants.XSDNS() + ">\n"
+        return "PREFIX hyp: <" + KBConstants.HYPNS()   + ">\nPREFIX xsd: <" + KBConstants.XSDNS() + ">\n"
              + "PREFIX rdfs: <" + KBConstants.RDFSNS() + ">\nPREFIX rdf: <" + KBConstants.RDFNS() + ">\n"                
              + "PREFIX disk: <" + KBConstants.DISKNS() + ">\n";
     }
@@ -765,6 +757,7 @@ public class DiskRepository extends WriteKBRepository {
         if (dataAdapter == null)
             return dataVarBindings;
         
+        //FIXME: These prefixes should be configured
         String dataQuery = "PREFIX bio: <http://disk-project.org/ontology/omics#>\n" + 
                 "PREFIX neuro: <https://w3id.org/disk/ontology/enigma_hypothesis#>\n" + 
                 "PREFIX hyp: <http://disk-project.org/ontology/hypothesis#>\n" + 
@@ -880,7 +873,7 @@ public class DiskRepository extends WriteKBRepository {
             LineOfInquiry loi = this.getLOI(username, loiid);
             DataAdapter dataAdapter = getDataAdapter(loi.getDataSource());
             MethodAdapter methodAdapter = WingsAdapter.get();
-            System.out.println(loi.getId());
+            //System.out.println(loi.getId());
             if (dataAdapter != null) {
                 if (!results.containsKey(loi))
                     results.put(loi, new ArrayList<Map<String,String>>());
@@ -978,7 +971,7 @@ public class DiskRepository extends WriteKBRepository {
   }
     
 
-    private String addQueryAssertions (String queryPattern, String assertionUri) {
+    /*private String addQueryAssertions (String queryPattern, String assertionUri) {
       Pattern ASSERTION_PATTERN = Pattern.compile("(user:[^\\s]+)");
         String extra = "";
       try {
@@ -1003,7 +996,7 @@ public class DiskRepository extends WriteKBRepository {
         this.end();
       }
       return queryPattern + extra;
-    }
+    }*/
 
     // This replaces all triggered lines of inquiry already executed. tlois should be from the same hypothesis.
     private List<TriggeredLOI> checkExistingTLOIs(String username, List<TriggeredLOI> tlois) {
@@ -1375,7 +1368,7 @@ public class DiskRepository extends WriteKBRepository {
       }
     }
 
-    public List<String> getQueriesToBeRun(Graph assertions) {
+    /*public List<String> getQueriesToBeRun(Graph assertions) {
         List<Triple> UITriples = assertions.getTriples();
         HashSet<String> toQuery = new HashSet<String>();
         String temp;
@@ -1398,7 +1391,7 @@ public class DiskRepository extends WriteKBRepository {
         for (String strTemp : toQuery)
             ToBeQueried.add(strTemp);
         return ToBeQueried;
-    }
+    }*/
 
     public void updateAssertions(String username, Graph assertions) {
         String url = this.ASSERTIONSURI(username);
@@ -2024,7 +2017,7 @@ public class DiskRepository extends WriteKBRepository {
                     defaultDomain = Config.get().getProperties().getString("domain");
                     String url = ASSERTIONSURI(defaultUsername);
                     KBAPI kb = fac.getKB(url, OntSpec.PLAIN, false);
-                    KBObject typeprop = kb.getProperty(KBConstants.NEURONS() + "hasEnigmaQueryLiteral");
+                    KBObject typeprop = kb.getProperty(/*KBConstants.NEURONS() +*/ "hasEnigmaQueryLiteral");
                     List<KBTriple> equeries = kb.genericTripleQuery(null, typeprop, null);
                     for (KBTriple kbt : equeries)
                         if (DataQuery.wasUpdatedInLastDay(kbt.getObject().getValueAsString())) {

@@ -18,18 +18,13 @@ import edu.isi.kcap.ontapi.transactions.TransactionsAPI;
 public class KBRepository implements TransactionsAPI {
   protected String server;
   protected String tdbdir;
-  protected String onturi;
-  protected String ontns;
   protected OntFactory fac;
   protected transient TransactionsAPI transaction;
-  
-  protected String owlns, rdfns, rdfsns;
   protected KBAPI ontkb;
   protected HashMap<String, KBObject> pmap, cmap;
-
   private Semaphore mutex;
-  
-  protected void setConfiguration(String onturi, String ontns) {
+
+  protected void setConfiguration() {
     if(Config.get() == null)
       return;
     PropertyListConfiguration props = Config.get().getProperties();
@@ -39,14 +34,6 @@ public class KBRepository implements TransactionsAPI {
     if(!tdbdirf.exists() && !tdbdirf.mkdirs()) {
       System.err.println("Cannot create tdb directory : "+tdbdirf.getAbsolutePath());
     }
-
-    // TODO: Read execution engines
-    owlns = KBConstants.OWLNS();
-    rdfns = KBConstants.RDFNS();
-    rdfsns = KBConstants.RDFSNS();
-    
-    this.onturi = onturi;
-    this.ontns = ontns;
   }
   
   protected void initializeKB() {
@@ -62,10 +49,10 @@ public class KBRepository implements TransactionsAPI {
     this.cmap = new HashMap<String, KBObject>();
       
     try {
-        this.ontkb = fac.getKB(this.onturi, OntSpec.PELLET, false, true);
+        this.ontkb = fac.getKB(KBConstants.DISKURI(), OntSpec.PELLET, false, true);
     } catch (Exception e) {
         e.printStackTrace();
-        System.out.println("Error reading KB: " + this.onturi);
+        System.out.println("Error reading KB: " + KBConstants.DISKURI());
         return;
     }
     
@@ -99,76 +86,75 @@ public class KBRepository implements TransactionsAPI {
 
   //TransactionsAPI functions
   private void acquire () {
-	  if (is_in_transaction()) {
-		  System.out.println("Waiting... " +  mutex.availablePermits());
-		  //FIXME this is an error! check why you get here, double open probably.
-	  }
-	  try {
-		  mutex.acquire();
-	  } catch(InterruptedException ie) {
-		  System.out.println("InterruptedException");
-	  }
+    if (is_in_transaction()) {
+      System.out.println("Waiting... " +  mutex.availablePermits());
+      //FIXME this is an error! check why you get here, double open probably.
+    }
+    try {
+      mutex.acquire();
+    } catch(InterruptedException ie) {
+      System.out.println("InterruptedException");
+    }
   }
   
   private void release () {
-	  try {
-		  mutex.release();
-	  } catch (Exception e) {
-		  System.out.println("Error on release");
-	  }
+    try {
+      mutex.release();
+    } catch (Exception e) {
+      System.out.println("Error on release");
+	}
   }
   
- @Override
- public boolean start_read() {
-	 if (transaction != null) {
-		 acquire();
-		 return transaction.start_read();
-	 }
-	 return true; //true??? FIXME
- }
+  @Override
+  public boolean start_read() {
+    if (transaction != null) {
+      acquire();
+      return transaction.start_read();
+    }
+    return true; //true??? FIXME
+  }
 
- @Override
- public boolean start_write() {
-	 if (transaction != null) {
-		 acquire();
-		 return transaction.start_write();
-	 }
-	 return true;
- }
+  @Override
+  public boolean start_write() {
+    if (transaction != null) {
+      acquire();
+      return transaction.start_write();
+    }
+    return true;
+  }
 
- @Override
- public boolean end () {
-	 if (transaction != null) {
-		 boolean b = transaction.end();
-		 release();
-		 return b;
-	 }
-	 return true;
- }
+  @Override
+  public boolean end () {
+    if (transaction != null) {
+      boolean b = transaction.end();
+      release();
+      return b;
+    }
+    return true;
+  }
  
- @Override
- public boolean save(KBAPI kb) {
-	 return transaction.save(kb);
- }
+  @Override
+  public boolean save(KBAPI kb) {
+    return transaction.save(kb);
+  }
  
- @Override
- public boolean saveAll() {
-	 return transaction.saveAll();
- }
+  @Override
+  public boolean saveAll() {
+    return transaction.saveAll();
+  }
 
- @Override
- public boolean start_batch_operation() {
-   return transaction.start_batch_operation();
- }
+  @Override
+  public boolean start_batch_operation() {
+    return transaction.start_batch_operation();
+  }
 
- @Override
- public void stop_batch_operation() {
-   transaction.stop_batch_operation();
- }
+  @Override
+  public void stop_batch_operation() {
+    transaction.stop_batch_operation();
+  }
  
- @Override
- public boolean is_in_transaction() {
-	 return transaction.is_in_transaction();
- }
-
+  @Override
+  public boolean is_in_transaction() {
+    return transaction.is_in_transaction();
+  }
 }

@@ -36,7 +36,7 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
     String token = requestContext.getHeaderString("authorization");
     if (token != null) {
       KeycloakUser user = KeycloakSessions.getKeycloakUser(token);
-      if (user.username != null)
+      if (user != null && user.username != null)
           requestContext.setProperty("username", user.username);
       else
           requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity("Access denied").build());

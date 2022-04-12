@@ -39,7 +39,7 @@ public class TestQueryDialog extends DialogBox { //implements ClickHandler {
     }
 
     private void initialize () { // FIXME: Load all vocabularies
-        sparqlQuery.loadVocabulary("bio", KBConstants.OMICSURI(), new Callback<String, Throwable>() {
+        /*sparqlQuery.loadVocabulary("bio", KBConstants.OMICSURI(), new Callback<String, Throwable>() {
             @Override
             public void onSuccess(String result) {
                 sparqlQuery.setValue(dataQuery);
@@ -49,7 +49,7 @@ public class TestQueryDialog extends DialogBox { //implements ClickHandler {
             public void onFailure(Throwable reason) {
                 GWT.log("C");
             }
-        });
+        });*/
     }
     
     public void setDataSourceList(Map<String, String> nameToEndpoint) {

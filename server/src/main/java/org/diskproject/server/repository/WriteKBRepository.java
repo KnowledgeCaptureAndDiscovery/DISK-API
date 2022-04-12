@@ -879,6 +879,8 @@ public class WriteKBRepository extends KBRepository {
         if (bindingsList == null || bindingsList.size() == 0)
             return;
         
+        System.out.println(">> Writing workflows");
+        
         String fullId = userDomain + "/" + id;
         KBAPI userKB = getOrCreateKB(userDomain);
         
@@ -898,15 +900,12 @@ public class WriteKBRepository extends KBRepository {
 
                 // Get Run details
                 if (bindings.getRun() != null) {
-                    if (bindings.getRun().getId() != null) {
+                    if (bindings.getRun().getId() != null)
                         kb.setPropertyValue(bindingobj, pmap.get("hasId"), kb.createLiteral(bindings.getRun().getId()));
-                    }
                     if (bindings.getRun().getStatus() != null)
-                        kb.setPropertyValue(bindingobj, pmap.get("hasStatus"),
-                                kb.createLiteral(bindings.getRun().getStatus()));
+                        kb.setPropertyValue(bindingobj, pmap.get("hasStatus"), kb.createLiteral(bindings.getRun().getStatus()));
                     if (bindings.getRun().getLink() != null)
-                        kb.setPropertyValue(bindingobj, pmap.get("hasRunLink"),
-                                kb.createLiteral(bindings.getRun().getLink()));
+                        kb.setPropertyValue(bindingobj, pmap.get("hasRunLink"), kb.createLiteral(bindings.getRun().getLink()));
                 }
 
                 // Creating workflow data bindings
@@ -916,9 +915,7 @@ public class WriteKBRepository extends KBRepository {
                     Value bindingValue = new Value(binding, KBConstants.XSDNS() + "string");
                     KBObject varbindingobj = kb.createObjectOfClass(null, cmap.get("VariableBinding"));
                     kb.setPropertyValue(varbindingobj, pmap.get("hasVariable"), kb.getResource(workflowuri + "#" + varid));
-                    if (bindingValue != null)
-                        kb.setPropertyValue(varbindingobj, pmap.get("hasBindingValue"), this.getKBValue(bindingValue, kb));
-
+                    kb.setPropertyValue(varbindingobj, pmap.get("hasBindingValue"), this.getKBValue(bindingValue, kb));
                     kb.addPropertyValue(bindingobj, pmap.get("hasVariableBinding"), varbindingobj);
                 }
                 
@@ -929,9 +926,7 @@ public class WriteKBRepository extends KBRepository {
                     Value bindingValue = new Value(binding, KBConstants.XSDNS() + "string");
                     KBObject paramobj = kb.createObjectOfClass(null, cmap.get("VariableBinding"));
                     kb.setPropertyValue(paramobj, pmap.get("hasVariable"), kb.getResource(workflowuri + "#" + varid));
-                    if (bindingValue != null)
-                        kb.setPropertyValue(paramobj, pmap.get("hasBindingValue"), this.getKBValue(bindingValue, kb));
-
+                    kb.setPropertyValue(paramobj, pmap.get("hasBindingValue"), this.getKBValue(bindingValue, kb));
                     kb.addPropertyValue(bindingobj, pmap.get("hasParameter"), paramobj);
                 }
 
@@ -942,14 +937,14 @@ public class WriteKBRepository extends KBRepository {
                     Value bindingValue = new Value(binding, KBConstants.XSDNS() + "string");
                     KBObject paramobj = kb.createObjectOfClass(null, cmap.get("VariableBinding"));
                     kb.setPropertyValue(paramobj, pmap.get("hasVariable"), kb.getResource(workflowuri + "#" + varid));
-                    if (bindingValue != null)
-                        kb.setPropertyValue(paramobj, pmap.get("hasBindingValue"), this.getKBValue(bindingValue, kb));
+                    kb.setPropertyValue(paramobj, pmap.get("hasBindingValue"), this.getKBValue(bindingValue, kb));
 
                     kb.addPropertyValue(bindingobj, pmap.get("hasOptionalParameter"), paramobj);
                 }
 
                 String hypid = bindings.getMeta().getHypothesis();
                 String revhypid = bindings.getMeta().getRevisedHypothesis();
+                System.out.println(hypid + " -- " + revhypid);
                 if (hypid != null)
                     kb.setPropertyValue(bindingobj, pmap.get("hasHypothesisVariable"),
                             kb.getResource(workflowuri + "#" + hypid));
@@ -958,6 +953,7 @@ public class WriteKBRepository extends KBRepository {
                             kb.getResource(workflowuri + "#" + revhypid));
             }
             
+            this.save(kb);
             this.end();
         }
     }
@@ -975,6 +971,7 @@ public class WriteKBRepository extends KBRepository {
         List<WorkflowBindings> list = new ArrayList<WorkflowBindings>();
         String loiId = userDomain + "/" + id;
         KBAPI kb = getOrCreateKB(userDomain);
+
         
         if (kb != null) {
             this.start_write();

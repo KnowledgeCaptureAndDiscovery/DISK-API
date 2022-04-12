@@ -141,10 +141,10 @@ public class LOIEditor extends Composite implements HasLOIHandlers {
         	}
         }
 
-        if(loi.getHypothesisQuery() != null && loadcount==7) {
+        if(loi.getHypothesisQuery() != null && loadcount==3) {
             hypothesisQuery.setValue(loi.getHypothesisQuery());
         }
-        if(loi.getDataQuery() != null && loadcount==7) {
+        if(loi.getDataQuery() != null && loadcount==3) {
             dataQuery.setValue(loi.getDataQuery());    
         }
         if (loi.getRelevantVariables() != null) {
@@ -165,13 +165,13 @@ public class LOIEditor extends Composite implements HasLOIHandlers {
 
     private void loadVocabularies() {
         loadcount=0;
-        hypothesisQuery.loadVocabulary("bio", KBConstants.OMICSURI(), vocabLoaded);
-        hypothesisQuery.loadVocabulary("neuro", KBConstants.NEUROURI(), vocabLoaded);
+        //hypothesisQuery.loadVocabulary("bio", KBConstants.OMICSURI(), vocabLoaded);
+        //hypothesisQuery.loadVocabulary("neuro", KBConstants.NEUROURI(), vocabLoaded);
         hypothesisQuery.loadVocabulary("hyp", KBConstants.HYPURI(), vocabLoaded);
         hypothesisQuery.loadVocabulary("disk", KBConstants.DISKURI(), vocabLoaded);
 
-        dataQuery.loadVocabulary("bio", KBConstants.OMICSURI(), vocabLoaded);
-        dataQuery.loadVocabulary("neuro", KBConstants.NEUROURI(), vocabLoaded);
+        //dataQuery.loadVocabulary("bio", KBConstants.OMICSURI(), vocabLoaded);
+        //dataQuery.loadVocabulary("neuro", KBConstants.NEUROURI(), vocabLoaded);
         dataQuery.loadVocabulary("hyp", KBConstants.HYPURI(), vocabLoaded);
     }
 
@@ -179,10 +179,10 @@ public class LOIEditor extends Composite implements HasLOIHandlers {
         new Callback<String, Throwable>() {
             public void onSuccess(String result) {
                 loadcount++;
-                if (loi != null && loi.getHypothesisQuery() != null && loadcount==7) {
+                if (loi != null && loi.getHypothesisQuery() != null && loadcount==3) {
                     hypothesisQuery.setValue(loi.getHypothesisQuery());
                 }
-                if (loi != null && loi.getDataQuery() != null && loadcount==7) {
+                if (loi != null && loi.getDataQuery() != null && loadcount==3) {
                     dataQuery.setValue(loi.getDataQuery());
                 }
             }

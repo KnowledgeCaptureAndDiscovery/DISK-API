@@ -91,8 +91,8 @@ public class MyTerminologyView extends ApplicationSubviewImpl implements
 
 	void loadVocabularies() {
 		loadcount = 0;
-		triples.loadVocabulary("bio", KBConstants.OMICSURI(), vocabLoaded);
-		triples.loadVocabulary("neuro", KBConstants.NEUROURI(), vocabLoaded);
+		//triples.loadVocabulary("bio", KBConstants.OMICSURI(), vocabLoaded);
+		//triples.loadVocabulary("neuro", KBConstants.NEUROURI(), vocabLoaded);
 		triples.loadVocabulary("hyp", KBConstants.HYPURI(), vocabLoaded);
 		triples.loadVocabulary("disk", KBConstants.DISKURI(), vocabLoaded);
 	}
@@ -100,8 +100,8 @@ public class MyTerminologyView extends ApplicationSubviewImpl implements
 	private Callback<String, Throwable> vocabLoaded = new Callback<String, Throwable>() {
 		public void onSuccess(String result) {
 			loadcount++;
-			if (loadcount == 4) {
-				String[] prefixes = {"bio", "neuro", "hyp", "disk", ""};
+			if (loadcount == 2) {
+				String[] prefixes = {/*"bio", "neuro", */"hyp", "disk", ""};
 				vocab = new Vocabulary();
 				for (String p: prefixes)
 					vocab.mergeWith(triples.getVocabulary(p));
@@ -171,7 +171,7 @@ public class MyTerminologyView extends ApplicationSubviewImpl implements
 			if (graph != null) {
 				loadedTriples = graph.getTriples();
 				loadTableData(loadedTriples);
-				if (loadcount == 4) showAssertions();
+				if (loadcount == 2) showAssertions();
 			}
 		  }
 		  @Override
