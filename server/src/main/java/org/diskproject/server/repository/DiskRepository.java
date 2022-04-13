@@ -892,22 +892,24 @@ public class DiskRepository extends WriteKBRepository {
     
     public List<TriggeredLOI> queryHypothesis(String username, String id) {
         List<TriggeredLOI> tlois = new ArrayList<TriggeredLOI>();
+        Set<String> queries = new HashSet<String>();
 
         System.out.println("Quering hypothesis: " + id);
         Map<LineOfInquiry, List<Map<String, String>>> matchingBindings = this.getLOIByHypothesisId(username, id);
         for (LineOfInquiry loi: matchingBindings.keySet()) {
             System.out.println("Checking LOI: "+ loi.getId());
+            
             //One hypothesis can match the same LOI in more than one way, the following for-loop handles that
             for (Map<String, String> values: matchingBindings.get(loi)) {
-                for (String k: values.keySet()) {
-                    System.out.println("> " + k + ": " + values.get(k) );
-                }
                 String dq = getQueryBindings(loi.getDataQuery(), varPattern, values);
-
                 String query = this.getAllPrefixes() + "SELECT DISTINCT ";
                 for (String qvar: loi.getAllWorkflowVariables()) query += qvar + " ";
                 query += "{\n" + dq + "}";
                 
+                //Prevents executing the same query several times.
+                if (queries.contains(query))
+                    continue;
+                queries.add(query);
                 System.out.println("Query: \n" + query);
 
                 List<DataResult> solutions = this.dataAdapters.get(loi.getDataSource()).query(query);
