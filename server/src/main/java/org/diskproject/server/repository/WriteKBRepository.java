@@ -245,7 +245,6 @@ public class WriteKBRepository extends KBRepository {
                 String ID = hypothesisId + "/bindings/";
                 String[] sp = vb.getVariable().split("/");
                 ID += sp[sp.length-1];
-                System.out.println("varBindingId: " + ID);
                 KBObject binding = userKB.createObjectOfClass(ID, this.cmap.get("VariableBinding"));
                 userKB.setPropertyValue(binding, pmap.get("hasVariable"), userKB.createLiteral(vb.getVariable()));
                 userKB.setPropertyValue(binding, pmap.get("hasBindingValue"), userKB.createLiteral(vb.getBinding()));
@@ -588,9 +587,7 @@ public class WriteKBRepository extends KBRepository {
     
     protected List<LineOfInquiry> listLOIPreviews (String username) {
         List<LineOfInquiry> list = new ArrayList<LineOfInquiry>();
-
         String userDomain = this.LOIURI(username);
-      
         KBAPI userKB = getKB(userDomain);
         
         if (userKB != null) {
@@ -626,15 +623,14 @@ public class WriteKBRepository extends KBRepository {
         }
         return list;
     }
-    
+
     // -- Triggered Lines of Inquiry
     protected boolean writeTLOI (String username, TriggeredLOI tloi) {
         if (tloi.getId() == null)
             return false;
-        
-        String userDomain = this.TLOIURI(username);
-        String tloiId = userDomain + "/" + tloi.getId();
 
+        String userDomain = this.TLOIURI(username);
+        String tloiid = userDomain + "/" + tloi.getId();
         String hypns = this.HYPURI(username) + "/";
         String loins = this.LOIURI(username) + "/";
 
@@ -643,7 +639,7 @@ public class WriteKBRepository extends KBRepository {
             return false;
         
         this.start_write();
-        KBObject tloiitem = userKB.createObjectOfClass(tloiId, this.cmap.get("TriggeredLineOfInquiry"));
+        KBObject tloiitem = userKB.createObjectOfClass(tloiid, this.cmap.get("TriggeredLineOfInquiry"));
 
         if (tloi.getName() != null)
             userKB.setLabel(tloiitem, tloi.getName());
@@ -681,7 +677,7 @@ public class WriteKBRepository extends KBRepository {
                 userKB.addPropertyValue(tloiitem, pmap.get("hasOutputFile"), userKB.createLiteral(outputurl));
             }
         }
-            
+        
         if (tloi.getLoiId() != null) {
             KBObject lobj = userKB.getResource(loins + tloi.getLoiId());
             userKB.setPropertyValue(tloiitem, pmap.get("hasLineOfInquiry"), lobj);
@@ -703,7 +699,7 @@ public class WriteKBRepository extends KBRepository {
 
         return true;
     }
-    
+
     protected TriggeredLOI loadTLOI (String username, String id) {
         String userDomain = this.TLOIURI(username);
         String tloiId = userDomain + "/" + id;
@@ -713,14 +709,12 @@ public class WriteKBRepository extends KBRepository {
             return null;
 
         this.start_read();
-
-        KBObject obj = userKB.getIndividual(id);
-        if (obj.getName() != null) {
+        KBObject obj = userKB.getIndividual(tloiId);
+        if (obj != null && obj.getName() != null) {
             TriggeredLOI tloi = new TriggeredLOI();
             tloi.setId(obj.getName());
             tloi.setName(userKB.getLabel(obj));
             tloi.setDescription(userKB.getComment(obj));
-            
             KBObject hasLOI = userKB.getPropertyValue(obj, pmap.get("hasLineOfInquiry"));
             if (hasLOI != null)
                 tloi.setLoiId(hasLOI.getName());
@@ -785,8 +779,8 @@ public class WriteKBRepository extends KBRepository {
             }
             this.end();
             
-            tloi.setWorkflows(loadWorkflowsBindings(userDomain, tloiId));
-            tloi.setMetaWorkflows(loadWorkflowsBindings(userDomain, tloiId));
+            tloi.setWorkflows(loadWorkflowsBindings(userDomain, tloi.getId() ));
+            tloi.setMetaWorkflows(loadMetaWorkflowsBindings(userDomain, tloi.getId()));
             
             return tloi;
         } else {
@@ -800,13 +794,13 @@ public class WriteKBRepository extends KBRepository {
             return false;
 
         String userDomain = this.TLOIURI(username);
-        String tloiId = userDomain + "/" + id;
-
+        String tloiId = userDomain + "/" + id; 
+        
         KBAPI userKB = getKB(userDomain);
         if (userKB == null)
             return false;
 
-        // Remove resulting hypothesis is is not being used
+        // Remove resulting hypothesis if is not being used
         this.start_read();
         KBObject item = userKB.getIndividual(tloiId);
         KBObject hypobj = userKB.getPropertyValue(item, pmap.get("hasResultingHypothesis"));
@@ -845,12 +839,13 @@ public class WriteKBRepository extends KBRepository {
             KBObject cls = this.cmap.get("TriggeredLineOfInquiry");
             KBObject typeprop = userKB.getProperty(KBConstants.RDFNS() + "type");
 
-            for (KBTriple t :  userKB.genericTripleQuery(null, typeprop, cls))
+            for (KBTriple t :  userKB.genericTripleQuery(null, typeprop, cls)) {
                 tloiIds.add(t.getSubject().getID());
+            }
             this.end();
             
             for (String tloiId: tloiIds) {
-                TriggeredLOI tloi = loadTLOI(username, tloiId);
+                TriggeredLOI tloi = loadTLOI(username, tloiId.replaceAll("^.*\\/", ""));
                 if (tloi != null)
                     list.add(tloi);
             }
@@ -878,8 +873,6 @@ public class WriteKBRepository extends KBRepository {
     private void writeBindings (String userDomain, String id, KBObject bindingprop, List<WorkflowBindings> bindingsList) {
         if (bindingsList == null || bindingsList.size() == 0)
             return;
-        
-        System.out.println(">> Writing workflows");
         
         String fullId = userDomain + "/" + id;
         KBAPI userKB = getOrCreateKB(userDomain);
@@ -944,7 +937,6 @@ public class WriteKBRepository extends KBRepository {
 
                 String hypid = bindings.getMeta().getHypothesis();
                 String revhypid = bindings.getMeta().getRevisedHypothesis();
-                System.out.println(hypid + " -- " + revhypid);
                 if (hypid != null)
                     kb.setPropertyValue(bindingobj, pmap.get("hasHypothesisVariable"),
                             kb.getResource(workflowuri + "#" + hypid));

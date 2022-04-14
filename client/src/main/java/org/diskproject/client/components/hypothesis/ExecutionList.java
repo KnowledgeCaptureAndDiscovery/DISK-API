@@ -118,7 +118,7 @@ public class ExecutionList extends SearchableItem {
 			    link.setInnerText(tloi.getDateCreated());
 			    
             //FIXME: this is different on the server
-			link.setHref("/disk-portal/#tlois/" + ExecutionList.username + "/" + ExecutionList.domain + "/" + tloi.getId());
+			link.setHref("/#tlois/" + ExecutionList.username + "/" + ExecutionList.domain + "/" + tloi.getId());
 			//date.setInnerText(tloi.getDateCreated());
 			date.appendChild(link);
 			

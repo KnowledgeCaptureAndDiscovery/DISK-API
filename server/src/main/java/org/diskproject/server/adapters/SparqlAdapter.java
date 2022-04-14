@@ -67,12 +67,12 @@ public class SparqlAdapter extends DataAdapter {
                     String varName = cell.getVariable();
                     KBObject varValue = cell.getObject();
                     if (varValue != null) {
-                        if (cell.getObject().isLiteral()) {
-                            curResult.addValue(varName, cell.getObject().getValueAsString());
+                        if (varValue.isLiteral()) {
+                            curResult.addValue(varName, varValue.getValueAsString());
                         } else {
-                            String name = cell.getObject().getName();
+                            String name = varValue.getName();
                             name = name.replaceAll("-", "%"); //Semantic media wiki changes % to - 
-                            curResult.addValue(varName, cell.getObject().getID(), name);
+                            curResult.addValue(varName, varValue.getID(), name);
                         }
                     } else {
                         curResult.addValue(varName, null);

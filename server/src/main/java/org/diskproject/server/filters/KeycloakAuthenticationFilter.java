@@ -97,6 +97,8 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
     
     private static KeycloakUser fetchKeycloakUser (String token) {
 	  CloseableHttpClient client = KeycloakSessions.getHttpClient();
+	  if (KeycloakSessions.userInfoUrl == null)
+	      return null;
 	  HttpGet userInfo = new HttpGet(KeycloakSessions.userInfoUrl);
 	  userInfo.addHeader("Authorization", token);
 	  

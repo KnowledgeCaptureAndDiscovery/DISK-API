@@ -646,7 +646,7 @@ public class DiskRepository extends WriteKBRepository {
 
     private List<List<String>> loadVariableOptions (String sid) {
         List<List<String>> options = new ArrayList<List<String>>();
-        System.out.print("Loading options for " + sid);
+        System.out.println("Loading options for " + sid);
         QuestionVariable variable = null;
         // FIXME: Find a better way to handle url prefix or change the request to include the full URI
         if (allVariables.containsKey("http://disk-project.org/examples/" + sid)) {
@@ -897,8 +897,6 @@ public class DiskRepository extends WriteKBRepository {
         System.out.println("Quering hypothesis: " + id);
         Map<LineOfInquiry, List<Map<String, String>>> matchingBindings = this.getLOIByHypothesisId(username, id);
         for (LineOfInquiry loi: matchingBindings.keySet()) {
-            System.out.println("Checking LOI: "+ loi.getId());
-            
             //One hypothesis can match the same LOI in more than one way, the following for-loop handles that
             for (Map<String, String> values: matchingBindings.get(loi)) {
                 String dq = getQueryBindings(loi.getDataQuery(), varPattern, values);
@@ -910,7 +908,6 @@ public class DiskRepository extends WriteKBRepository {
                 if (queries.contains(query))
                     continue;
                 queries.add(query);
-                System.out.println("Query: \n" + query);
 
                 List<DataResult> solutions = this.dataAdapters.get(loi.getDataSource()).query(query);
                 if (solutions.size() > 0) {
@@ -943,9 +940,7 @@ public class DiskRepository extends WriteKBRepository {
                     // check collections
                     Set<String> varNonCollection = loi.getAllWorkflowNonCollectionVariables();
 
-                    System.out.println("dataBindings:");
                     for (String key: dataVarBindings.keySet()) {
-                      System.out.println(" " + key + ":");
                       String var = (key.charAt(0) != '?') ? '?' + key : key;
                       if (varNonCollection.contains(var)) {
                         //System.out.println("  Is not a collection");
@@ -1029,7 +1024,7 @@ public class DiskRepository extends WriteKBRepository {
             List<WorkflowBindings> wflowBindings, Map<String, List<String>> dataVarBindings, String endpoint) {
       
         List<WorkflowBindings> tloiBindings = new ArrayList<WorkflowBindings>();
-      
+
         for (WorkflowBindings bindings : wflowBindings) { //FOR EACH WORKFLOW
             // For each Workflow, create an empty copy to set the values
             WorkflowBindings tloiBinding = new WorkflowBindings(
@@ -1077,13 +1072,12 @@ public class DiskRepository extends WriteKBRepository {
             for (VariableBinding vbinding : bindings.getBindings()) { //Normal variable bindings.
                 // For each Variable binding, check :
                 // - If this variable expects a collection or single values
-                // - Check the binding values from the data store
+                // - Check the binding values on the data store
                 String binding = vbinding.getBinding();
                 Matcher collmat = varCollPattern.matcher(binding);
                 Matcher mat = varPattern.matcher(binding);
         
-                // Check if this binding is meant for a collection
-                // Also get the sparql variable
+                // Get the sparql variable
                 boolean isCollection = false;
                 String sparqlvar = null;
                 if(collmat.find() && dataVarBindings.containsKey(collmat.group(1))) {
@@ -1783,17 +1777,17 @@ public class DiskRepository extends WriteKBRepository {
         @Override
         public void run() {
             try {
-                System.out.println("Running execution thread");
                 if (this.metamode)
-                    System.out.println("METAMODE enabled!");
+                    System.out.println("Running execution thread on META mode");
+                else 
+                    System.out.println("Running execution thread");
 
-                WingsAdapter wings = WingsAdapter.get();
-
-                List<WorkflowBindings> wflowBindings = tloi.getWorkflows();
-                if (this.metamode)
-                    wflowBindings = tloi.getMetaWorkflows();
+                WingsAdapter wings = WingsAdapter.get(); //TODO
+                List<WorkflowBindings> wflowBindings = this.metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows();
+                
+                boolean allok = true;
         
-                // Start off workflows from tloi
+                // Start workflows from tloi
                 for (WorkflowBindings bindings : wflowBindings) {
                     // Get workflow input details
                     Map<String, Variable> inputs = wings.getWorkflowInputs(bindings.getWorkflow());
@@ -1860,19 +1854,27 @@ public class DiskRepository extends WriteKBRepository {
                             continue;
                         }
                     }
+
                     // Execute workflow
                     System.out.println("Executing " + bindings.getWorkflow() + " with:\n" + vbindings);
                     String runid = wings.runWorkflow(bindings.getWorkflow(), sendbindings, inputs);
-                    if (runid != null)
-                        bindings.getRun().setId(runid);// .replaceAll("^.*#",
-                                                        // ""));
+
+                    if (runid != null) {
+                        bindings.getRun().setId(runid);// .replaceAll("^.*#", ""));
+                    } else {
+                        allok = false;
+                        System.out.println("Error executing workflow");
+                    }
                 }
-                tloi.setStatus(Status.RUNNING);
+                
+                tloi.setStatus(allok ? Status.RUNNING : Status.FAILED);
                 updateTriggeredLOI(username, tloi.getId(), tloi);
 
                 // Start monitoring
-                TLOIMonitoringThread monitorThread = new TLOIMonitoringThread(username, tloi, metamode);
-                monitor.schedule(monitorThread, 5, TimeUnit.SECONDS);
+                if (allok) {
+                    TLOIMonitoringThread monitorThread = new TLOIMonitoringThread(username, tloi, metamode);
+                    monitor.schedule(monitorThread, 10, TimeUnit.SECONDS);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }

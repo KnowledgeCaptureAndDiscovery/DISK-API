@@ -202,8 +202,7 @@ public class WingsAdapter extends MethodAdapter {
 
 			Map<String, String> varmap = new HashMap<String, String>();
 			KBAPI xkb = fac.getKB(xtpluri, OntSpec.PLAIN);
-			KBObject bindprop = xkb
-					.getProperty(this.wflowns + "hasDataBinding");
+			KBObject bindprop = xkb.getProperty(this.wflowns + "hasDataBinding");
 
 			for (KBTriple triple : xkb.genericTripleQuery(null, bindprop, null)) {
 				KBObject varobj = triple.getSubject();
@@ -523,10 +522,12 @@ public class WingsAdapter extends MethodAdapter {
 			String toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
 			String getData = postWithSpecifiedMediaType("users/"+getUsername()+"/"+domain+"/plan/getData",
 					toPost, "application/json", "application/json");
+
 			vbindings = addDataBindings(inputVariables, vbindings, getData, false);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
 			String getParams = postWithSpecifiedMediaType("users/"+getUsername()+"/"+domain+"/plan/getParameters",
 			        toPost, "application/json", "application/json");
+
 			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
 
@@ -968,20 +969,20 @@ private List<VariableBinding> addDataBindings(
 	JsonObject bindingobj = new JsonObject();
 	for(Iterator<JsonElement> it = datalist.iterator(); it.hasNext(); ) {
 	  JsonElement el = it.next();
+
 	  JsonObject obj = null;
 	  if(param) {
 	    // If Parameter, the entries aren't arrays
 	    obj = el.getAsJsonObject();
-	  }
-	  else {
+	  } else {
 	    JsonArray ellist = el.getAsJsonArray();
 	    if(ellist.size() > 0) {
 	      obj = ellist.get(0).getAsJsonObject();
 	    }
 	  }
-    for(Entry<String, JsonElement> entry : obj.entrySet()) {
-      bindingobj.add(entry.getKey(), entry.getValue());
-    }
+	  if (obj != null) for(Entry<String, JsonElement> entry : obj.entrySet()) {
+        bindingobj.add(entry.getKey(), entry.getValue());
+      }
 	}
 
 	for (String key : inputVariables.keySet()) {
@@ -1101,36 +1102,33 @@ private String toPlanAcceptableFormat(String wfname, List<VariableBinding> vbl, 
 	return output;
 }
 
-private String postWithSpecifiedMediaType(String pageid, String data,
-		String type, String type2) {
-  this.login();
+private String postWithSpecifiedMediaType(String pageid, String data, String type, String type2) {
+    this.login();
 	CloseableHttpClient client = HttpClientBuilder.create()
-      .setDefaultCookieStore(this.cookieStore).build();
+	        .setDefaultCookieStore(this.cookieStore).build();
 	try {
 		HttpPost securedResource = new HttpPost(server + "/" + pageid);
 		securedResource.setEntity(new StringEntity(data));
 		securedResource.addHeader("Accept", type);
 		securedResource.addHeader("Content-type", type2);
-		CloseableHttpResponse httpResponse = client
-				.execute(securedResource);
+		CloseableHttpResponse httpResponse = client.execute(securedResource);
 		try {
-		HttpEntity responseEntity = httpResponse.getEntity();
-		String strResponse = EntityUtils.toString(responseEntity);
-		EntityUtils.consume(responseEntity);
-		httpResponse.close();
-		return strResponse;
+		    HttpEntity responseEntity = httpResponse.getEntity();
+		    String strResponse = EntityUtils.toString(responseEntity);
+		    EntityUtils.consume(responseEntity);
+		    httpResponse.close();
+		    return strResponse;
+		} finally {
+		    httpResponse.close();
+		}
+	} catch (Exception e) {
+	    e.printStackTrace();
 	} finally {
-		httpResponse.close();
+	    try {
+	        client.close();
+	    } catch (IOException e) {}
 	}
-} catch (Exception e) {
-	e.printStackTrace();
-} finally {
-	try {
-		client.close();
-	} catch (IOException e) {
-	}
-}
-return null;
+	return null;
 }
 
 private String post(String pageid, List<NameValuePair> data) {
