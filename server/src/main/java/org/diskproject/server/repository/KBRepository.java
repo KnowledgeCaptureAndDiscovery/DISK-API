@@ -2,14 +2,13 @@ package org.diskproject.server.repository;
 
 import java.io.File;
 import java.util.concurrent.Semaphore;
-import java.util.HashMap;
 
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.diskproject.server.util.Config;
+import org.diskproject.server.util.KBCache;
 import org.diskproject.shared.classes.util.KBConstants;
 
 import edu.isi.kcap.ontapi.KBAPI;
-import edu.isi.kcap.ontapi.KBObject;
 import edu.isi.kcap.ontapi.OntFactory;
 import edu.isi.kcap.ontapi.OntSpec;
 import edu.isi.kcap.ontapi.jena.transactions.TransactionsJena;
@@ -21,8 +20,8 @@ public class KBRepository implements TransactionsAPI {
   protected OntFactory fac;
   protected transient TransactionsAPI transaction;
   protected KBAPI ontkb;
-  protected HashMap<String, KBObject> pmap, cmap;
   private Semaphore mutex;
+  protected KBCache DISKOnt;
 
   protected void setConfiguration() {
     if(Config.get() == null)
@@ -45,8 +44,6 @@ public class KBRepository implements TransactionsAPI {
     
     this.fac = new OntFactory(OntFactory.JENA, tdbdir);
     this.transaction = new TransactionsJena(this.fac);
-    this.pmap = new HashMap<String, KBObject>();
-    this.cmap = new HashMap<String, KBObject>();
       
     try {
         this.ontkb = fac.getKB(KBConstants.DISKURI(), OntSpec.PELLET, false, true);
@@ -57,33 +54,15 @@ public class KBRepository implements TransactionsAPI {
     }
     
     if (this.ontkb != null) {
-        this.start_write();
-        this.cacheKBTerms(ontkb);
+        this.start_read();
+        this.DISKOnt = new KBCache(ontkb);
         this.end();
     } else {
         return;
     }
 
   }
-
-  protected void cacheKBTerms(KBAPI kb) {
-    for (KBObject obj : kb.getAllClasses()) {
-      if(obj != null && obj.getName() != null) {
-        cmap.put(obj.getName(), obj);
-      }
-    }
-    for (KBObject obj : kb.getAllObjectProperties()) {
-      if(obj != null) {
-        pmap.put(obj.getName(), obj);
-      }
-    }
-    for (KBObject obj : kb.getAllDatatypeProperties()) {
-      if(obj != null) {
-        pmap.put(obj.getName(), obj);
-      }
-    }
-  }
-
+  
   //TransactionsAPI functions
   private void acquire () {
     if (is_in_transaction()) {

@@ -20,7 +20,6 @@ public class LineOfInquiry {
   String relevantVariables; //To show on the table.
   String explanation; //To describe the table
   String dataSource;
-  //FIXME
   String question;
 
   public LineOfInquiry() {

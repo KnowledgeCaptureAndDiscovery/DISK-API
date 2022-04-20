@@ -54,6 +54,7 @@ import com.vaadin.polymer.paper.widget.PaperDialog;
 import com.vaadin.polymer.iron.widget.IronIcon;
 import com.vaadin.polymer.iron.widget.event.IronOverlayClosedEvent;
 
+@SuppressWarnings("deprecation")
 public class TriggeredLOIViewer extends Composite {
   interface Binder extends UiBinder<Widget, TriggeredLOIViewer> {};
   private static Binder uiBinder = GWT.create(Binder.class);
@@ -583,7 +584,6 @@ public class TriggeredLOIViewer extends Composite {
 				  if (sdate != null) run.setStartDate(sdate);
 				  if (edate != null) run.setEndDate(edate);
 
-                  @SuppressWarnings("deprecation")
                   Element el;
 
 				  Map<String, String> outputs = result.getOutputs();

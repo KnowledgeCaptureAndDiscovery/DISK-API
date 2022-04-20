@@ -6,7 +6,6 @@ import java.util.Set;
 
 import org.diskproject.client.components.triples.SparqlInput;
 import org.diskproject.client.rest.DiskREST;
-import org.diskproject.shared.classes.util.KBConstants;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.DivElement;
@@ -38,8 +37,8 @@ public class TestQueryDialog extends DialogBox { //implements ClickHandler {
         //initialize();
     }
 
-    private void initialize () { // FIXME: Load all vocabularies
-        /*sparqlQuery.loadVocabulary("bio", KBConstants.OMICSURI(), new Callback<String, Throwable>() {
+    /*private void initialize () { // FIXME: Load all vocabularies
+        sparqlQuery.loadVocabulary("bio", KBConstants.OMICSURI(), new Callback<String, Throwable>() {
             @Override
             public void onSuccess(String result) {
                 sparqlQuery.setValue(dataQuery);
@@ -49,8 +48,8 @@ public class TestQueryDialog extends DialogBox { //implements ClickHandler {
             public void onFailure(Throwable reason) {
                 GWT.log("C");
             }
-        });*/
-    }
+        });
+    }*/
     
     public void setDataSourceList(Map<String, String> nameToEndpoint) {
         dataSource.clear();

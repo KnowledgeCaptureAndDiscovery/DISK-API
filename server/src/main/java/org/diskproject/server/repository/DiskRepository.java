@@ -33,6 +33,7 @@ import org.diskproject.server.adapters.SparqlAdapter;
 //import org.diskproject.server.repository.GmailService.MailMonitor;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.DataQuery;
+import org.diskproject.server.util.KBCache;
 import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.common.TreeItem;
 import org.diskproject.shared.classes.common.Triple;
@@ -54,6 +55,8 @@ import org.diskproject.shared.classes.vocabulary.Type;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
+import org.diskproject.shared.ontologies.DISK;
+import org.diskproject.shared.ontologies.SQO;
 
 import edu.isi.kcap.ontapi.KBAPI;
 import edu.isi.kcap.ontapi.KBObject;
@@ -69,8 +72,11 @@ public class DiskRepository extends WriteKBRepository {
     Pattern varPattern = Pattern.compile("\\?(.+?)\\b");
     Pattern varCollPattern = Pattern.compile("\\[\\s*\\?(.+?)\\s*\\]");
 
-    protected KBAPI hypontkb;
+    /* This is only used as vocabulary to send. Redoing vocab manager.
+     * protected KBAPI hypontkb;
+     */
     protected KBAPI questionkb;
+    protected KBCache SQOnt;
 
     Map<String, Vocabulary> vocabularies;
     ScheduledExecutorService monitor;
@@ -97,14 +103,14 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     public DiskRepository() {
+        //Set domain for writing the KB
         setConfiguration();
+        this.setDomain(this.server);
 
+        // Initialize
         dataAdapters = new HashMap<String, DataAdapter>();
         methodAdapters = new HashMap<String, MethodAdapter>();
         optionsCache = new WeakHashMap<String, List<List<String>>>();
-        //Set domain for writing the KB
-        this.setDomain(this.server);
-        // Initialize
         this.initializeDataAdapters();
         this.initializeMethodAdapters();
         initializeKB();
@@ -130,12 +136,12 @@ public class DiskRepository extends WriteKBRepository {
      */
 
     public void initializeKB() {
-        super.initializeKB(); // This initializes this.ontkb 
+        super.initializeKB(); // This initializes the DISK ontology
         if (fac == null)
             return;
         
         try {
-            this.hypontkb   = fac.getKB(KBConstants.HYPURI(), OntSpec.PLAIN, false, true);
+            //this.hypontkb   = fac.getKB(KBConstants.HYPURI(), OntSpec.PLAIN, false, true);
             this.questionkb = fac.getKB(KBConstants.QUESTIONSURI(), OntSpec.PLAIN, false, true);
         } catch (Exception e) {
             e.printStackTrace();
@@ -143,12 +149,16 @@ public class DiskRepository extends WriteKBRepository {
             return;
         }
            
-        this.initializeVocabularies();
+        this.start_read();
+        SQOnt = new KBCache(this.questionkb);
+        this.end();
         loadQuestionTemplates();
+
+        this.initializeVocabularies();
     }
 
     public void reloadKBCaches () {
-        KBAPI[] kbs = {this.ontkb, this.hypontkb, this.questionkb};
+        KBAPI[] kbs = {this.ontkb, this.questionkb};//, this.hypontkb};
 
         try {
             this.start_write();
@@ -273,7 +283,7 @@ public class DiskRepository extends WriteKBRepository {
         }
     }
 
-    private MethodAdapter getMethodAdapter (String url) {
+    public MethodAdapter getMethodAdapter (String url) {
         if (this.methodAdapters.containsKey(url))
             return this.methodAdapters.get(url);
         return null;
@@ -284,8 +294,8 @@ public class DiskRepository extends WriteKBRepository {
         this.vocabularies = new HashMap<String, Vocabulary>();
         try {
             this.start_read();
-            this.vocabularies.put(KBConstants.HYPURI(),
-                    this.initializeVocabularyFromKB(this.hypontkb, KBConstants.HYPNS()));
+            /*this.vocabularies.put(KBConstants.HYPURI(),
+                    this.initializeVocabularyFromKB(this.hypontkb, KBConstants.HYPNS()));*/
             this.vocabularies.put(KBConstants.DISKURI(),
                     this.initializeVocabularyFromKB(this.ontkb, KBConstants.DISKNS()));
             this.vocabularies.put(KBConstants.QUESTIONSURI(),
@@ -574,27 +584,18 @@ public class DiskRepository extends WriteKBRepository {
         List<Question> questions = new ArrayList<Question>();
         try {
             KBAPI kb = fac.getKB(url, OntSpec.PLAIN, true, true);
-
             this.start_read();
-            KBObject questionClass = this.questionkb.getIndividual(KBConstants.QUESTIONSNS() + "Question");
-            KBObject hasTemplate = this.questionkb.getProperty(KBConstants.QUESTIONSNS() + "hasQuestionTemplate");
-            KBObject hasPattern  = this.questionkb.getProperty(KBConstants.QUESTIONSNS() + "hasQuestionPattern");
-            KBObject hasVariable = this.questionkb.getProperty(KBConstants.QUESTIONSNS() + "hasQuestionVariable");
-
-            KBObject hasName = this.questionkb.getProperty(KBConstants.QUESTIONSNS() + "hasVariableName");
-            KBObject hasConstraints = this.questionkb.getProperty(KBConstants.QUESTIONSNS() + "hasConstraints");
-            KBObject hasFixedOptions = this.questionkb.getProperty(KBConstants.QUESTIONSNS() + "hasFixedOptions");
             KBObject typeprop  = kb.getProperty(KBConstants.RDFNS() + "type");
             KBObject labelprop = kb.getProperty(KBConstants.RDFSNS() + "label");
 
             // Load question classes and properties
-            for (KBTriple t : kb.genericTripleQuery(null, typeprop, questionClass)) {
+            for (KBTriple t : kb.genericTripleQuery(null, typeprop, SQOnt.getClass(SQO.QUESTION))) {
                 //System.out.println(t.toString());
                 KBObject question = t.getSubject();
                 KBObject name = kb.getPropertyValue(question, labelprop);
-                KBObject template = kb.getPropertyValue(question, hasTemplate);
-                KBObject pattern = kb.getPropertyValue(question, hasPattern);
-                ArrayList<KBObject> variables = kb.getPropertyValues(question, hasVariable);
+                KBObject template = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_TEMPLATE));
+                KBObject pattern = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_PATTERN));
+                ArrayList<KBObject> variables = kb.getPropertyValues(question, SQOnt.getProperty(SQO.HAS_VARIABLE));
 
                 if (name != null && template != null && pattern != null) {
                     List<QuestionVariable> vars = null;
@@ -602,9 +603,9 @@ public class DiskRepository extends WriteKBRepository {
                     if (variables != null && variables.size() > 0) {
                         vars = new ArrayList<QuestionVariable>();
                         for (KBObject var : variables) {
-                            KBObject vname = kb.getPropertyValue(var, hasName);
-                            KBObject vconstraints = kb.getPropertyValue(var, hasConstraints);
-                            KBObject vfixedOptions = kb.getPropertyValue(var, hasFixedOptions);
+                            KBObject vname = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_VARIABLE_NAME));
+                            KBObject vconstraints = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_CONSTRAINT_QUERY));
+                            KBObject vfixedOptions = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_FIXED_OPTIONS));
                             if (vname != null) {
                                 QuestionVariable q = new QuestionVariable(var.getID(), vname.getValueAsString(), 
                                         vconstraints == null ? null : vconstraints.getValueAsString());
@@ -1193,7 +1194,7 @@ public class DiskRepository extends WriteKBRepository {
         String url = this.HYPURI(username);
         try {
             KBAPI kb = this.fac.getKB(url, OntSpec.PLAIN, true);
-            KBObject hypcls = this.cmap.get("Hypothesis");
+            KBObject hypcls = DISKOnt.getClass(DISK.HYPOTHESIS);
             
             this.start_read();
             KBObject typeprop = kb.getProperty(KBConstants.RDFNS() + "type");
