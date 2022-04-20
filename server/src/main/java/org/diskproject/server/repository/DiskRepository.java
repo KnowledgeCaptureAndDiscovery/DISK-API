@@ -5,7 +5,6 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashMap;
@@ -30,9 +29,7 @@ import org.diskproject.server.adapters.DataAdapter;
 import org.diskproject.server.adapters.DataResult;
 import org.diskproject.server.adapters.MethodAdapter;
 import org.diskproject.server.adapters.SparqlAdapter;
-//import org.diskproject.server.repository.GmailService.MailMonitor;
 import org.diskproject.server.util.Config;
-import org.diskproject.server.util.DataQuery;
 import org.diskproject.server.util.KBCache;
 import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.common.TreeItem;
@@ -1299,41 +1296,6 @@ public class DiskRepository extends WriteKBRepository {
         return null;
     }
 
-    public void addQueries(String username, List<String> ToBeQueried) {
-        try {
-
-            String[] temp;
-            for (int i = 0; i < ToBeQueried.size(); i++) {
-
-                temp = DataQuery.queryFor(ToBeQueried.get(i).substring(ToBeQueried.get(i).indexOf(" ") + 1))[1]
-                        .split("\n\",\"\n");
-                for (int j = 0; j < temp.length - 1; j += 2) {
-                    //FIXME
-                    WingsAdapter.get().addOrUpdateData(temp[j].substring(4),
-                            "/export/users/" + username + "/data/ontology.owl#File", temp[j + 1], true);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public String[] addQuery(String username, String query, String type, boolean upload) {
-        try {
-
-            String[] temp = DataQuery.queryFor(query.substring(query.indexOf(" ") + 1))[1].split("\n\",\"\n");
-            if (upload)
-                for (int j = 0; j < temp.length - 1; j += 2) {
-                    //FIXME
-                    WingsAdapter.get().addOrUpdateData(temp[j].substring(4), type, temp[j + 1], false);
-                }
-            return temp;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
     public void addAssertion(String username, Graph assertion) {
         String url = this.ASSERTIONSURI(username);
         try {
@@ -1401,53 +1363,6 @@ public class DiskRepository extends WriteKBRepository {
         } catch (Exception e) {
             e.printStackTrace();
             this.end();
-        }
-    }
-
-    private void requeryHypotheses(String username) {
-        // Cache already run/queries hypotheses (check tlois)
-        HashMap<String, Boolean> tloikeys = new HashMap<String, Boolean>();
-        List<String> bindkeys = new ArrayList<String>();
-        HashMap<String, TriggeredLOI> tloimap = new HashMap<String, TriggeredLOI>();
-        for (TriggeredLOI tloi : this.listTriggeredLOIs(username)) {
-            if (!tloi.getStatus().equals(TriggeredLOI.Status.FAILED)) {
-                TriggeredLOI fulltloi = this.getTriggeredLOI(username, tloi.getId());
-                String key = fulltloi.toString();
-                tloikeys.put(key, true);
-
-                if (tloi.getStatus().equals(TriggeredLOI.Status.SUCCESSFUL)
-                        && fulltloi.getResultingHypothesisIds().size() > 0) {
-                    String partkey = "";
-                    for (WorkflowBindings wb : fulltloi.getWorkflows())
-                        partkey += wb.toString();
-                    bindkeys.add(partkey);
-                    tloimap.put(partkey, fulltloi);
-                }
-            }
-        }
-        Collections.sort(bindkeys);
-        // Get all Hypotheses
-        for (TreeItem hypitem : this.listHypotheses(username)) {
-            // Run/Query only top-level hypotheses
-            if (hypitem.getParentId() == null) {
-                List<TriggeredLOI> tlois = this.queryHypothesis(username, hypitem.getId());
-                Collections.sort(tlois);
-                for (TriggeredLOI tloi : tlois) {
-                    List<WorkflowBindings> wfbindings = tloi.getWorkflows(); //this.addEnimgaFiles(username, domain, tloi, false, false);
-                    tloi.setWorkflows(wfbindings);
-                    String key = tloi.toString();
-                    if (tloikeys.containsKey(key))
-                        continue;
-                    for (String partkey : bindkeys) {
-                        if (key.contains(partkey)) {
-                            TriggeredLOI curtloi = tloimap.get(partkey);
-                            if (curtloi.getLoiId().equals(tloi.getLoiId()))
-                                tloi.setParentHypothesisId(tloimap.get(partkey).getResultingHypothesisIds().get(0));
-                        }
-                    }
-                    this.addTriggeredLOI(username, tloi);
-                }
-            }
         }
     }
 
@@ -1997,8 +1912,6 @@ public class DiskRepository extends WriteKBRepository {
     public class DataMonitor implements Runnable {
         boolean stop;
         ScheduledFuture<?> scheduledFuture;
-        String defaultUsername;
-        String defaultDomain;
 
         public DataMonitor() {
             stop = false;
@@ -2018,18 +1931,8 @@ public class DiskRepository extends WriteKBRepository {
                     stop();
                     return;
                 } else {
-                    defaultUsername = Config.get().getProperties().getString("username");
-                    defaultDomain = Config.get().getProperties().getString("domain");
-                    String url = ASSERTIONSURI(defaultUsername);
-                    KBAPI kb = fac.getKB(url, OntSpec.PLAIN, false);
-                    KBObject typeprop = kb.getProperty(/*KBConstants.NEURONS() +*/ "hasEnigmaQueryLiteral");
-                    List<KBTriple> equeries = kb.genericTripleQuery(null, typeprop, null);
-                    for (KBTriple kbt : equeries)
-                        if (DataQuery.wasUpdatedInLastDay(kbt.getObject().getValueAsString())) {
-                            requeryHypotheses(defaultUsername);
-                            break;
-                        }
-
+                    // Re-run all hypothesis  FIXME:
+                    //runAllHypotheses("admin");
                 }
             } catch (Exception e) {
                 scheduledFuture.cancel(false);

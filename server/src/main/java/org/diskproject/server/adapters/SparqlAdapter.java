@@ -125,7 +125,6 @@ public class SparqlAdapter extends DataAdapter {
 
     @Override
     public Map<String, String> getFileHashes (List<String> files) {
-        // TODO Auto-generated method stub
         String query = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
                 + "SELECT DISTINCT ?file ?sha WHERE {\n"
                 + "  ?page ?contentUrl ?file .\n"
@@ -163,7 +162,6 @@ public class SparqlAdapter extends DataAdapter {
             return false;
 
         // All variables used on both, the hypothesis query and data query, must be set.
-        // FIXME: what will happen with optional on data-query?
         for (String variable: inVars) {
             if (!values.containsKey(variable.substring(1))) {
                 return false;

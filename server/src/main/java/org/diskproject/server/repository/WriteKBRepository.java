@@ -374,7 +374,7 @@ public class WriteKBRepository extends KBRepository {
             this.start_read();
             KBObject hypitem = userKB.getIndividual(hypothesisId);
             if (hypitem != null) {
-                ArrayList<KBTriple> parentHypotheses = userKB.genericTripleQuery(null, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS), hypitem);
+                ArrayList<KBTriple> childHypotheses = userKB.genericTripleQuery(null, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS), hypitem);
                 ArrayList<KBObject> questionBindings = userKB.getPropertyValues(hypitem, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING));
                 this.end();
                 
@@ -387,8 +387,8 @@ public class WriteKBRepository extends KBRepository {
                 this.save(userKB);
                 this.end();
 
-                // Remove parent hypothesis //FIXME
-                for (KBTriple t : parentHypotheses) {
+                // Remove all child hypotheses
+                for (KBTriple t : childHypotheses) {
                     this.deleteHypothesis(username, t.getSubject().getName());
                 }
             } else {

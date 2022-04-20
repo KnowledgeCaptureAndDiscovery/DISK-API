@@ -66,8 +66,8 @@ public class KBRepository implements TransactionsAPI {
   //TransactionsAPI functions
   private void acquire () {
     if (is_in_transaction()) {
+      //If you get here, you are deadlocked... probably double open somewhere... 
       System.out.println("Waiting... " +  mutex.availablePermits());
-      //FIXME this is an error! check why you get here, double open probably.
     }
     try {
       mutex.acquire();
@@ -90,7 +90,7 @@ public class KBRepository implements TransactionsAPI {
       acquire();
       return transaction.start_read();
     }
-    return true; //true??? FIXME
+    return true; //true??
   }
 
   @Override
