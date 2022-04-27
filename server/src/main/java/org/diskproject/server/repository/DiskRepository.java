@@ -681,7 +681,8 @@ public class DiskRepository extends WriteKBRepository {
                         String label = solution.getValue(DataAdapter.VARLABEL);
 
                         if (uri != null && label != null) {
-                            List<List<String>> sameLabelOptions = labelToOption.containsKey(label) ? labelToOption.get(label) : new ArrayList<List<String>>();
+                            List<List<String>> sameLabelOptions = labelToOption.containsKey(label) ?
+                                    labelToOption.get(label) : new ArrayList<List<String>>();
                             List<String> thisOption = new ArrayList<String>();
                             thisOption.add(uri);
                             thisOption.add(label);
@@ -692,7 +693,7 @@ public class DiskRepository extends WriteKBRepository {
                     }
                 }
                         
-                //Add all options
+                //Add all options with unique labels
                 for (List<List<String>> sameLabelOptions: labelToOption.values()) {
                     if (sameLabelOptions.size() == 1) {
                         options.add(sameLabelOptions.get(0).subList(0, 2));
@@ -709,10 +710,17 @@ public class DiskRepository extends WriteKBRepository {
                         if (allTheSame) {
                             options.add(sameLabelOptions.get(0).subList(0, 2));
                         } else {
+                            Map<String, Integer> dsCount = new HashMap<String, Integer>();
+
                             for (List<String> candOption: sameLabelOptions) {
                                 List<String> newOption = new ArrayList<String>();
                                 newOption.add(candOption.get(0));
-                                newOption.add(candOption.get(1) + " (" + candOption.get(2) + ")");
+                                String dataSource = candOption.get(2);
+                                Integer count = dsCount.containsKey(dataSource) ? dsCount.get(dataSource) : 0;
+                                String label = candOption.get(1) + " (" + dataSource + (count > 0 ? "_"+count.toString() : "") + ")";
+                                dsCount.put(dataSource, (count+1));
+
+                                newOption.add(label);
                                 options.add(newOption);
                             }
                         }
