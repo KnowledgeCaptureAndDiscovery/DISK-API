@@ -10,7 +10,7 @@ metadata and outputs for posterior analysis.
 
 ## Installation
 
-You can install DISK using Docker or building from source.
+You can install DISK using Docker or [building from sourcfe](./building.md)
 We recommend to use `docker` to install DISK. 
 
 
@@ -22,9 +22,6 @@ Install DISK with docker
 docker-compose up -d
 ```
 
-### Building the project
-
-Please read the docs for the [building instructions](./building.md)
 
 ## Configuration
 
