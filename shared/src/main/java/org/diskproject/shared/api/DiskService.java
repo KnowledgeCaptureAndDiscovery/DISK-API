@@ -52,7 +52,9 @@ public interface DiskService extends DirectRestService {
    */
   @POST
   @Path("hypotheses")
-  public void addHypothesis(
+  @Produces("application/json")
+  @Consumes("application/json")
+  public Hypothesis addHypothesis(
       @JsonProperty("hypothesis") Hypothesis hypothesis);
   
   @GET
@@ -66,7 +68,9 @@ public interface DiskService extends DirectRestService {
   
   @PUT
   @Path("hypotheses/{id}")
-  public void updateHypothesis(
+  @Produces("application/json")
+  @Consumes("application/json")
+  public Hypothesis updateHypothesis(
       @PathParam("id") String id,
       @JsonProperty("hypothesis") Hypothesis hypothesis);
   
@@ -108,7 +112,9 @@ public interface DiskService extends DirectRestService {
 
   @POST
   @Path("lois")  
-  public void addLOI(
+  @Produces("application/json")
+  @Consumes("application/json")
+  public LineOfInquiry addLOI(
       @JsonProperty("loi") LineOfInquiry loi);
 
   @GET
@@ -121,8 +127,10 @@ public interface DiskService extends DirectRestService {
       @PathParam("id") String id);
 
   @PUT
+  @Produces("application/json")
+  @Consumes("application/json")
   @Path("lois/{id}")
-  public void updateLOI(
+  public LineOfInquiry updateLOI(
       @PathParam("id") String id,
       @JsonProperty("loi") LineOfInquiry loi);
 
@@ -135,8 +143,10 @@ public interface DiskService extends DirectRestService {
    * Triggered LOIs
    */
   @POST
+  @Produces("application/json")
+  @Consumes("application/json")
   @Path("tlois")
-  public void addTriggeredLOI(
+  public TriggeredLOI addTriggeredLOI(
       @JsonProperty("tloi") TriggeredLOI tloi);
   
   @GET

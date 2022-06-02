@@ -84,6 +84,8 @@ public class DiskRepository extends WriteKBRepository {
     private Map<String, List<List<String>>> optionsCache;
     private Map<String, DataAdapter> dataAdapters;
     private Map<String, MethodAdapter> methodAdapters;
+    private Map<String, KBAPI> externalOntologies;
+    private Map<String, String> externalOntologiesNamespaces;
 
     public static void main(String[] args) {
         get();
@@ -146,12 +148,57 @@ public class DiskRepository extends WriteKBRepository {
             return;
         }
            
+        // Load questions
         this.start_read();
         SQOnt = new KBCache(this.questionkb);
         this.end();
         loadQuestionTemplates();
 
+        //--
+        this.loadKBFromConfig();
         this.initializeVocabularies();
+    }
+
+    private void loadKBFromConfig () {
+        this.externalOntologies = new HashMap<String, KBAPI>();
+        this.externalOntologiesNamespaces = new HashMap<String, String>();
+
+        PropertyListConfiguration cfg = this.getConfig();
+        Map<String, Map<String,String>> ontologies = new HashMap<String, Map<String,String>>();
+        Iterator<String> a = cfg.getKeys("vocabularies");
+        while (a.hasNext()) {
+            String key = a.next();
+            String sp[] = key.split("\\.");
+            
+            if (sp != null && sp.length == 3) { // as the list is normalized length is how deep the property is
+                Map<String, String> map;
+                if (ontologies.containsKey(sp[1]))
+                    map = ontologies.get(sp[1]);
+                else {
+                    map = new HashMap<String, String>();
+                    ontologies.put(sp[1], map);
+                }
+                map.put(sp[2], cfg.getProperty(key).toString());
+            }
+        }
+
+        for (String name: ontologies.keySet()) {
+            Map<String,String> cur = ontologies.get(name);
+            String curUrl= cur.get("url"),
+                   curPrefix = cur.get("prefix"),
+                   curNamespace = cur.get("namespace");
+
+            KBAPI curKB = null;
+            try {
+                curKB = fac.getKB(curUrl, OntSpec.PLAIN, false, true);
+            } catch (Exception e) {
+                System.out.println("Could not load " + curUrl);
+            }
+            if (curKB != null) {
+                this.externalOntologies.put(curPrefix, curKB);
+                this.externalOntologiesNamespaces.put(curPrefix, curNamespace);
+            }
+        }
     }
 
     public void reloadKBCaches () {
@@ -297,6 +344,12 @@ public class DiskRepository extends WriteKBRepository {
                     this.initializeVocabularyFromKB(this.ontkb, KBConstants.DISKNS()));
             this.vocabularies.put(KBConstants.QUESTIONSURI(),
                     this.initializeVocabularyFromKB(this.questionkb, KBConstants.QUESTIONSNS()));
+
+            // Load vocabularies from config file
+            for (String prefix: this.externalOntologies.keySet()) {
+                KBAPI cur = this.externalOntologies.get(prefix);
+                this.vocabularies.put(prefix, this.initializeVocabularyFromKB(cur, this.externalOntologiesNamespaces.get(prefix)));
+            }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -440,9 +493,17 @@ public class DiskRepository extends WriteKBRepository {
     /*
      * Hypotheses
      */
-
-    public boolean addHypothesis (String username, Hypothesis hypothesis) {
-        return writeHypothesis(username, hypothesis);
+    public Hypothesis addHypothesis (String username, Hypothesis hypothesis) {
+        String name = hypothesis.getName();
+        String desc = hypothesis.getDescription();
+        String question = hypothesis.getQuestion();
+        if (name != null && desc != null && question != null && hypothesis.getQuestionBindings() != null &&
+                !name.equals("") && !desc.equals("") && !question.equals("") &&
+                writeHypothesis(username, hypothesis)
+                )
+            return hypothesis;
+        else
+            return null;
     }
 
     public boolean removeHypothesis (String username, String id) {
@@ -454,8 +515,8 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     public Hypothesis updateHypothesis(String username, String id, Hypothesis hypothesis) {
-        if (hypothesis.getId() != null && this.deleteHypothesis(username, id) && this.addHypothesis(username, hypothesis))
-            return hypothesis;
+        if (hypothesis.getId() != null && this.deleteHypothesis(username, id))
+            return this.addHypothesis(username, hypothesis);
         return null;
     }
 
@@ -476,8 +537,17 @@ public class DiskRepository extends WriteKBRepository {
      * Lines of Inquiry
      */
 
-    public boolean addLOI(String username, LineOfInquiry loi) {
-        return writeLOI(username, loi);
+    public LineOfInquiry addLOI(String username, LineOfInquiry loi) {
+        String name = loi.getName();
+        String desc = loi.getDescription();
+        String question = loi.getQuestion();
+        if (name != null && desc != null && question != null && 
+                !name.equals("") && !desc.equals("") && !question.equals("") &&
+                writeLOI(username, loi)
+                )
+            return loi;
+        else
+            return null;
     }
 
     public boolean removeLOI(String username, String id) {
@@ -489,8 +559,8 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     public LineOfInquiry updateLOI(String username, String id, LineOfInquiry loi) {
-        if (loi.getId() != null && this.deleteLOI(username, id) && this.addLOI(username, loi))
-            return loi;
+        if (loi.getId() != null && this.deleteLOI(username, id))
+            return this.addLOI(username, loi);
         return null;
     }
 
@@ -510,12 +580,13 @@ public class DiskRepository extends WriteKBRepository {
      * Triggered Lines of Inquiries (TLOIs)
      */
 
-    public void addTriggeredLOI(String username, TriggeredLOI tloi) {
+    public TriggeredLOI addTriggeredLOI(String username, TriggeredLOI tloi) {
         tloi.setStatus(Status.QUEUED);
         writeTLOI(username, tloi);
 
         TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, false);
         executor.execute(wflowThread);
+        return tloi;
     }
 
     public boolean removeTriggeredLOI(String username, String id) {
@@ -832,16 +903,32 @@ public class DiskRepository extends WriteKBRepository {
         try {
             this.start_read();
             KBAPI hypkb = this.fac.getKB(hypuri, OntSpec.PLAIN, true);
+            //####
+            //System.out.println(hypuri);
+            //for (KBTriple triple : hypkb.getAllTriples()) {
+            //    System.out.print("  " + triple.getSubject().getID());
+            //    System.out.print("  " + triple.getPredicate().getID());
+            //    System.out.print("  " + triple.getObject().getID());
+            //}
+
             for (LineOfInquiry loi : lois) {
                 String hq = loi.getHypothesisQuery();
                 if (hq != null) {
                     String query = this.getAllPrefixes() + "SELECT DISTINCT * WHERE { \n" + hq.replaceAll("\n", ".\n") + " }";
-                    ArrayList<ArrayList<SparqlQuerySolution>> allSolutions = hypkb.sparqlQuery(query);
-                    for (List<SparqlQuerySolution> row: allSolutions) {
+                    ArrayList<ArrayList<SparqlQuerySolution>> allSolutions = null;
+                    try {
+                        allSolutions = hypkb.sparqlQuery(query);
+                        if (allSolutions.size() == 0)
+                            System.out.println("LOI match but with no bindings: " + loi.getId());
+                    } catch (Exception e) {
+                        System.out.println("Error querying: " + query);
+                    }
+                    if (allSolutions != null) for (List<SparqlQuerySolution> row: allSolutions) {
                         // One match per cell, store variables on cur.
                         Map<String, String> cur = new HashMap<String, String>();
                         for (SparqlQuerySolution cell: row) {
                             String var = cell.getVariable(), val = null;
+                            System.out.println("3> "+ var);
                             KBObject obj = cell.getObject();
                             if (obj != null) {
                                 if (obj.isLiteral()) {
@@ -903,12 +990,15 @@ public class DiskRepository extends WriteKBRepository {
         System.out.println("Quering hypothesis: " + id);
         Map<LineOfInquiry, List<Map<String, String>>> matchingBindings = this.getLOIByHypothesisId(username, id);
         for (LineOfInquiry loi: matchingBindings.keySet()) {
+            System.out.println("Matching LOI: " + loi.getId());
             //One hypothesis can match the same LOI in more than one way, the following for-loop handles that
             for (Map<String, String> values: matchingBindings.get(loi)) {
                 String dq = getQueryBindings(loi.getDataQuery(), varPattern, values);
                 String query = this.getAllPrefixes() + "SELECT DISTINCT ";
                 for (String qvar: loi.getAllWorkflowVariables()) query += qvar + " ";
                 query += "{\n" + dq + "}";
+
+                System.out.print("q> " + query);
                 
                 //Prevents executing the same query several times.
                 if (queries.contains(query))
@@ -1404,7 +1494,7 @@ public class DiskRepository extends WriteKBRepository {
             LineOfInquiry loi = this.getLOI(username, loiId);
             
             if (loi == null || hyp == null) {
-                System.out.print("ERROR: could not get hypotheses or LOI");
+                System.out.println("ERROR: could not get hypotheses or LOI");
                 return narratives;
             }
             

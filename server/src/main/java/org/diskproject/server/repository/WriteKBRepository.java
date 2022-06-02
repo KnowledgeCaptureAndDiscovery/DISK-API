@@ -204,8 +204,10 @@ public class WriteKBRepository extends KBRepository {
     
     //--- Hypothesis
     protected boolean writeHypothesis (String username, Hypothesis hypothesis) {
-        if (hypothesis.getId() == null)
-            return false;
+        Boolean newHypothesis = hypothesis.getId() == null;
+        if (newHypothesis) {
+            hypothesis.setId(GUID.randomId("Hypothesis"));
+        }
         
         String userDomain = this.HYPURI(username);
         String hypothesisId = userDomain + "/" + hypothesis.getId();
@@ -231,7 +233,7 @@ public class WriteKBRepository extends KBRepository {
         if (hypothesis.getNotes() != null)
             userKB.setPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES), userKB.createLiteral(hypothesis.getNotes()));
         
-        // Adding paring hypotheis ID 
+        // Adding parent hypothesis ID 
         if (hypothesis.getParentId() != null) {
             String fullparentid = userDomain + "/" + hypothesis.getParentId();
             userKB.setPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS), userKB.getResource(fullparentid));
@@ -334,8 +336,8 @@ public class WriteKBRepository extends KBRepository {
             hypothesis.setQuestion(questionobj.getValueAsString());
 
         ArrayList<KBObject> questionBindings = userKB.getPropertyValues(hypitem, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING));
+        List<VariableBinding> variableBindings = new ArrayList<VariableBinding>();
         if (questionBindings != null) {
-            List<VariableBinding> variableBindings = new ArrayList<VariableBinding>();
             for (KBObject binding: questionBindings) {
                 KBObject kbvar = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_VARIABLE));
                 KBObject kbval = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
@@ -345,8 +347,8 @@ public class WriteKBRepository extends KBRepository {
                     variableBindings.add( new VariableBinding(var, val));
                 }
             }
-            if (variableBindings.size() > 0) hypothesis.setQuestionBindings(variableBindings);
         }
+        hypothesis.setQuestionBindings(variableBindings);
 
         //FIXME: dont remember what this does.
         String provid = hypothesisId + "/provenance";
@@ -449,8 +451,10 @@ public class WriteKBRepository extends KBRepository {
     
     // -- Line of inquiry
     protected boolean writeLOI (String username, LineOfInquiry loi) {
-        if (loi.getId() == null)
-            return false;
+        Boolean newLOI = loi.getId() == null;
+        if (newLOI) {
+            loi.setId(GUID.randomId("LOI"));
+        }
 
         String userDomain = this.LOIURI(username);
         String loiId = userDomain + "/" + loi.getId();

@@ -96,9 +96,9 @@ public class DiskResource implements DiskService {
   @POST
   @Path("hypotheses")
   @Override
-  public void addHypothesis(
+  public Hypothesis addHypothesis(
       @JsonProperty("hypothesis") Hypothesis hypothesis) {
-    this.repo.addHypothesis(USERNAME, hypothesis);
+    return this.repo.addHypothesis(USERNAME, hypothesis);
   }
       
   @GET
@@ -121,10 +121,10 @@ public class DiskResource implements DiskService {
   @PUT
   @Path("hypotheses/{id}")
   @Override
-  public void updateHypothesis(
+  public Hypothesis updateHypothesis(
       @PathParam("id") String id,
       @JsonProperty("hypothesis") Hypothesis hypothesis) {
-    this.repo.updateHypothesis(USERNAME, id, hypothesis);
+    return this.repo.updateHypothesis(USERNAME, id, hypothesis);
   }
   
   @DELETE
@@ -183,9 +183,9 @@ public class DiskResource implements DiskService {
   @POST
   @Path("lois")
   @Override
-  public void addLOI(
+  public LineOfInquiry addLOI(
       @JsonProperty("loi") LineOfInquiry loi) {
-    this.repo.addLOI(USERNAME, loi);
+    return this.repo.addLOI(USERNAME, loi);
   }
 
   @GET
@@ -206,10 +206,10 @@ public class DiskResource implements DiskService {
   @PUT
   @Path("lois/{id}")
   @Override
-  public void updateLOI(
+  public LineOfInquiry updateLOI(
       @PathParam("id") String id,
       @JsonProperty("loi") LineOfInquiry loi) {
-    this.repo.updateLOI(USERNAME, id, loi);
+    return this.repo.updateLOI(USERNAME, id, loi);
   }
   
   @DELETE
@@ -226,9 +226,9 @@ public class DiskResource implements DiskService {
   @POST
   @Path("tlois")
   @Override
-  public void addTriggeredLOI(
+  public TriggeredLOI addTriggeredLOI(
       @JsonProperty("tloi") TriggeredLOI tloi) {
-    this.repo.addTriggeredLOI(USERNAME, tloi);
+    return this.repo.addTriggeredLOI(USERNAME, tloi);
   }
   
   @GET
