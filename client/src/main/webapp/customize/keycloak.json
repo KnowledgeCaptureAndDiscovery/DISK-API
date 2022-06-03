@@ -1,8 +1,0 @@
-{
-  "realm": "production",
-  "auth-server-url": "https://auth.mint.isi.edu/auth",
-  "ssl-required": "external",
-  "resource": "enigma-disk",
-  "public-client": true,
-  "confidential-port": 0
-}

@@ -2,22 +2,16 @@ version: '3.9'
 
 services:
   frontend:
-    image: ikcap/disk_frontend
-    build:
-      context: .
-      dockerfile: docker/frontend/Dockerfile
+    image: ikcap/disk_frontend_react
     ports:
-      - '8080:80' 
-    volumes:
-      - ./config.js:/usr/share/nginx/html/disk-portal/customize/config.js
-      - ./docker/frontend/default.conf:/etc/nginx/conf.d/default.conf
+      - 8000:80
   backend:
     image: ikcap/disk_backend
     build:
       context: .
       dockerfile: docker/backend/Dockerfile
     ports:
-      - '8080'
+      - 8080:8080
     volumes:
       - ./tomcat-users.xml:/usr/local/tomcat/conf/tomcat-users.xml
       - ./context.xml:/usr/local/tomcat/webapps/manager/META-INF/context.xml
