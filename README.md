@@ -53,7 +53,7 @@ core_wings_1      catalina.sh run                  Up      0.0.0.0:7080->8080/tc
 ```
 
 If the state is `Up`, the service are running.
-You z`can access the web interface at `http://localhost:8000`.
+You can access the web interface at `http://localhost:8000`.
 
 ## Troubleshooting
 
