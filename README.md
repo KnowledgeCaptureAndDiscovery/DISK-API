@@ -33,12 +33,6 @@ Open http://localhost:8080/disk-server/vocabulary to check that the local reposi
 
 Open http://localhost:8000/index.html to access the Disk UI that connects with the local repository
 
-## Using DISK
-
-We have prepared some examples to show how to use DISK.
-
-- [Example 1](./docs/example1.md)
-
 
 ## Documentation
 
