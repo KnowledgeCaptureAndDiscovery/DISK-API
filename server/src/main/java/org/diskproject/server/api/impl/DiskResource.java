@@ -13,8 +13,8 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 
@@ -33,6 +33,15 @@ import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.Gson;
+
+class ErrorMessage {
+  //constructor
+  public ErrorMessage(String message) {
+    this.message = message;
+  }
+  public String message;
+}
 
 @Path("")
 @Produces("application/json")
@@ -261,7 +270,28 @@ public class DiskResource implements DiskService {
   @Override
   @Path("workflows")
   public List<Workflow> listWorkflows() {
-    return WingsAdapter.get().getWorkflowList();
+    try {
+      return WingsAdapter.get().getWorkflowList();
+    } catch (Exception e) {
+      try {
+        //Create Json error response
+        Gson gson = new Gson();
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = gson.toJson(error);
+        
+        //Prepare the response
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+        
+        //Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
+    return null;
   }
 
   @GET
