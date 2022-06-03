@@ -86,16 +86,6 @@ public class WriteKBRepository extends KBRepository {
         }
     }
 
-    private KBTriple getKBTriple(Triple triple, KBAPI kb) {
-        KBObject subj = kb.getResource(triple.getSubject());
-        KBObject pred = kb.getResource(triple.getPredicate());
-        KBObject obj = getKBValue(triple.getObject(), kb);
-
-        if (subj != null && pred != null && obj != null)
-            return this.fac.getTriple(subj, pred, obj);
-        return null;
-    }
-
     private void setKBStatement(Triple triple, KBAPI kb, KBObject st) {
         KBObject subj = kb.getResource(triple.getSubject());
         KBObject pred = kb.getResource(triple.getPredicate());
@@ -204,11 +194,6 @@ public class WriteKBRepository extends KBRepository {
     
     //--- Hypothesis
     protected boolean writeHypothesis (String username, Hypothesis hypothesis) {
-        Boolean newHypothesis = hypothesis.getId() == null;
-        if (newHypothesis) {
-            hypothesis.setId(GUID.randomId("Hypothesis"));
-        }
-        
         String userDomain = this.HYPURI(username);
         String hypothesisId = userDomain + "/" + hypothesis.getId();
 
@@ -259,16 +244,20 @@ public class WriteKBRepository extends KBRepository {
         this.end();
         
         // Store hypothesis graph
-        KBAPI hypkb = getOrCreateKB(hypothesisId);
-        if (hypkb == null) return false;
+        KBAPI hypKb = getOrCreateKB(hypothesisId);
+        if (hypKb == null) return false;
 
         this.start_write();
         for (Triple triple : hypothesis.getGraph().getTriples()) {
-                KBTriple t = this.getKBTriple(triple, hypkb);
-                if (t != null)
-                    hypkb.addTriple(t);
+            KBObject subj = hypKb.getResource(triple.getSubject());
+            KBObject pred = hypKb.getResource(triple.getPredicate());
+            KBObject obj = getKBValue(triple.getObject(), hypKb);
+
+            if (subj != null && pred != null && obj != null) {
+                hypKb.addTriple( this.fac.getTriple(subj, pred, obj));
+            }
         }
-        this.save(hypkb);
+        this.save(hypKb);
         this.end();
 
         //FIXME: remove this way of getting the p-value

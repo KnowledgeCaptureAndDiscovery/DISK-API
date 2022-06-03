@@ -44,6 +44,7 @@ import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.loi.TriggeredLOI.Status;
 import org.diskproject.shared.classes.question.Question;
 import org.diskproject.shared.classes.question.QuestionVariable;
+import org.diskproject.shared.classes.util.GUID;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.vocabulary.Individual;
 import org.diskproject.shared.classes.vocabulary.Property;
@@ -490,20 +491,51 @@ public class DiskRepository extends WriteKBRepository {
         return this.vocabularies;
     }
 
+    private Graph resolvePrefixesForGraph (Graph graph, String localDomain) {
+        List<Triple> triples = new ArrayList<Triple>();
+        for (Triple triple: graph.getTriples()) {
+            String subj = resolvePrefixes(triple.getSubject(), localDomain);
+            String pred = resolvePrefixes(triple.getPredicate(), localDomain);
+            triples.add(new Triple(subj, pred, triple.getObject(), triple.getDetails()));
+        }
+        Graph newGraph = new Graph();
+        newGraph.setTriples(triples);
+        return newGraph;
+    }
+
+    private String resolvePrefixes (String value, String localDomain) {
+        if (localDomain != null && !localDomain.equals("") && value.charAt(0) == ':') { // replace ":" for local domain
+            value = localDomain + value.substring(1);
+        } else {
+            for (String prefix: this.externalOntologiesNamespaces.keySet()) {
+                if (value.startsWith(prefix + ":")) {
+                    String namespace = this.externalOntologiesNamespaces.get(prefix);
+                    value = namespace + value.substring(prefix.length() + 1);
+                }
+            }
+        }
+        return value;
+    }
+
     /*
      * Hypotheses
      */
     public Hypothesis addHypothesis (String username, Hypothesis hypothesis) {
+        // Check required inputs and set ID if necessary
         String name = hypothesis.getName();
         String desc = hypothesis.getDescription();
         String question = hypothesis.getQuestion();
-        if (name != null && desc != null && question != null && hypothesis.getQuestionBindings() != null &&
-                !name.equals("") && !desc.equals("") && !question.equals("") &&
-                writeHypothesis(username, hypothesis)
-                )
-            return hypothesis;
-        else
-            return null;
+        if (name != null && desc != null && question != null && !name.equals("") && !desc.equals("") && !question.equals("")) {
+            String id = hypothesis.getId();
+            if (id == null || id.equals("")) // Create new Hypothesis ID
+                hypothesis.setId(GUID.randomId("Hypothesis"));
+
+            String hypothesisDomain = this.HYPURI(username) + "/" + hypothesis.getId() + "#";
+            hypothesis.setGraph(resolvePrefixesForGraph(hypothesis.getGraph(), hypothesisDomain));
+            if (writeHypothesis(username, hypothesis))
+                    return hypothesis;
+        }
+        return null;
     }
 
     public boolean removeHypothesis (String username, String id) {
@@ -515,7 +547,11 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     public Hypothesis updateHypothesis(String username, String id, Hypothesis hypothesis) {
-        if (hypothesis.getId() != null && this.deleteHypothesis(username, id))
+        String name = hypothesis.getName();
+        String desc = hypothesis.getDescription();
+        String question = hypothesis.getQuestion();
+        if (name != null && desc != null && question != null && !name.equals("") && !desc.equals("") && !question.equals("") && 
+                hypothesis.getId().equals(id) && this.deleteHypothesis(username, id))
             return this.addHypothesis(username, hypothesis);
         return null;
     }
@@ -928,7 +964,6 @@ public class DiskRepository extends WriteKBRepository {
                         Map<String, String> cur = new HashMap<String, String>();
                         for (SparqlQuerySolution cell: row) {
                             String var = cell.getVariable(), val = null;
-                            System.out.println("3> "+ var);
                             KBObject obj = cell.getObject();
                             if (obj != null) {
                                 if (obj.isLiteral()) {
@@ -990,7 +1025,6 @@ public class DiskRepository extends WriteKBRepository {
         System.out.println("Quering hypothesis: " + id);
         Map<LineOfInquiry, List<Map<String, String>>> matchingBindings = this.getLOIByHypothesisId(username, id);
         for (LineOfInquiry loi: matchingBindings.keySet()) {
-            System.out.println("Matching LOI: " + loi.getId());
             //One hypothesis can match the same LOI in more than one way, the following for-loop handles that
             for (Map<String, String> values: matchingBindings.get(loi)) {
                 String dq = getQueryBindings(loi.getDataQuery(), varPattern, values);
@@ -998,7 +1032,6 @@ public class DiskRepository extends WriteKBRepository {
                 for (String qvar: loi.getAllWorkflowVariables()) query += qvar + " ";
                 query += "{\n" + dq + "}";
 
-                System.out.print("q> " + query);
                 
                 //Prevents executing the same query several times.
                 if (queries.contains(query))
@@ -1056,7 +1089,6 @@ public class DiskRepository extends WriteKBRepository {
                     tloi.setRelevantVariables(loi.getRelevantVariables());
                     tloi.setExplanation(loi.getExplanation());
                     tlois.add(tloi);
-                    
                 }
             }
         }
