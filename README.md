@@ -10,7 +10,7 @@ metadata and outputs for posterior analysis.
 
 ## Installation
 
-You can install DISK using Docker or [building from sourcfe](./building.md)
+You can install DISK using Docker or [building from source](./building.md)
 We recommend to use `docker` to install DISK. 
 
 
@@ -23,11 +23,6 @@ docker-compose up -d
 ```
 
 
-## Configuration
-
-1. Customize the client by changing the [config.js file](./config.js)
-2. Open http://localhost:8080/disk-client/index.html to access the Disk UI that connects with the local repository
-
 ## Usage
 
 ### Check the server
@@ -36,7 +31,7 @@ Open http://localhost:8080/disk-server/vocabulary to check that the local reposi
 
 ### Check the client
 
-Open http://localhost:8080/disk-client/index.html to access the Disk UI that connects with the local repository
+Open http://localhost:8000/index.html to access the Disk UI that connects with the local repository
 
 ## Using DISK
 
