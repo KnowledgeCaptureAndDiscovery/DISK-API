@@ -523,8 +523,13 @@ public class WingsAdapter extends MethodAdapter {
 			String getData = postWithSpecifiedMediaType("users/"+getUsername()+"/"+domain+"/plan/getData",
 					toPost, "application/json", "application/json");
 
+			System.out.println("1> " + toPost);
+			System.out.println("2> " + toPost);
+
 			vbindings = addDataBindings(inputVariables, vbindings, getData, false);
+			System.out.println("3> " + vbindings);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			System.out.println("2> " + toPost);
 			String getParams = postWithSpecifiedMediaType("users/"+getUsername()+"/"+domain+"/plan/getParameters",
 			        toPost, "application/json", "application/json");
 
