@@ -98,6 +98,11 @@ public class DiskResource implements DiskService {
   @Override
   public Hypothesis addHypothesis(
       @JsonProperty("hypothesis") Hypothesis hypothesis) {
+
+    String username = (String) request.getAttribute("username");
+    if (username != null) {
+      hypothesis.setAuthor(username);
+    }
     return this.repo.addHypothesis(USERNAME, hypothesis);
   }
       
@@ -105,8 +110,6 @@ public class DiskResource implements DiskService {
   @Path("hypotheses")
   @Override
   public List<TreeItem> listHypotheses() {
-    String username = (String) request.getAttribute("username");
-    System.out.println( "user: " + username);
     return this.repo.listHypotheses(USERNAME);
   }
   
@@ -124,6 +127,10 @@ public class DiskResource implements DiskService {
   public Hypothesis updateHypothesis(
       @PathParam("id") String id,
       @JsonProperty("hypothesis") Hypothesis hypothesis) {
+    String username = (String) request.getAttribute("username");
+    if (username != null) {
+      hypothesis.setAuthor(username);
+    }
     return this.repo.updateHypothesis(USERNAME, id, hypothesis);
   }
   
@@ -185,6 +192,11 @@ public class DiskResource implements DiskService {
   @Override
   public LineOfInquiry addLOI(
       @JsonProperty("loi") LineOfInquiry loi) {
+
+    String username = (String) request.getAttribute("username");
+    if (username != null) {
+      loi.setAuthor(username);
+    }
     return this.repo.addLOI(USERNAME, loi);
   }
 
@@ -209,6 +221,10 @@ public class DiskResource implements DiskService {
   public LineOfInquiry updateLOI(
       @PathParam("id") String id,
       @JsonProperty("loi") LineOfInquiry loi) {
+    String username = (String) request.getAttribute("username");
+    if (username != null) {
+      loi.setAuthor(username);
+    }
     return this.repo.updateLOI(USERNAME, id, loi);
   }
   

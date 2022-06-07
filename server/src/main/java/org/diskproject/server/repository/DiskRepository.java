@@ -66,7 +66,7 @@ public class DiskRepository extends WriteKBRepository {
     static DiskRepository singleton;
     private static boolean creatingKB = false;
 
-    private static SimpleDateFormat dateformatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX");
+    private static SimpleDateFormat dateformatter = new SimpleDateFormat("HH:mm:ss yyyy-MM-dd");
     Pattern varPattern = Pattern.compile("\\?(.+?)\\b");
     Pattern varCollPattern = Pattern.compile("\\[\\s*\\?(.+?)\\s*\\]");
 
@@ -525,6 +525,14 @@ public class DiskRepository extends WriteKBRepository {
         String name = hypothesis.getName();
         String desc = hypothesis.getDescription();
         String question = hypothesis.getQuestion();
+        String dateCreated = hypothesis.getDateCreated();
+        if (dateCreated == null || dateCreated.equals("")) {
+            //SET DATE
+            hypothesis.setDateCreated(dateformatter.format(new Date()));
+        } else {
+            //Update date
+            hypothesis.setDateModified(dateformatter.format(new Date()));
+        }
         if (name != null && desc != null && question != null && !name.equals("") && !desc.equals("") && !question.equals("")) {
             String id = hypothesis.getId();
             if (id == null || id.equals("")) // Create new Hypothesis ID
@@ -577,6 +585,14 @@ public class DiskRepository extends WriteKBRepository {
         String name = loi.getName();
         String desc = loi.getDescription();
         String question = loi.getQuestion();
+        String dateCreated = loi.getDateCreated();
+        if (dateCreated == null || dateCreated.equals("")) {
+            //SET DATE
+            loi.setDateCreated(dateformatter.format(new Date()));
+        } else {
+            //Update date
+            loi.setDateModified(dateformatter.format(new Date()));
+        }
         if (name != null && desc != null && question != null && 
                 !name.equals("") && !desc.equals("") && !question.equals("") &&
                 writeLOI(username, loi)
@@ -1137,6 +1153,7 @@ public class DiskRepository extends WriteKBRepository {
                     tloi.setMetaWorkflows(
                         this.getTLOIBindings(username, loi.getMetaWorkflows(), dataVarBindings, endpoint));
                     tloi.setDataQuery(dq);
+                    tloi.setDateCreated(dateformatter.format(new Date()));
                     tloi.setRelevantVariables(loi.getRelevantVariables());
                     tloi.setExplanation(loi.getExplanation());
                     tlois.add(tloi);
@@ -1554,7 +1571,6 @@ public class DiskRepository extends WriteKBRepository {
     
     public Map<String, String> getNarratives (String username, String tloid) {
         Map<String,String> narratives = new HashMap<String, String>();
-        //if (true) return narratives;
         TriggeredLOI tloi = this.getTriggeredLOI(username, tloid);
         if (tloi != null) {
             String hypId = tloi.getParentHypothesisId();
@@ -1594,7 +1610,6 @@ public class DiskRepository extends WriteKBRepository {
                 len = ds.getBindingAsArray().length > len ? ds.getBindingAsArray().length : len;
             }
             if (allCollections) {
-                //dataset += "<table>";
                 dataset += "<table><thead><tr><td><b>#</b></td>";
                 for (VariableBinding ds: wf.getBindings()) {
                     dataset += "<td><b>" + ds.getVariable() + "</b></td>";
@@ -1636,6 +1651,11 @@ public class DiskRepository extends WriteKBRepository {
             
             String pval = df.format(confidence);           
             //Execution narratives
+            //String executionTemplate = "The Hypothesis with title: <b>${HYP.NAME}</b> was runned <span class=\"${TLOI.STATUS}\">${TLOI.STATUS}</span>"
+            //                 + "with the Line of Inquiry: <b>${LOI.NAME}"</b>."
+            //                 + "The LOI triggered the <a target=\"_blank\" href="{WF.getWorkflowLink()}">workflow on WINGS</a>"
+            //                 + " where it was tested with the following datasets:<div class=\"data-list\"><ol> ${[WF.getInputFiles]}"
+            //                 + "</ol></div>The resulting p-value is $(tloi.pval).";
             String execution = "The Hypothesis with title: <b>" + hyp.getName()
                              + "</b> was runned <span class=\"" + tloi.getStatus() + "\">" 
                              + tloi.getStatus() + "</span>"
@@ -1751,8 +1771,7 @@ public class DiskRepository extends WriteKBRepository {
                 //Set basic metadata
                 tloi.setAuthor("System");
                 Date date = new Date(); 
-                SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss yyyy-MM-dd");
-                tloi.setDateCreated(formatter.format(date));
+                tloi.setDateCreated(dateformatter.format(date));
                 addTriggeredLOI(username, tloi);
                 //match = tloi;
                 break;
