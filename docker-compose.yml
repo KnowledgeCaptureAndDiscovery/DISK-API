@@ -5,6 +5,7 @@ services:
     image: ikcap/disk_frontend_react
     ports:
       - 8000:80
+    restart: failure:5
   backend:
     image: ikcap/disk_backend
     build:
@@ -12,6 +13,7 @@ services:
       dockerfile: docker/backend/Dockerfile
     ports:
       - 8080:8080
+    restart: failure:5
     volumes:
       - ./tomcat-users.xml:/usr/local/tomcat/conf/tomcat-users.xml
       - ./context.xml:/usr/local/tomcat/webapps/manager/META-INF/context.xml
@@ -26,8 +28,9 @@ services:
       - fuseki_databases:/fuseki-base/databases/
     env_file:
       - .env
+    restart: failure:5
   wings:
-    image: "ikcap/wings:4.2.6"
+    image: "ikcap/wings:5.2.0"
     environment:
       WINGS_MODE: dind
     volumes:
@@ -35,6 +38,7 @@ services:
       - wings:/opt/wings
     ports:
       - 7080:8080
+    restart: failure:5
 volumes:
   mysql:
   fuseki_databases:
