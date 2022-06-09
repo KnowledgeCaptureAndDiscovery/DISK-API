@@ -7,10 +7,7 @@ services:
       - 8000:80
     restart: failure:5
   backend:
-    image: ikcap/disk_backend
-    build:
-      context: .
-      dockerfile: docker/backend/Dockerfile
+    image: ikcap/disk_backend:3.0.0
     ports:
       - 8080:8080
     restart: failure:5
