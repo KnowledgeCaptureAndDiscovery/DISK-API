@@ -1,3 +1,4 @@
+server-local.properties
 !.gitkeep
 *.egg
 *.egg-info
