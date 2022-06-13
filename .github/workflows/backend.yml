@@ -10,9 +10,7 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 8
@@ -65,7 +63,7 @@ jobs:
         docker push $IMAGE_NAME:$VERSION
 
   update:
-    needs: push
+    needs: image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
