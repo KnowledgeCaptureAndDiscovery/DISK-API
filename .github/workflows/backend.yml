@@ -1,4 +1,5 @@
 # This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
 
 name: Backend Java CI with Maven
@@ -62,3 +63,18 @@ jobs:
         docker push $IMAGE_NAME:$GITHUB_SHA
         docker tag $IMAGE_NAME $IMAGE_NAME:$VERSION
         docker push $IMAGE_NAME:$VERSION
+
+  update:
+    needs: push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Update the image
+        run: |  
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          curl -H "webhook:${KEY}" https://webhook.disk.isi.edu/hooks/disk
+        env:
+          key: ${{ secrets.WEBHOOK }}
+
+
