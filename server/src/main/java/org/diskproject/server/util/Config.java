@@ -7,8 +7,6 @@ import org.apache.commons.configuration.plist.PropertyListConfiguration;
 
 public class Config {
   static Config singleton = null;
-
-
   PropertyListConfiguration props = null;
   
   public static void load() {
@@ -24,11 +22,11 @@ public class Config {
   }
   
   public PropertyListConfiguration getProperties() {
-      try {
-		props.load();
-	} catch (ConfigurationException e) {
-		e.printStackTrace();
-	}
+    try {
+		  props.load();
+    } catch (ConfigurationException e) {
+      e.printStackTrace();
+    }
     return this.props;
   }
   
@@ -36,15 +34,14 @@ public class Config {
     String configFile = null;
     String home = System.getProperty("user.home");
     if (home != null && !home.equals(""))
-        configFile = home + File.separator + ".disk"
-                + File.separator + "server.properties";
+        configFile = home + File.separator + ".disk" + File.separator + "server.properties";
     else
         configFile = "/etc/disk/server.properties";
     // Create configFile if it doesn't exist (portal.properties)
-    File cfile = new File(configFile);
-    if (!cfile.exists()) {
-        if (!cfile.getParentFile().exists() && !cfile.getParentFile().mkdirs()) {
-            System.err.println("Cannot create config file directory : " + cfile.getParent());
+    File cFile = new File(configFile);
+    if (!cFile.exists()) {
+        if (!cFile.getParentFile().exists() && !cFile.getParentFile().mkdirs()) {
+            System.err.println("Cannot create config file directory : " + cFile.getParent());
             return null;
         }
         createDefaultServerConfig(configFile);
@@ -79,13 +76,17 @@ public class Config {
     config.addProperty("keycloak.url", "YOUR_KEYCLOAK_URL");
     config.addProperty("keycloak.realm", "YOUR_KEYCLOAK_REALM");
     config.addProperty("data-adapters.EXAMPLE_ADAPTER.type", "ADD_HERE");
-    config.addProperty("data-adapters.EXAMPLE_ADAPTER.endpoint", "ADD_HERE");
+    config.addProperty("data-adapters.EXAMPLE_ADAPTER.endpoint", "URL_HERE");
     config.addProperty("data-adapters.EXAMPLE_ADAPTER.username", "ADD_HERE");
     config.addProperty("data-adapters.EXAMPLE_ADAPTER.password", "ADD_HERE");
     config.addProperty("method-adapters.EXAMPLE_ADAPTER.type", "ADD_HERE");
-    config.addProperty("method-adapters.EXAMPLE_ADAPTER.endpoint", "ADD_HERE");
+    config.addProperty("method-adapters.EXAMPLE_ADAPTER.endpoint", "URL_HERE");
     config.addProperty("method-adapters.EXAMPLE_ADAPTER.username", "ADD_HERE");
     config.addProperty("method-adapters.EXAMPLE_ADAPTER.password", "ADD_HERE");
+    config.addProperty("question-templates.EXAMPLE_QUESTION_ONTOLOGY", "URL_HERE");
+    config.addProperty("vocabularies.EXAMPLE_VOCABULARY.url", "URL_HERE");
+    config.addProperty("vocabularies.EXAMPLE_VOCABULARY.prefix", "ADD_HERE");
+    config.addProperty("vocabularies.EXAMPLE_VOCABULARY.namespace", "ADD_HERE");
 
     try {
     	config.setFileName("file://" + configFile);

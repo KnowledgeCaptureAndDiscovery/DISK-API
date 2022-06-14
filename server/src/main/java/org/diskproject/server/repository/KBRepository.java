@@ -31,7 +31,7 @@ public class KBRepository implements TransactionsAPI {
     tdbdir = props.getString("storage.tdb");
     File tdbdirf = new File(tdbdir);
     if(!tdbdirf.exists() && !tdbdirf.mkdirs()) {
-      System.err.println("Cannot create tdb directory : "+tdbdirf.getAbsolutePath());
+      System.err.println("Cannot create tdb directory : " + tdbdirf.getAbsolutePath());
     }
   }
   

@@ -110,7 +110,6 @@ public class DiskRepository extends WriteKBRepository {
         // Initialize
         dataAdapters = new HashMap<String, DataAdapter>();
         methodAdapters = new HashMap<String, MethodAdapter>();
-        optionsCache = new WeakHashMap<String, List<List<String>>>();
         this.initializeDataAdapters();
         this.initializeMethodAdapters();
         initializeKB();
@@ -141,15 +140,15 @@ public class DiskRepository extends WriteKBRepository {
             return;
         
         try {
-            //this.hypontkb   = fac.getKB(KBConstants.HYPURI(), OntSpec.PLAIN, false, true);
             this.questionkb = fac.getKB(KBConstants.QUESTIONSURI(), OntSpec.PLAIN, false, true);
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Error reading KB");
+            System.out.println("Error reading Question KB");
             return;
         }
-           
+
         // Load questions
+        optionsCache = new WeakHashMap<String, List<List<String>>>();
         this.start_read();
         SQOnt = new KBCache(this.questionkb);
         this.end();
@@ -200,6 +199,10 @@ public class DiskRepository extends WriteKBRepository {
                 this.externalOntologiesNamespaces.put(curPrefix, curNamespace);
             }
         }
+
+        if (this.externalOntologies.size() == 0) {
+            System.err.println("WARNING: No external vocabularies found on the configuration file.");
+        }
     }
 
     public void reloadKBCaches () {
@@ -208,6 +211,14 @@ public class DiskRepository extends WriteKBRepository {
         try {
             this.start_write();
             for (KBAPI kb: kbs) if (kb != null) {
+                System.out.println("Reloading " + kb.getURI());
+                kb.removeAllTriples();
+                kb.delete();
+                this.save(kb);
+                this.end(); this.start_write();
+            }
+            for (String kbPrefix: this.externalOntologies.keySet()) {
+                KBAPI kb = this.externalOntologies.get(kbPrefix);
                 System.out.println("Reloading " + kb.getURI());
                 kb.removeAllTriples();
                 kb.delete();
@@ -273,6 +284,15 @@ public class DiskRepository extends WriteKBRepository {
                     break;
             }
         }
+
+        //Check data adapters:
+        if (this.dataAdapters.size() == 0) {
+            System.err.println("WARNING: No data adapters found on configuration file.");
+        } else for (DataAdapter curAdp: this.dataAdapters.values()) {
+            if (!curAdp.ping()) {
+                System.err.println("ERROR: Could not connect with " + curAdp.getEndpointUrl());
+            }
+        }
     }
 
     private DataAdapter getDataAdapter (String url) {
@@ -291,7 +311,7 @@ public class DiskRepository extends WriteKBRepository {
             String key = a.next();
             String sp[] = key.split("\\.");
             
-            if (sp != null && sp.length == 3) { // as the list is normalized length is how deep the property is
+            if (sp != null && sp.length == 3) { // as the list is normalized, length is how deep the property is
                 Map<String, String> map;
                 if (adapters.containsKey(sp[1]))
                     map = adapters.get(sp[1]);
@@ -325,6 +345,15 @@ public class DiskRepository extends WriteKBRepository {
             }
             if (curAdapter != null)
                 this.methodAdapters.put(curURI, curAdapter);
+        }
+
+        //Check method adapters:
+        if (this.methodAdapters.size() == 0) {
+            System.err.println("WARNING: No method adapters found on configuration file.");
+        } else for (MethodAdapter curAdp: this.methodAdapters.values()) {
+            if (!curAdp.ping()) {
+                System.err.println("ERROR: Could not connect with " + curAdp.getEndpointUrl());
+            }
         }
     }
 

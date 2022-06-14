@@ -169,12 +169,10 @@ public class SparqlAdapter extends DataAdapter {
         }
         return true;
     }
-            
-            
-            
-            
-            
-            
-            
-            
+
+    @Override
+    public boolean ping() {
+        List<DataResult> results = this.query("SELECT * WHERE { ?a ?b ?c . } LIMIT 1");
+        return results.size() > 0;
+    }
 }

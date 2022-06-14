@@ -49,4 +49,10 @@ public class AirFlowAdapter extends MethodAdapter {
             System.err.println("Could not list methods");
         }
     }
+    
+    @Override
+    public boolean ping() {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }

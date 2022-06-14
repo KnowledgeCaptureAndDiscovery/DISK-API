@@ -1220,4 +1220,26 @@ private String upload(String pageid, String type, File file) {
 
         return true;
     }
+
+	@Override
+	public boolean ping() {
+		if (this.login()) {
+			System.out.print("AUTHENTICATED ON WINGS: " + this.server + "... ");
+			OntFactory fac = new OntFactory(OntFactory.JENA);
+
+			String liburi = this.WFLOWURI() + "/library.owl";
+			try {
+				KBAPI kb = fac.getKB(liburi, OntSpec.PLAIN);
+				System.out.print("OK\n");
+				return true;
+			} catch (Exception e) {
+				System.out.print("\n");
+				System.err.print("ERROR: WINGS adapter could not open KB: " + liburi);
+				System.err.print(e.toString());
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
 }

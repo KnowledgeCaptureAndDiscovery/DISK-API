@@ -67,4 +67,7 @@ public abstract class DataAdapter {
 
     // Check that a LOI is correctly configured for this adapter
     public abstract boolean validateLOI (LineOfInquiry loi, Map<String, String> values);
+
+    // Test connection with source
+    public abstract boolean ping ();
 }
