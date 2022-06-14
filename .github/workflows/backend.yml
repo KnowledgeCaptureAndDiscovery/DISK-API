@@ -87,7 +87,7 @@ jobs:
 
 
   update:
-    needs: build
+    needs: image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
