@@ -25,22 +25,6 @@ jobs:
         GITHUB_USERNAME: ${{ secrets.GITHUB_USERNAME }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - run: mkdir staging && cp server/target/*.war staging
-    - uses: actions/upload-artifact@v2
-      with:
-        name: Package
-        path: staging
-  
-  image:
-    needs: [build]
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/download-artifact@v2
-      with:
-        name: Package
-        path: build/
-
     - name: Build image
       run: |
         docker build --tag $IMAGE_NAME  -f docker/backend/Dockerfile .
