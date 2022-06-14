@@ -3,7 +3,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: build
+name: security-cron
 
 on:
   push:
@@ -41,7 +41,7 @@ jobs:
 
       - name: Build an image from Dockerfile
         run: |
-          docker build -t docker.io/my-organization/my-app:${{ github.sha }}  docker/backend/Dockerfile
+          docker build -t docker.io/my-organization/my-app:${{ github.sha }}  docker/backend
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@2a2157eb22c08c9a1fac99263430307b8d1bc7a2
