@@ -75,7 +75,7 @@ jobs:
           template: "@/contrib/sarif.tpl"
           output: "trivy-results.sarif"
           severity: "CRITICAL"
-          exit-code: "1"
+          exit-code: "0" 
           ignore-unfixed: "true"
 
       - name: Upload Trivy scan results to GitHub Security tab
