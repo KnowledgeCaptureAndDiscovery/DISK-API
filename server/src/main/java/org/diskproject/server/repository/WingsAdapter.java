@@ -139,8 +139,9 @@ public class WingsAdapter extends MethodAdapter {
 			return list;
 		} catch (Exception e) {
 			e.printStackTrace();
+			//throw exception
+			throw new RuntimeException(e);
 		}
-		return null;
 	}
 
 	public List<Variable> getWorkflowVariables(String id) {

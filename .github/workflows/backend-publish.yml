@@ -9,26 +9,25 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 8
-      uses: actions/setup-java@v2
-      with:
-        java-version: '8'
-        distribution: 'temurin'
-        cache: maven
+      - uses: actions/checkout@v2
+      - name: Set up JDK 8
+        uses: actions/setup-java@v2
+        with:
+          java-version: "8"
+          distribution: "temurin"
+          cache: maven
 
-      env:
-        GITHUB_USERNAME: ${{ secrets.GITHUB_USERNAME }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_USERNAME: ${{ secrets.GITHUB_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Publish to GitHub Packages Apache Maven
-      run: mvn --batch-mode deploy
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
+      - name: Publish to GitHub Packages Apache Maven
+        run: mvn --batch-mode deploy
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

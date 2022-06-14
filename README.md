@@ -26,10 +26,15 @@ To install DISK you need to meet the following requirements:
 
 ### Docker
 
-Install DISK with docker.
 
-This command will install DISK in your current directory.
+Clone the repository using git
 
+```bash
+git clone https://github.com/KnowledgeCaptureAndDiscovery/DISK-WEB.git
+```
+
+
+install DISK using `docker-compose` tool
 
 ```bash
 $ docker-compose up -d
