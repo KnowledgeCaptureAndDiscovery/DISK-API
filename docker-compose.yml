@@ -7,7 +7,7 @@ services:
       - 8000:80
     restart: on-failure:5
   backend:
-    image: ikcap/disk_backend:3.0.0
+    image: ikcap/disk_backend
     ports:
       - 8080:8080
     restart: on-failure:5
