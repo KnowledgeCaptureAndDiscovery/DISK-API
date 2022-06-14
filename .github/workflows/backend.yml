@@ -47,7 +47,7 @@ jobs:
         docker push $IMAGE_NAME:$VERSION
 
   update:
-    needs: image
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
