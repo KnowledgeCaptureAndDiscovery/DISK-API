@@ -97,19 +97,19 @@
 		<dependency>
 			<groupId>com.google.api-client</groupId>
 			<artifactId>google-api-client</artifactId>
-			<version>1.31.0</version>
+			<version>1.24.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.api-client/google-api-client-android -->
 		<dependency>
 			<groupId>com.google.api-client</groupId>
 			<artifactId>google-api-client-android</artifactId>
-			<version>1.31.0</version>
+			<version>1.24.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.api-client/google-api-client-appengine -->
 		<dependency>
 			<groupId>com.google.api-client</groupId>
 			<artifactId>google-api-client-appengine</artifactId>
-			<version>1.31.0</version>
+			<version>1.24.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.api-client/google-api-client-gson -->
 		<dependency>
@@ -121,55 +121,55 @@
 		<dependency>
 			<groupId>com.google.api-client</groupId>
 			<artifactId>google-api-client-jackson2</artifactId>
-			<version>1.31.0</version>
+			<version>1.24.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.api-client/google-api-client-java6 -->
 		<dependency>
 			<groupId>com.google.api-client</groupId>
 			<artifactId>google-api-client-java6</artifactId>
-			<version>1.31.0</version>
+			<version>1.24.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.api-client/google-api-client-servlet -->
 		<dependency>
 			<groupId>com.google.api-client</groupId>
 			<artifactId>google-api-client-servlet</artifactId>
-			<version>1.31.0</version>
+			<version>1.24.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.http-client/google-http-client -->
 		<dependency>
 			<groupId>com.google.http-client</groupId>
 			<artifactId>google-http-client</artifactId>
-			<version>1.31.0</version>
+			<version>1.24.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.http-client/google-http-client-android -->
 		<dependency>
 			<groupId>com.google.http-client</groupId>
 			<artifactId>google-http-client-android</artifactId>
-			<version>1.31.0</version>
+			<version>1.24.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.http-client/google-http-client-appengine -->
 		<dependency>
 			<groupId>com.google.http-client</groupId>
 			<artifactId>google-http-client-appengine</artifactId>
-			<version>1.31.0</version>
+			<version>1.24.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.http-client/google-http-client-gson -->
 		<dependency>
 			<groupId>com.google.http-client</groupId>
 			<artifactId>google-http-client-gson</artifactId>
-			<version>1.31.0</version>
+			<version>1.24.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.http-client/google-http-client-jackson2 -->
 		<dependency>
 			<groupId>com.google.http-client</groupId>
 			<artifactId>google-http-client-jackson2</artifactId>
-			<version>1.31.0</version>
+			<version>1.24.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.http-client/google-http-client-jdo -->
 		<dependency>
 			<groupId>com.google.http-client</groupId>
 			<artifactId>google-http-client-jdo</artifactId>
-			<version>1.31.0</version>
+			<version>1.24.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
 		<dependency>
