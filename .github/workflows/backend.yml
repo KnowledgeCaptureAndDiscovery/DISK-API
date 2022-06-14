@@ -32,6 +32,10 @@ jobs:
           path: staging
 
   image:
+    permissions:
+      contents: read
+      security-events: write
+      packages: write
     runs-on: ubuntu-latest
     needs: [build]
     steps:
