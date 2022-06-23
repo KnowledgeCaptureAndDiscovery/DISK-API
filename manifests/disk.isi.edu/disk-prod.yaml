@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: disk-frontend-prod
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: disk-prod
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: disk-backend-prod
+spec:
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    app: disk-prod
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: disk-prod
+spec:
+  selector:
+    matchLabels:
+      app: disk-prod
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: disk-prod
+    spec:
+      containers:
+        - name: disk-prod
+          image: ikcap/disk_frontend_react
+          ports:
+            - containerPort: 80
+        - name: backend
+          image: ikcap/disk_backend
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: server-properties
+              mountPath: /root/.disk/
+      volumes:
+        - name: server-properties
+          configMap:
+            name: server-properties 
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: disk-frontend-prod-ingress
+  annotations:
+    kubernetes.io/ingress.class: public
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+    - hosts:
+      - disk.isi.edu
+      secretName: disk-frontend-prod-tls
+  rules:
+    - host: disk.isi.edu
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: disk-frontend-prod 
+                port:
+                  number: 80
+          - pathType: Prefix
+            path: "/disk-server"
+            backend:
+              service:
+                name: disk-backend-prod 
+                port:
+                  number: 80
