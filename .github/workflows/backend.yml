@@ -84,17 +84,3 @@ jobs:
         with:
           sarif_file: "trivy-results.sarif"
 
-
-
-  update:
-    needs: image
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Update the image
-        run: |
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          curl -u "webhook:${KEY}" https://webhook.disk.isi.edu/hooks/disk
-        env:
-          key: ${{ secrets.WEBHOOK }}
