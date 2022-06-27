@@ -10,8 +10,10 @@ env:
   #variables related with the docker imager registry
   DOCKER_IMAGE_REPOSITORY: ikcap
   DOCKER_IMAGE_NAME: disk_backend
+  DOCKER_CONTEXT: "."
+  DOCKER_FILE: "docker/backend/Dockerfile"
   #variables related with the continuous delivery
-  MANIFEST_REPOSITORY: KnowledgeCaptureAndDiscovery/k8s
+  MANIFEST_ReEEPOSITORY: KnowledgeCaptureAndDiscovery/k8s
   MANIFEST_REPOSITORY_BRANCH: master
   MANIFEST_REPOSITORY_PATH: disk-server/disk
   KUSTOMIZE_IMAGE_NAME: backend-image-prod
@@ -55,7 +57,8 @@ jobs:
         with:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_TAG }}
-
+          context: ${{ env.DOCKER_CONTEXT }}
+          file: ${{ env.DOCKER_FILE}}
     outputs:
       docker_tag: ${{ steps.exposeValue.outputs.docker_tag }}
   
