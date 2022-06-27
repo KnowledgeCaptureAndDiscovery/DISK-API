@@ -12,7 +12,7 @@ env:
   DOCKER_IMAGE_NAME: disk_backend
   DOCKER_FILE: "docker/backend/Dockerfile"
   #variables related with the continuous delivery
-  MANIFEST_ReEEPOSITORY: KnowledgeCaptureAndDiscovery/k8s
+  MANIFEST_REPOSITORY: KnowledgeCaptureAndDiscovery/k8s
   MANIFEST_REPOSITORY_BRANCH: master
   MANIFEST_REPOSITORY_PATH: disk-server/disk
   KUSTOMIZE_IMAGE_NAME: backend-image-prod
