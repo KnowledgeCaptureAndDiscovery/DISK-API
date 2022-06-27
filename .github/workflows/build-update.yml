@@ -66,6 +66,7 @@ jobs:
           name: Package
           path: build/
 
+
       - name: Create value as an environment variable
         run: |
           echo "DOCKER_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
@@ -86,12 +87,13 @@ jobs:
         if: github.event_name != 'pull_request'
         with:
           push: true
+          context: .
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_TAG }}
           file: ${{ env.DOCKER_FILE}}
 
     outputs:
       docker_tag: ${{ steps.exposeValue.outputs.docker_tag }}
-
+  
   security:
     permissions:
       contents: read
@@ -109,7 +111,7 @@ jobs:
           template: "@/contrib/sarif.tpl"
           output: "trivy-results.sarif"
           severity: ${{ env.VULNERABILITY_SCAN_LEVEL }}
-          exit-code: "0"
+          exit-code: "0" 
           ignore-unfixed: "true"
 
       - name: Upload Trivy scan results to GitHub Security tab
@@ -117,6 +119,7 @@ jobs:
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
+  
 
   update:
     # This job the container running on k8s cluster
