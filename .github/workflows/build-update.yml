@@ -1,0 +1,132 @@
+name: Build and update app
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  #variables related with the repository
+  REPOSITORY_MAIN_BRANCH: "master"
+  #variables related with the docker imager registry
+  DOCKER_IMAGE_REPOSITORY: ikcap
+  DOCKER_IMAGE_NAME: disk_backend
+  #variables related with the continuous delivery
+  MANIFEST_REPOSITORY: KnowledgeCaptureAndDiscovery/k8s
+  MANIFEST_REPOSITORY_BRANCH: master
+  MANIFEST_REPOSITORY_PATH: disk-server/disk
+  KUSTOMIZE_IMAGE_NAME: backend-image-prod
+  #security level
+  VULNERABILITY_SCAN_LEVEL: "CRITICAL"
+
+on:
+  push:
+    branches:
+      - "*"
+    tags:
+      - v*
+  pull_request:
+
+jobs:
+  # This job build the app and the image. Then, push it
+  build:
+    runs-on: ubuntu-latest
+    name: "Build and push the Docker Image"
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Create value as an environment variable
+        run: |
+          echo "DOCKER_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
+
+      - name: Expose value
+        id: exposeValue
+        run: |
+          echo "::set-output name=docker_tag::${{ env.DOCKER_TAG }}"
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3.0.0
+        if: github.event_name != 'pull_request'
+        with:
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_TAG }}
+
+    outputs:
+      docker_tag: ${{ steps.exposeValue.outputs.docker_tag }}
+  
+  security:
+    permissions:
+      contents: read
+      security-events: write
+      packages: write
+    name: "Scan vulnerabilities in the image"
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@2a2157eb22c08c9a1fac99263430307b8d1bc7a2
+        with:
+          image-ref: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.docker_tag }}
+          format: "template"
+          template: "@/contrib/sarif.tpl"
+          output: "trivy-results.sarif"
+          severity: ${{ env.VULNERABILITY_SCAN_LEVEL }}
+          exit-code: "0" 
+          ignore-unfixed: "true"
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v1
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+  
+
+  update:
+    # This job the container running on k8s cluster
+    needs: [build, security]
+    name: "Deploy the app"
+    if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out k8s manifests
+        uses: actions/checkout@v3
+        if: github.event_name != 'pull_request'
+        with:
+          repository: ${{ env.MANIFEST_REPOSITORY }}
+          ref: ${{ env.MANIFEST_REPOSITORY_BRANCH }}
+          ssh-key: ${{ secrets.BOT_SSH }}
+          persist-credentials: true
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v1
+        if: github.event_name != 'pull_request'
+        with:
+          kustomize-version: "3.6.1"
+
+      - name: Update Kubernetes resources
+        if: github.event_name != 'pull_request'
+        run: |
+          cd ${{ env.MANIFEST_REPOSITORY_PATH }}
+          kustomize edit set image ${{ env.KUSTOMIZE_IMAGE_NAME }}=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.docker_tag }}
+          cat kustomization.yaml
+
+      - name: Commit files
+        if: github.event_name != 'pull_request'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -am "${{ GITHUB_REPOSITORY }} updated"
+        
+
+      - name: Push changes
+        if: github.event_name != 'pull_request'
+        uses: ad-m/github-push-action@master
+        with:
+          ssh: true
+          branch: ${{ env.MANIFEST_REPOSITORY_BRANCH }}
+          repository: ${{ env.MANIFEST_REPOSITORY }}
