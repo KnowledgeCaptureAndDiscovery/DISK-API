@@ -120,8 +120,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git commit -am "${{ GITHUB_REPOSITORY }} updated"
-        
+          git commit -am "Disk backend updated"
 
       - name: Push changes
         if: github.event_name != 'pull_request'
