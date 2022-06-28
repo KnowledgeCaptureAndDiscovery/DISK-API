@@ -100,11 +100,11 @@ jobs:
       security-events: write
       packages: write
     name: "Scan vulnerabilities in the image"
-    needs: [build]
     runs-on: ubuntu-18.04
+    needs: [build]
     steps:
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@2a2157eb22c08c9a1fac99263430307b8d1bc7a2
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.docker_tag }}
           format: "template"
