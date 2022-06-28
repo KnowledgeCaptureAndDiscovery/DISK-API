@@ -111,7 +111,7 @@ jobs:
           template: "@/contrib/sarif.tpl"
           output: "trivy-results.sarif"
           severity: ${{ env.VULNERABILITY_SCAN_LEVEL }}
-          exit-code: "0" 
+          exit-code: "1" 
           ignore-unfixed: "true"
 
       - name: Upload Trivy scan results to GitHub Security tab
