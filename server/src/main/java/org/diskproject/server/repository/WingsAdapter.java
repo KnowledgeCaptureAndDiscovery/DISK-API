@@ -47,7 +47,9 @@ import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
+import org.semanticweb.owlapi.profiles.violations.UseOfAnonymousIndividual;
 
+import com.gargoylesoftware.htmlunit.javascript.host.Console;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -96,12 +98,16 @@ public class WingsAdapter extends MethodAdapter {
 		return this.internal_server + "/export/users/" + this.getUsername() + "/" + this.domain;
 	}
 
+	public String eDOMURI() {
+		return this.server + "/export/users/" + this.getUsername() + "/" + this.domain;
+	}
+
 	public String WFLOWURI() {
-		return this.DOMURI() + "/workflows";
+		return this.eDOMURI() + "/workflows";
 	}
 
 	public String WFLOWURI(String id) {
-		return this.DOMURI() + "/workflows/" + id + ".owl";
+		return this.eDOMURI() + "/workflows/" + id + ".owl";
 	}
 
 	public String WFLOWID(String id) {
@@ -134,6 +140,7 @@ public class WingsAdapter extends MethodAdapter {
 				Workflow wflow = new Workflow();
 				wflow.setName(tobj.getName());
 				wflow.setLink(this.getWorkflowLink(wflow.getName()));
+				wflow.setSource(this.getName());
 				list.add(wflow);
 			}
 			return list;
@@ -151,6 +158,7 @@ public class WingsAdapter extends MethodAdapter {
 			Map<String, Boolean> varmap = new HashMap<String, Boolean>();
 			OntFactory fac = new OntFactory(OntFactory.JENA);
 			KBAPI kb = fac.getKB(wflowuri, OntSpec.PLAIN);
+
 			KBObject linkprop = kb.getProperty(this.wflowns + "hasLink");
 			KBObject origprop = kb.getProperty(this.wflowns + "hasOriginNode");
 			KBObject destprop = kb.getProperty(this.wflowns
@@ -524,16 +532,13 @@ public class WingsAdapter extends MethodAdapter {
 			String getData = postWithSpecifiedMediaType("users/"+getUsername()+"/"+domain+"/plan/getData",
 					toPost, "application/json", "application/json");
 
-			System.out.println("1> " + toPost);
-			System.out.println("2> " + toPost);
-
+			System.out.println("1> " + getData);
 			vbindings = addDataBindings(inputVariables, vbindings, getData, false);
-			System.out.println("3> " + vbindings);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
-			System.out.println("2> " + toPost);
 			String getParams = postWithSpecifiedMediaType("users/"+getUsername()+"/"+domain+"/plan/getParameters",
 			        toPost, "application/json", "application/json");
 
+			System.out.println("2> " + getParams);
 			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
 
@@ -550,7 +555,16 @@ public class WingsAdapter extends MethodAdapter {
                     toPost, "application/json", "application/json");
             JsonParser jsonParser = new JsonParser();
 
-            JsonObject expobj = (JsonObject) jsonParser.parse(s);
+            JsonObject expobj = null;
+			try {
+				expobj = (JsonObject) jsonParser.parse(s);
+			} catch (Exception e) {
+				System.out.println("Error parsing: \n" + s);
+				System.out.println(" + users/"+getUsername()+"/"+domain+"/plan/getExpansions");
+				System.out.println(" + toPOST: " + toPost);
+				return null;
+			}
+			
             JsonObject dataobj = expobj.get("data").getAsJsonObject();
 
             JsonArray templatesobj = dataobj.get("templates").getAsJsonArray();
@@ -683,11 +697,9 @@ public class WingsAdapter extends MethodAdapter {
 
 	public String addDataToWingsAsFile(String id, String contents) {
 	    String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
-
 		String postpage = "users/" + getUsername() + "/" + domain + "/data/addDataForType";
 		String uploadpage = "users/" + getUsername() + "/" + domain + "/upload";
 		String dataid = this.DATAID(id);
-		
 		
 		String sha = DigestUtils.sha1Hex(contents.getBytes());
 		String correctName = "SHA" + sha.substring(0,6);
@@ -698,13 +710,13 @@ public class WingsAdapter extends MethodAdapter {
 		try {
 			File dir = File.createTempFile("tmp", "");
 			if (!dir.delete() || !dir.mkdirs()) {
-				System.err.println("Could not create temporary directory "
-						+ dir);
+				System.err.println("Could not create temporary directory " + dir);
 				return null;
 			}
 			File f = new File(dir.getAbsolutePath() + "/" + id);
 			FileUtils.write(f, contents);
-			this.upload(uploadpage, "data", f);
+			String uploadResponse = this.upload(uploadpage, "data", f);
+			System.out.println(uploadResponse);
 			f.delete();
 
 			List<NameValuePair> data = new ArrayList<NameValuePair>();
@@ -756,8 +768,10 @@ public class WingsAdapter extends MethodAdapter {
 	        } catch (IOException e) {
 	        }
 	    }
-	    
+
+		System.out.println("Content downloaded [" + fileContents.length() + "]");
 		String dataid = addDataToWingsAsFile(name, fileContents);
+		System.out.println("Data ID generated: " + dataid);
 		return dataid;
 	}
 	
@@ -773,7 +787,7 @@ public class WingsAdapter extends MethodAdapter {
 					 + "  ?value a <" + filetype + "> .\n"
 					 + "  VALUES ?value {\n";
 		String queryEnd = "  }\n}";
-		
+
 		List<Set<String>> grouped = new ArrayList<Set<String>>();
 		int size = filelist.size();
 		if (size <= 20) {
@@ -963,7 +977,14 @@ private List<VariableBinding> addDataBindings(
 		String data, boolean param) {
 
 	JsonParser jsonParser = new JsonParser();
-	JsonObject expobj = jsonParser.parse(data.trim()).getAsJsonObject();
+	JsonObject expobj = null;
+	try {
+		expobj = jsonParser.parse(data.trim()).getAsJsonObject(); 
+	} catch (Exception e) {
+		System.out.println("Error parsing: \n" + data);
+		return vbl;
+	}
+
 	if (!expobj.get("success").getAsBoolean())
 		return vbl;
 
@@ -1123,6 +1144,10 @@ private String postWithSpecifiedMediaType(String pageid, String data, String typ
 		    String strResponse = EntityUtils.toString(responseEntity);
 		    EntityUtils.consume(responseEntity);
 		    httpResponse.close();
+
+			System.out.println("POST: " + pageid);
+			System.out.println("DATA: " + data);
+			System.out.println("RESPONSE: " + strResponse);
 		    return strResponse;
 		} finally {
 		    httpResponse.close();
@@ -1167,8 +1192,7 @@ private String post(String pageid, List<NameValuePair> data) {
 }
 
 private String upload(String pageid, String type, File file) {
-  this.login();
-  
+  	this.login();
 	CloseableHttpClient client = HttpClientBuilder.create()
       .setDefaultCookieStore(this.cookieStore).build();
 	try {

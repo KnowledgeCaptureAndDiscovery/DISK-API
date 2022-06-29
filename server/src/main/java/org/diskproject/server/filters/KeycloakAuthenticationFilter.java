@@ -31,14 +31,11 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
   
   @Override
   public void filter(ContainerRequestContext requestContext) throws IOException {
-    //FIXME: When several requests at the same time, all request try to get the token...
-    //should be some mechanism to check if theres a pending request for token validation.
     String token = requestContext.getHeaderString("authorization");
     if (token != null) {
       KeycloakUser user = KeycloakSessions.getKeycloakUser(token);
       if (user != null && user.username != null) {
           requestContext.setProperty("username", user.username);
-          //System.out.println("Token received: " + user.username);
       }
       else
           requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity("Access denied").build());
@@ -54,8 +51,13 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
   }
   
   public static class KeycloakSessions {
+    // Token to User map
     private static Map<String, KeycloakUser> tokenCache = new HashMap<String, KeycloakUser>();
+    // Username to Token map
     private static Map<String, String> userTokens = new HashMap<String, String>();
+    // Token to Get request 
+    private static Map<String, CloseableHttpResponse> tokenGet = new HashMap<String, CloseableHttpResponse>();
+
     private static CloseableHttpClient httpClient;
     private static PoolingHttpClientConnectionManager connectionManager;
     private static String userInfoUrl;
@@ -72,40 +74,53 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
         String realm = props.getString("keycloak.realm");
         
         //Create API urls
-	    KeycloakSessions.userInfoUrl = server + "/auth/realms/" + realm + "/protocol/openid-connect/userinfo";
+	      KeycloakSessions.userInfoUrl = server + "/auth/realms/" + realm + "/protocol/openid-connect/userinfo";
       } 
       return KeycloakSessions.httpClient;
     }
     
     public static KeycloakUser getKeycloakUser (String token) {
-      if (KeycloakSessions.tokenCache.containsKey(token))
+      if (KeycloakSessions.tokenCache.containsKey(token)) {
+        if (KeycloakSessions.tokenGet.containsKey(token))
+          KeycloakSessions.tokenGet.remove(token);
         return KeycloakSessions.tokenCache.get(token);
+      }
       else
         return fetchKeycloakUser(token);
     }
     
     private static void updateUserToken (KeycloakUser user, String token) {
       String username = user.username;
-	  if (KeycloakSessions.userTokens.containsKey(username)) {
-	    String usedToken = KeycloakSessions.userTokens.get(username);
-	    if (KeycloakSessions.tokenCache.containsKey(usedToken)) {
-	      //System.out.println("Cleaning token for " + username);
-	      KeycloakSessions.tokenCache.remove(usedToken);
+	    if (KeycloakSessions.userTokens.containsKey(username)) {
+	      String usedToken = KeycloakSessions.userTokens.get(username);
+	      if (KeycloakSessions.tokenCache.containsKey(usedToken))
+	        KeycloakSessions.tokenCache.remove(usedToken);
+	      if (KeycloakSessions.tokenGet.containsKey(usedToken))
+	        KeycloakSessions.tokenGet.remove(usedToken);
 	    }
-	  }
-	  KeycloakSessions.userTokens.put(username, token);
-	  KeycloakSessions.tokenCache.put(token, user);
+	    KeycloakSessions.userTokens.put(username, token);
+	    KeycloakSessions.tokenCache.put(token, user);
     }
     
     private static KeycloakUser fetchKeycloakUser (String token) {
-	  CloseableHttpClient client = KeycloakSessions.getHttpClient();
-	  if (KeycloakSessions.userInfoUrl == null)
-	      return null;
-	  HttpGet userInfo = new HttpGet(KeycloakSessions.userInfoUrl);
-	  userInfo.addHeader("Authorization", token);
-	  
-	  try (CloseableHttpResponse httpResponse = client.execute(userInfo)) {
-	    HttpEntity responseEntity = httpResponse.getEntity();
+      if (!KeycloakSessions.tokenGet.containsKey(token)) {
+        CloseableHttpClient client = KeycloakSessions.getHttpClient();
+        if (KeycloakSessions.userInfoUrl == null)
+          return null;
+        HttpGet userInfo = new HttpGet(KeycloakSessions.userInfoUrl);
+        userInfo.addHeader("Authorization", token);
+
+        try (CloseableHttpResponse httpResponse = client.execute(userInfo)) {
+          System.out.println("[U] " + token);
+          KeycloakSessions.tokenGet.put(token, httpResponse);
+        } catch (Exception e) {
+          System.err.println("Could not verify Keycloak token");
+        }
+      }
+
+	    CloseableHttpResponse httpResponse = tokenGet.get(token);
+	    try {
+        HttpEntity responseEntity = httpResponse.getEntity();
         String strResponse = EntityUtils.toString(responseEntity);
 
         JsonParser jsonParser = new JsonParser();
@@ -122,10 +137,10 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
           updateUserToken(user, token);
           return user;
         }
-	  } catch (Exception e) {
-          System.err.println("Could not verify Keycloak token");
+      } catch (Exception e) {
+        System.err.println("Could not verify Keycloak token");
       }
-	  return null;
+      return null;
     }
   }
 }

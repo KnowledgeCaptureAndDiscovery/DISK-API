@@ -21,7 +21,6 @@ import javax.ws.rs.core.SecurityContext;
 import org.diskproject.server.repository.DiskRepository;
 import org.diskproject.server.repository.WingsAdapter;
 import org.diskproject.shared.api.DiskService;
-import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.common.TreeItem;
 import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
@@ -160,8 +159,7 @@ public class DiskResource implements DiskService {
   }
 
   /**
-   * Assertions
-   */
+   * Assertions LATER!
   @POST
   @Path("assertions")
   @Override
@@ -192,6 +190,7 @@ public class DiskResource implements DiskService {
       @JsonProperty("assertions") Graph assertions) {
     this.repo.updateAssertions(USERNAME, assertions);
   }
+  */
   
   /**
    * Lines of Inquiry
@@ -287,7 +286,8 @@ public class DiskResource implements DiskService {
   @Path("workflows")
   public List<Workflow> listWorkflows() {
     try {
-      return WingsAdapter.get().getWorkflowList();
+      //return WingsAdapter.get().getWorkflowList();
+      return this.repo.getWorkflowList();
     } catch (Exception e) {
       try {
         //Create Json error response
@@ -312,9 +312,12 @@ public class DiskResource implements DiskService {
 
   @GET
   @Override
-  @Path("workflows/{id}")
-  public List<Variable> getWorkflowVariables( @PathParam("id") String id) {
-    return WingsAdapter.get().getWorkflowVariables(id);    
+  @Path("workflows/{source}/{id}")
+  public List<Variable> getWorkflowVariables(
+        @PathParam("source") String source,
+        @PathParam("id") String id) {
+    //return WingsAdapter.get().getWorkflowVariables(id);    
+    return this.repo.getWorkflowVariables(source, id);    
   }
   
   @GET

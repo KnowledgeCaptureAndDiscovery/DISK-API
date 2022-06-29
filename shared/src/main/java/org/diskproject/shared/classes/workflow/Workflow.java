@@ -3,6 +3,7 @@ package org.diskproject.shared.classes.workflow;
 public class Workflow {
   String name;
   String link;
+  String source;
 
   public String getName() {
     return name;
@@ -18,5 +19,13 @@ public class Workflow {
 
   public void setLink(String link) {
     this.link = link;
+  }
+
+  public String getSource () {
+    return source;
+  }
+
+  public void setSource (String source) {
+    this.source = source;
   }
 }

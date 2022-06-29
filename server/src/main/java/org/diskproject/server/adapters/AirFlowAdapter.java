@@ -1,5 +1,7 @@
 package org.diskproject.server.adapters;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.http.HttpEntity;
@@ -15,6 +17,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
+import org.diskproject.shared.classes.workflow.Variable;
+import org.diskproject.shared.classes.workflow.Workflow;
 
 public class AirFlowAdapter extends MethodAdapter {
     private PoolingHttpClientConnectionManager connectionManager;
@@ -52,7 +56,16 @@ public class AirFlowAdapter extends MethodAdapter {
     
     @Override
     public boolean ping() {
-        // TODO Auto-generated method stub
         return false;
+    }
+
+    @Override
+	public List<Workflow> getWorkflowList() {
+        List<Workflow> list = new ArrayList<Workflow>();
+        return list;
+    }
+
+	public List<Variable> getWorkflowVariables(String id) {
+        return null;
     }
 }

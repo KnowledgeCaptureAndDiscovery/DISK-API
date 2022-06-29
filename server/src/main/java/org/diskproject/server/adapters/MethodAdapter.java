@@ -1,8 +1,11 @@
 package org.diskproject.server.adapters;
 
+import java.util.List;
 import java.util.Map;
 
 import org.diskproject.shared.classes.loi.LineOfInquiry;
+import org.diskproject.shared.classes.workflow.Variable;
+import org.diskproject.shared.classes.workflow.Workflow;
 
 public abstract class MethodAdapter {
     private String name;
@@ -35,6 +38,10 @@ public abstract class MethodAdapter {
     
     // Check that a LOI is correctly configured for this adapter
     public abstract boolean validateLOI (LineOfInquiry loi, Map<String, String> values);
+
+	public abstract List<Workflow> getWorkflowList();
+
+	public abstract List<Variable> getWorkflowVariables(String id);
 
     // Test connection with source
     public abstract boolean ping ();

@@ -13,7 +13,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.Produces;
 
-import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.common.TreeItem;
 import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
@@ -85,8 +84,7 @@ public interface DiskService extends DirectRestService {
       @PathParam("id") String id);
   
   /*
-   * Assertions
-   */
+   * Assertions LATER
   @POST
   @Path("assertions")
   public void addAssertion(
@@ -105,6 +103,7 @@ public interface DiskService extends DirectRestService {
   @Path("assertions")
   public void updateAssertions (
       @JsonProperty("assertions") Graph assertions);
+   */
 
   /*
    * Lines of Inquiry
@@ -172,8 +171,9 @@ public interface DiskService extends DirectRestService {
   public List<Workflow> listWorkflows();
 
   @GET
-  @Path("workflows/{id}")
+  @Path("workflows/{source}/{id}")
   public List<Variable> getWorkflowVariables(
+      @PathParam("source") String source,
       @PathParam("id") String id);
 
   @GET

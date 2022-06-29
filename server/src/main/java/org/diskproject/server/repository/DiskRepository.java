@@ -36,7 +36,6 @@ import org.diskproject.shared.classes.common.TreeItem;
 import org.diskproject.shared.classes.common.Triple;
 import org.diskproject.shared.classes.common.TripleDetails;
 import org.diskproject.shared.classes.common.TripleUtil;
-import org.diskproject.shared.classes.common.Value;
 import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.WorkflowBindings;
@@ -52,6 +51,7 @@ import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import org.diskproject.shared.classes.vocabulary.Type;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
+import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 import org.diskproject.shared.ontologies.DISK;
 import org.diskproject.shared.ontologies.SQO;
@@ -70,10 +70,7 @@ public class DiskRepository extends WriteKBRepository {
     Pattern varPattern = Pattern.compile("\\?(.+?)\\b");
     Pattern varCollPattern = Pattern.compile("\\[\\s*\\?(.+?)\\s*\\]");
 
-    /* This is only used as vocabulary to send. Redoing vocab manager.
-     * protected KBAPI hypontkb;
-     */
-    protected KBAPI questionkb;
+    protected KBAPI questionKb;
     protected KBCache SQOnt;
 
     Map<String, Vocabulary> vocabularies;
@@ -140,7 +137,7 @@ public class DiskRepository extends WriteKBRepository {
             return;
         
         try {
-            this.questionkb = fac.getKB(KBConstants.QUESTIONSURI(), OntSpec.PLAIN, false, true);
+            this.questionKb = fac.getKB(KBConstants.QUESTIONSURI(), OntSpec.PLAIN, false, true);
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Error reading Question KB");
@@ -150,7 +147,7 @@ public class DiskRepository extends WriteKBRepository {
         // Load questions
         optionsCache = new WeakHashMap<String, List<List<String>>>();
         this.start_read();
-        SQOnt = new KBCache(this.questionkb);
+        SQOnt = new KBCache(this.questionKb);
         this.end();
         loadQuestionTemplates();
 
@@ -206,7 +203,7 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     public void reloadKBCaches () {
-        KBAPI[] kbs = {this.ontkb, this.questionkb};//, this.hypontkb};
+        KBAPI[] kbs = {this.ontkb, this.questionKb};//, this.hypontkb};
 
         try {
             this.start_write();
@@ -363,6 +360,25 @@ public class DiskRepository extends WriteKBRepository {
         return null;
     }
 
+    public List<Workflow> getWorkflowList () {
+        List<Workflow> list = new ArrayList<Workflow>();
+        for (MethodAdapter adapter: this.methodAdapters.values()) {
+            for (Workflow wf: adapter.getWorkflowList()) {
+                list.add(wf);
+            }
+        }
+        return list;
+    }
+
+    public List<Variable> getWorkflowVariables (String source, String id) {
+        for (MethodAdapter adapter: this.methodAdapters.values()) {
+            if (adapter.getName().equals(source)) {
+                return adapter.getWorkflowVariables(id);
+            }
+        }
+        return null;
+    }
+
     // -- Vocabulary Initialization
     private void initializeVocabularies () {
         this.vocabularies = new HashMap<String, Vocabulary>();
@@ -373,7 +389,7 @@ public class DiskRepository extends WriteKBRepository {
             this.vocabularies.put(KBConstants.DISKURI(),
                     this.initializeVocabularyFromKB(this.ontkb, KBConstants.DISKNS()));
             this.vocabularies.put(KBConstants.QUESTIONSURI(),
-                    this.initializeVocabularyFromKB(this.questionkb, KBConstants.QUESTIONSNS()));
+                    this.initializeVocabularyFromKB(this.questionKb, KBConstants.QUESTIONSNS()));
 
             // Load vocabularies from config file
             for (String prefix: this.externalOntologies.keySet()) {
@@ -1367,7 +1383,7 @@ public class DiskRepository extends WriteKBRepository {
     }
     
     private Map<String, String> addDataToWings(String username, List<String> dsurls, String endpoint) {
-        //To add files to wings and do not replace anything, we need to get the hash from the wiki.
+        //To add files to wings and not replace anything, we need to get the hash from the wiki.
         Map<String, String> nameToUrl = new HashMap<String, String>();
         Map<String, String> urlToName = new HashMap<String, String>();
         
@@ -1446,28 +1462,27 @@ public class DiskRepository extends WriteKBRepository {
      * Assertions
      */
 
-    private KBObject getKBValue(Value v, KBAPI kb) {
-        if (v.getType() == Value.Type.LITERAL) {
-            if (v.getDatatype() != null)
-                return kb.createXSDLiteral(v.getValue().toString(), v.getDatatype());
-            else
-                return kb.createLiteral(v.getValue());
-        } else {
-            return kb.getResource(v.getValue().toString());
-        }
-    }
+    //private KBObject getKBValue(Value v, KBAPI kb) {
+    //    if (v.getType() == Value.Type.LITERAL) {
+    //        if (v.getDatatype() != null)
+    //            return kb.createXSDLiteral(v.getValue().toString(), v.getDatatype());
+    //        else
+    //            return kb.createLiteral(v.getValue());
+    //    } else {
+    //        return kb.getResource(v.getValue().toString());
+    //    }
+    //}
 
-    private KBTriple getKBTriple(Triple triple, KBAPI kb) {
-        KBObject subj = kb.getResource(triple.getSubject());
-        KBObject pred = kb.getResource(triple.getPredicate());
-        KBObject obj = getKBValue(triple.getObject(), kb);
+    //private KBTriple getKBTriple(Triple triple, KBAPI kb) {
+    //    KBObject subj = kb.getResource(triple.getSubject());
+    //    KBObject pred = kb.getResource(triple.getPredicate());
+    //    KBObject obj = getKBValue(triple.getObject(), kb);
+    //    if (subj != null && pred != null && obj != null)
+    //        return this.fac.getTriple(subj, pred, obj);
+    //    return null;
+    //}
 
-        if (subj != null && pred != null && obj != null)
-            return this.fac.getTriple(subj, pred, obj);
-        return null;
-    }
-
-    private Value getObjectValue(KBObject obj) {
+    /*private Value getObjectValue(KBObject obj) {
         Value v = new Value();
         if (obj.isLiteral()) {
             Object valobj = obj.getValue();
@@ -1486,9 +1501,9 @@ public class DiskRepository extends WriteKBRepository {
             v.setValue(obj.getID());
         }
         return v;
-    }
+    }*/
 
-    private Graph getKBGraph(String url) {
+    /*private Graph getKBGraph(String url) {
         try {
             Graph graph = new Graph();
             KBAPI kb = this.fac.getKB(url, OntSpec.PLAIN, false);
@@ -1507,8 +1522,9 @@ public class DiskRepository extends WriteKBRepository {
             e.printStackTrace();
         }
         return null;
-    }
+    }*/
 
+    /*  ASSERTION STUFF LATER
     public void addAssertion(String username, Graph assertion) {
         String url = this.ASSERTIONSURI(username);
         try {
@@ -1540,7 +1556,7 @@ public class DiskRepository extends WriteKBRepository {
       }
     }
 
-    /*public List<String> getQueriesToBeRun(Graph assertions) {
+    public List<String> getQueriesToBeRun(Graph assertions) {
         List<Triple> UITriples = assertions.getTriples();
         HashSet<String> toQuery = new HashSet<String>();
         String temp;
@@ -1563,7 +1579,7 @@ public class DiskRepository extends WriteKBRepository {
         for (String strTemp : toQuery)
             ToBeQueried.add(strTemp);
         return ToBeQueried;
-    }*/
+    }
 
     public void updateAssertions(String username, Graph assertions) {
         String url = this.ASSERTIONSURI(username);
@@ -1593,6 +1609,7 @@ public class DiskRepository extends WriteKBRepository {
             e.printStackTrace();
         }
     }
+    */
 
     /*
      * Narratives 

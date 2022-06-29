@@ -7,8 +7,6 @@ import java.util.List;
 import org.diskproject.shared.classes.util.GUID;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 public class TriggeredLOI implements Comparable<TriggeredLOI> {
   public static enum Status {
     QUEUED, RUNNING, FAILED, SUCCESSFUL
@@ -217,33 +215,6 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
 
   public void setMetaWorkflows(List<WorkflowBindings> metaWorkflows) {
     this.metaWorkflows = metaWorkflows;
-  }
-
-  //FIXME: This is the way it looks in the list.
-  @JsonIgnore
-  public String getHeaderHTML() {
-    String extra ="", extracls="";
-    if(status != null) {
-      String icon = "icons:hourglass-empty";
-      if(status == Status.SUCCESSFUL) {
-        icon = "icons:check";
-      }
-      else if(status == Status.FAILED) {
-        icon = "icons:clear";
-      }
-      extra = " <iron-icon class='"+status+"' icon='"+icon+"' />";
-      extracls = " " +status;
-    } else {
-      extracls = " TORUN";
-    }
-
-    String html = "<div class='name" + extracls+ "'>"+ name + extra +"</div>";
-    html += "<div class='description'>";
-    if(description != null)
-      html += description;
-    html += "</div>";
-
-    return html;
   }
 
   public String toString() {

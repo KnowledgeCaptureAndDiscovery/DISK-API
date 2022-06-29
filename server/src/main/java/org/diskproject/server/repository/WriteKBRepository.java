@@ -51,9 +51,9 @@ public class WriteKBRepository extends KBRepository {
         return this.DOMURI(username) + "/tlois";
     }
 
-    public String ASSERTIONSURI (String username) {
-        return this.DOMURI(username) + "/assertions";
-    }
+    //public String ASSERTIONSURI (String username) {
+    //    return this.DOMURI(username) + "/assertions";
+    //}
     
     private KBAPI getOrCreateKB (String url) {
         KBAPI kb = null;
@@ -440,7 +440,7 @@ public class WriteKBRepository extends KBRepository {
     
     // -- Line of inquiry
     protected boolean writeLOI (String username, LineOfInquiry loi) {
-        Boolean newLOI = loi.getId() == null;
+        Boolean newLOI = loi.getId() == null || loi.getId().equals("");
         if (newLOI) {
             loi.setId(GUID.randomId("LOI"));
         }
@@ -620,7 +620,7 @@ public class WriteKBRepository extends KBRepository {
 
     // -- Triggered Lines of Inquiry
     protected boolean writeTLOI (String username, TriggeredLOI tloi) {
-        if (tloi.getId() == null)
+        if (tloi.getId() == null || tloi.getId().equals(""))
             return false;
 
         String userDomain = this.TLOIURI(username);
@@ -1027,5 +1027,4 @@ public class WriteKBRepository extends KBRepository {
         }
         return list;
     }
-    
 }
