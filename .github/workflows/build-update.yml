@@ -14,7 +14,7 @@ env:
   #variables related with the continuous delivery
   MANIFEST_REPOSITORY: KnowledgeCaptureAndDiscovery/k8s
   MANIFEST_REPOSITORY_BRANCH: master
-  MANIFEST_REPOSITORY_PATH: disk-server/disk
+  MANIFEST_REPOSITORY_PATH: disk-server/disk/prod
   KUSTOMIZE_IMAGE_NAME: backend-image-prod
   #security level
   VULNERABILITY_SCAN_LEVEL: "CRITICAL"
