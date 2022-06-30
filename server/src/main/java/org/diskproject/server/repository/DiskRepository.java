@@ -70,7 +70,7 @@ public class DiskRepository extends WriteKBRepository {
     Pattern varPattern = Pattern.compile("\\?(.+?)\\b");
     Pattern varCollPattern = Pattern.compile("\\[\\s*\\?(.+?)\\s*\\]");
 
-    protected KBAPI questionKb;
+    protected KBAPI questionKB;
     protected KBCache SQOnt;
 
     Map<String, Vocabulary> vocabularies;
@@ -80,8 +80,6 @@ public class DiskRepository extends WriteKBRepository {
     static DataMonitor dataThread;
 
     private Map<String, List<List<String>>> optionsCache;
-    private Map<String, DataAdapter> dataAdapters;
-    private Map<String, MethodAdapter> methodAdapters;
     private Map<String, KBAPI> externalOntologies;
     private Map<String, String> externalOntologiesNamespaces;
 
@@ -105,8 +103,8 @@ public class DiskRepository extends WriteKBRepository {
         this.setDomain(this.server);
 
         // Initialize
-        dataAdapters = new HashMap<String, DataAdapter>();
-        methodAdapters = new HashMap<String, MethodAdapter>();
+        this.dataAdapters = new HashMap<String, DataAdapter>();
+        this.methodAdapters = new HashMap<String, MethodAdapter>();
         this.initializeDataAdapters();
         this.initializeMethodAdapters();
         initializeKB();
@@ -137,7 +135,7 @@ public class DiskRepository extends WriteKBRepository {
             return;
         
         try {
-            this.questionKb = fac.getKB(KBConstants.QUESTIONSURI(), OntSpec.PLAIN, false, true);
+            this.questionKB = fac.getKB(KBConstants.QUESTIONSURI(), OntSpec.PLAIN, false, true);
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Error reading Question KB");
@@ -147,7 +145,7 @@ public class DiskRepository extends WriteKBRepository {
         // Load questions
         optionsCache = new WeakHashMap<String, List<List<String>>>();
         this.start_read();
-        SQOnt = new KBCache(this.questionKb);
+        SQOnt = new KBCache(this.questionKB);
         this.end();
         loadQuestionTemplates();
 
@@ -203,7 +201,7 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     public void reloadKBCaches () {
-        KBAPI[] kbs = {this.ontkb, this.questionKb};//, this.hypontkb};
+        KBAPI[] kbs = {this.ontKB, this.questionKB};
 
         try {
             this.start_write();
@@ -384,12 +382,10 @@ public class DiskRepository extends WriteKBRepository {
         this.vocabularies = new HashMap<String, Vocabulary>();
         try {
             this.start_read();
-            /*this.vocabularies.put(KBConstants.HYPURI(),
-                    this.initializeVocabularyFromKB(this.hypontkb, KBConstants.HYPNS()));*/
             this.vocabularies.put(KBConstants.DISKURI(),
-                    this.initializeVocabularyFromKB(this.ontkb, KBConstants.DISKNS()));
+                    this.initializeVocabularyFromKB(this.ontKB, KBConstants.DISKNS()));
             this.vocabularies.put(KBConstants.QUESTIONSURI(),
-                    this.initializeVocabularyFromKB(this.questionKb, KBConstants.QUESTIONSNS()));
+                    this.initializeVocabularyFromKB(this.questionKB, KBConstants.QUESTIONSNS()));
 
             // Load vocabularies from config file
             for (String prefix: this.externalOntologies.keySet()) {
@@ -419,19 +415,19 @@ public class DiskRepository extends WriteKBRepository {
             if (!prop.getID().startsWith(vocabulary.getNamespace()))
                 continue;
 
-            KBObject domcls = kb.getPropertyDomain(prop);
-            KBObject rangecls = kb.getPropertyRange(prop);
+            KBObject domCls = kb.getPropertyDomain(prop);
+            KBObject rangeCls = kb.getPropertyRange(prop);
 
-            Property mprop = new Property();
-            mprop.setId(prop.getID());
-            mprop.setName(prop.getName());
+            Property mProp = new Property();
+            mProp.setId(prop.getID());
+            mProp.setName(prop.getName());
 
             String label = this.createPropertyLabel(prop.getName());
-            mprop.setLabel(label);
-            if (domcls != null)   mprop.setDomain(domcls.getID());
-            if (rangecls != null) mprop.setRange(rangecls.getID());
+            mProp.setLabel(label);
+            if (domCls != null)   mProp.setDomain(domCls.getID());
+            if (rangeCls != null) mProp.setRange(rangeCls.getID());
 
-            vocabulary.addProperty(mprop);
+            vocabulary.addProperty(mProp);
         }
     }
 
@@ -440,9 +436,9 @@ public class DiskRepository extends WriteKBRepository {
         for (KBTriple t : kb.genericTripleQuery(null, typeprop, null)) {
             KBObject inst = t.getSubject();
             KBObject typeobj = t.getObject();
-            String instid = inst.getID();
+            String instId = inst.getID();
 
-            if (instid == null || instid.startsWith(vocabulary.getNamespace()) 
+            if (instId == null || instId.startsWith(vocabulary.getNamespace()) 
                 || typeobj.getNamespace().equals(KBConstants.OWLNS())) {
                 continue;
             }
@@ -461,27 +457,27 @@ public class DiskRepository extends WriteKBRepository {
             // Add asserted types
             if (!typeobj.getID().startsWith(vocabulary.getNamespace()))
                 continue;
-            String clsid = typeobj.getID();
+            String clsId = typeobj.getID();
             Type type = new Type();
-            type.setId(clsid);
+            type.setId(clsId);
             type.setName(typeobj.getName());
             type.setLabel(kb.getLabel(typeobj));
             vocabulary.addType(type);
         }
 
         // Add types not asserted
-        KBObject clsobj = kb.getProperty(KBConstants.OWLNS() + "Class");
-        for (KBTriple t : kb.genericTripleQuery(null, typeprop, clsobj)) {
+        KBObject clsObj = kb.getProperty(KBConstants.OWLNS() + "Class");
+        for (KBTriple t : kb.genericTripleQuery(null, typeprop, clsObj)) {
             KBObject cls = t.getSubject();
-            String clsid = cls.getID();
-            if (clsid == null || !clsid.startsWith(vocabulary.getNamespace()) || cls.getNamespace().equals(KBConstants.OWLNS()) ) {
+            String clsId = cls.getID();
+            if (clsId == null || !clsId.startsWith(vocabulary.getNamespace()) || cls.getNamespace().equals(KBConstants.OWLNS()) ) {
                 continue;
             }
 
-            Type type = vocabulary.getType(clsid);
+            Type type = vocabulary.getType(clsId);
             if (type == null) {
                 type = new Type();
-                type.setId(clsid);
+                type.setId(clsId);
                 type.setName(cls.getName());
                 type.setLabel(kb.getLabel(cls));
                 vocabulary.addType(type);
@@ -489,18 +485,18 @@ public class DiskRepository extends WriteKBRepository {
         }
 
         // Add type hierarchy
-        KBObject subclsprop = kb.getProperty(KBConstants.RDFSNS() + "subClassOf");
-        for (KBTriple t : kb.genericTripleQuery(null, subclsprop, null)) {
-            KBObject subcls = t.getSubject();
+        KBObject subClsProp = kb.getProperty(KBConstants.RDFSNS() + "subClassOf");
+        for (KBTriple t : kb.genericTripleQuery(null, subClsProp, null)) {
+            KBObject subCls = t.getSubject();
             KBObject cls = t.getObject();
-            String clsid = cls.getID();
+            String clsId = cls.getID();
 
-            Type subtype = vocabulary.getType(subcls.getID());
+            Type subtype = vocabulary.getType(subCls.getID());
             if (subtype == null)
                 continue;
 
-            if (!clsid.startsWith(KBConstants.OWLNS()))
-                subtype.setParent(clsid);
+            if (!clsId.startsWith(KBConstants.OWLNS()))
+                subtype.setParent(clsId);
 
             Type type = vocabulary.getType(cls.getID());
             if (type != null && subtype.getId().startsWith(vocabulary.getNamespace())) {
@@ -666,7 +662,8 @@ public class DiskRepository extends WriteKBRepository {
         List<LineOfInquiry> lois = this.listLOIPreviews(username);
 
         for (LineOfInquiry l: lois) {
-            TreeItem item = new TreeItem(l.getId(), l.getName(), l.getDescription(), null, l.getDateCreated(), l.getAuthor());
+            TreeItem item = new TreeItem(l.getId(), l.getName(), l.getDescription(),
+                                        null, l.getDateCreated(), l.getAuthor());
             if (l.getDateModified() != null) item.setDateModified(l.getDateModified());
             list.add(item);
         }
@@ -1207,36 +1204,8 @@ public class DiskRepository extends WriteKBRepository {
         }
 
         return checkExistingTLOIs(username, tlois);
-  }
+    }
     
-
-    /*private String addQueryAssertions (String queryPattern, String assertionUri) {
-      Pattern ASSERTION_PATTERN = Pattern.compile("(user:[^\\s]+)");
-        String extra = "";
-      try {
-          this.start_read();
-          Graph graph = this.getKBGraph(assertionUri);
-          Matcher m = ASSERTION_PATTERN.matcher(queryPattern);
-        String aURL = assertionUri + "#";
-          while (m.find()) {
-              String s = m.group(1);
-              String id = s.replace("user:", aURL);
-              for (Triple t: graph.getTriplesForSubject(id)) {
-                String o = t.getObject().toString();
-                String p = t.getPredicate().toString();
-                if (o != null && p != null && !p.contains("rdf-syntax-ns#type")) { //TODO: do not add types.
-                  extra += s + " <" + p + "> " + o + " .\n";
-                  System.out.println("+ " +s + " " + p + " " + o);
-                }
-              }
-          }
-      }
-      finally {
-        this.end();
-      }
-      return queryPattern + extra;
-    }*/
-
     // This replaces all triggered lines of inquiry already executed. tlois should be from the same hypothesis.
     private List<TriggeredLOI> checkExistingTLOIs(String username, List<TriggeredLOI> tlois) {
         List<TriggeredLOI> checked = new ArrayList<TriggeredLOI>();
@@ -1457,159 +1426,6 @@ public class DiskRepository extends WriteKBRepository {
 
         return true;
     }
-
-    /**
-     * Assertions
-     */
-
-    //private KBObject getKBValue(Value v, KBAPI kb) {
-    //    if (v.getType() == Value.Type.LITERAL) {
-    //        if (v.getDatatype() != null)
-    //            return kb.createXSDLiteral(v.getValue().toString(), v.getDatatype());
-    //        else
-    //            return kb.createLiteral(v.getValue());
-    //    } else {
-    //        return kb.getResource(v.getValue().toString());
-    //    }
-    //}
-
-    //private KBTriple getKBTriple(Triple triple, KBAPI kb) {
-    //    KBObject subj = kb.getResource(triple.getSubject());
-    //    KBObject pred = kb.getResource(triple.getPredicate());
-    //    KBObject obj = getKBValue(triple.getObject(), kb);
-    //    if (subj != null && pred != null && obj != null)
-    //        return this.fac.getTriple(subj, pred, obj);
-    //    return null;
-    //}
-
-    /*private Value getObjectValue(KBObject obj) {
-        Value v = new Value();
-        if (obj.isLiteral()) {
-            Object valobj = obj.getValue();
-            if (valobj instanceof Date) {
-                valobj = dateformatter.format((Date) valobj);
-            }
-            if (valobj instanceof String) {
-                //Fix quotes and \n
-                valobj = ((String) valobj).replace("\"", "\\\"").replace("\n", "\\n");
-            }
-            v.setType(Value.Type.LITERAL);
-            v.setValue(valobj);
-            v.setDatatype(obj.getDataType());
-        } else {
-            v.setType(Value.Type.URI);
-            v.setValue(obj.getID());
-        }
-        return v;
-    }*/
-
-    /*private Graph getKBGraph(String url) {
-        try {
-            Graph graph = new Graph();
-            KBAPI kb = this.fac.getKB(url, OntSpec.PLAIN, false);
-            if (kb == null)
-                return null;
-            for (KBTriple t : kb.genericTripleQuery(null, null, null)) {
-                Value value = this.getObjectValue(t.getObject());
-                Triple triple = new Triple();
-                triple.setSubject(t.getSubject().getID());
-                triple.setPredicate(t.getPredicate().getID());
-                triple.setObject(value);
-                graph.addTriple(triple);
-            }
-            return graph;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }*/
-
-    /*  ASSERTION STUFF LATER
-    public void addAssertion(String username, Graph assertion) {
-        String url = this.ASSERTIONSURI(username);
-        try {
-            KBAPI kb = this.fac.getKB(url, OntSpec.PLAIN, true);
-            this.start_write();
-            for (Triple triple : assertion.getTriples()) {
-                KBTriple t = this.getKBTriple(triple, kb);
-                if (t != null)
-                    kb.addTriple(t);
-            }
-            this.save(kb); 
-            this.end();
-
-            // Re-run hypotheses if needed TODO
-            //this.requeryHypotheses(username, domain);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public Graph listAssertions(String username, String domain) {
-      try {
-          String url = this.ASSERTIONSURI(username);
-          this.start_read();
-          return this.getKBGraph(url);
-      }
-      finally {
-        this.end();
-      }
-    }
-
-    public List<String> getQueriesToBeRun(Graph assertions) {
-        List<Triple> UITriples = assertions.getTriples();
-        HashSet<String> toQuery = new HashSet<String>();
-        String temp;
-        //String[] temp2;
-        String file;
-        String query;
-        //Triple tri;
-        for (int i = 0; i < UITriples.size(); i++) {
-            temp = UITriples.get(i).getPredicate(); // check if asking for query
-            if (temp.equals(KBConstants.NEURONS() + "hasEnigmaQueryLiteral")) {
-                temp = UITriples.get(i).getSubject().toString();
-                file = temp.substring(temp.indexOf("#") + 1);
-                temp = UITriples.get(i).getObject().getValue().toString();
-                query = temp.replace("|", "/");
-                toQuery.add(file + " " + query);
-
-            }
-        }
-        List<String> ToBeQueried = new ArrayList<String>();
-        for (String strTemp : toQuery)
-            ToBeQueried.add(strTemp);
-        return ToBeQueried;
-    }
-
-    public void updateAssertions(String username, Graph assertions) {
-        String url = this.ASSERTIONSURI(username);
-        try {
-            KBAPI kb = this.fac.getKB(url, OntSpec.PLAIN, true);
-            this.start_write();
-            if(kb.delete() && this.save(kb) && this.end()) {
-              this.addAssertion(username, assertions);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            this.end();
-        }
-    }
-
-    public void deleteAssertion(String username, Graph assertion) {
-        String url = this.ASSERTIONSURI(username);
-        try {
-            KBAPI kb = this.fac.getKB(url, OntSpec.PLAIN, true);
-            for (Triple triple : assertion.getTriples()) {
-                KBTriple t = this.getKBTriple(triple, kb);
-                if (t != null)
-                    kb.removeTriple(t);
-            }
-            kb.save();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    */
 
     /*
      * Narratives 

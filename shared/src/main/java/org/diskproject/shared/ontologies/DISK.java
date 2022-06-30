@@ -19,6 +19,7 @@ public class DISK {
     public static final String HAS_VARIABLE = "hasVariable";
     public static final String HAS_BINDING_VALUE = "hasBindingValue";
     public static final String HAS_VARIABLE_BINDING = "hasVariableBinding";
+    public static final String HAS_SOURCE = "hasSource";
 
     public static final String HAS_HYPOTHESIS_QUERY = "hasHypothesisQuery";
     public static final String HAS_DATA_QUERY = "hasDataQuery";

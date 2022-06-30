@@ -40,16 +40,13 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.diskproject.server.adapters.MethodAdapter;
-import org.diskproject.server.util.Config;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
-import org.semanticweb.owlapi.profiles.violations.UseOfAnonymousIndividual;
 
-import com.gargoylesoftware.htmlunit.javascript.host.Console;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -63,7 +60,6 @@ import edu.isi.kcap.ontapi.KBTriple;
 import edu.isi.kcap.ontapi.OntFactory;
 import edu.isi.kcap.ontapi.OntSpec;
 
-@SuppressWarnings("unused")
 public class WingsAdapter extends MethodAdapter {
 	static WingsAdapter singleton = null;
 
@@ -125,6 +121,19 @@ public class WingsAdapter extends MethodAdapter {
 
 	public String RUNID(String id) {
 		return this.RUNURI(id) + "#" + id;
+	}
+
+	public String getWorkflowId(String id) {
+		return this.WFLOWID(id);
+	}
+
+	public String getWorkflowUri(String id) {
+		return this.WFLOWURI(id);
+	}
+
+	public String getWorkflowLink(String id) {
+		return this.server + "/users/" + this.getUsername() + "/" + this.domain
+				+ "/workflows/" + id + ".owl";
 	}
 
 	public List<Workflow> getWorkflowList() {
@@ -520,11 +529,6 @@ public class WingsAdapter extends MethodAdapter {
 		return true;
 	}
 
-	public String getWorkflowLink(String id) {
-		return this.server + "/users/" + this.getUsername() + "/" + this.domain
-				+ "/workflows/" + id + ".owl";
-	}
-
 	public String runWorkflow(String wflowname, List<VariableBinding> vbindings, Map<String, Variable> inputVariables) {
 		try {
 			wflowname = WFLOWID(wflowname);
@@ -871,73 +875,6 @@ public class WingsAdapter extends MethodAdapter {
 		return false;
 	}
 
-private List<NameValuePair> getBindings(String json,
-		List<VariableBinding> initbindings, List<NameValuePair> formdata) {
-
-	Map<String, Boolean> isBound = new HashMap<String, Boolean>();
-	for (VariableBinding vbinding : initbindings)
-		isBound.put(vbinding.getVariable(), true);
-
-	if (json == null)
-		return null;
-
-	JsonParser jsonParser = new JsonParser();
-	JsonObject expobj = jsonParser.parse(json.trim()).getAsJsonObject();
-
-	if (!expobj.get("success").getAsBoolean())
-		return null;
-
-	JsonObject dataobj = expobj.get("data").getAsJsonObject();
-	JsonArray bindingsobj = dataobj.get("bindings").getAsJsonArray();
-	if (bindingsobj.size() == 0)
-		return formdata;
-
-	JsonObject bindingobj = bindingsobj.get(0).getAsJsonObject();
-	for (Entry<String, JsonElement> entry : bindingobj.entrySet()) {
-		if (!isBound.containsKey(entry.getKey())) {
-			if (entry.getValue().isJsonArray()) {
-				for (JsonElement bindingEl : entry.getValue()
-						.getAsJsonArray())
-					formdata.add(new BasicNameValuePair(entry.getKey(),
-							this.getJsonBindingValue(bindingEl)));
-			} else {
-				formdata.add(new BasicNameValuePair(entry.getKey(), this
-						.getJsonBindingValue(entry.getValue())));
-			}
-		}
-	}
-	return formdata;
-}
-
-private String getJsonBindingValue(JsonElement el) {
-	JsonObject obj = el.getAsJsonObject();
-	if (obj.get("type").getAsString().equals("uri"))
-		return obj.get("id").getAsString();
-	else
-		return obj.get("value").getAsString();
-}
-
-private List<NameValuePair> createFormData(String templateid, List<VariableBinding> bindings,
-		Map<String, Variable> inputs) {
-	List<NameValuePair> data = new ArrayList<NameValuePair>();
-	HashMap<String, String> paramDTypes = new HashMap<String, String>();
-
-
-	data.add(new BasicNameValuePair("templateId", templateid));
-
-	for (VariableBinding vbinding : bindings) {
-		if (paramDTypes.containsKey(vbinding.getVariable())) {
-			data.add(new BasicNameValuePair(vbinding.getVariable(),
-					vbinding.getBinding()));
-		} else {
-			data.add(new BasicNameValuePair(vbinding.getVariable(), DATAID(vbinding.getBinding())));
-		}
-	}
-	data.add(new BasicNameValuePair("__paramdtypes", json
-			.toJson(paramDTypes)));
-	return data;
-}
-
 private String get(String pageid, List<NameValuePair> data) {
 	this.login();
 	CloseableHttpClient client = HttpClientBuilder.create().setDefaultCookieStore(this.cookieStore).build();
@@ -1254,7 +1191,7 @@ private String upload(String pageid, String type, File file) {
 
 			String liburi = this.WFLOWURI() + "/library.owl";
 			try {
-				KBAPI kb = fac.getKB(liburi, OntSpec.PLAIN);
+				fac.getKB(liburi, OntSpec.PLAIN);
 				System.out.print("OK\n");
 				return true;
 			} catch (Exception e) {

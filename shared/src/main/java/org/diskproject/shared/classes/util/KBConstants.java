@@ -1,7 +1,7 @@
 package org.diskproject.shared.classes.util;
 
 public class KBConstants {
-  private static String diskuri = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/disk/release/1.2.2/ontology.ttl";
+  private static String diskuri = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/disk/release/1.2.3/ontology.ttl";
   private static String hypuri  = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/hypothesis/release/0.0.3/ontology.xml";
   private static String questionsuri = "https://knowledgecaptureanddiscovery.github.io/QuestionOntology/release/v1.0.0/ontology.xml";
 

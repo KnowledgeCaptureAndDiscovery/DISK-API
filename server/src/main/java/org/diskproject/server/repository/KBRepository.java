@@ -1,9 +1,12 @@
 package org.diskproject.server.repository;
 
 import java.io.File;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
+import org.diskproject.server.adapters.DataAdapter;
+import org.diskproject.server.adapters.MethodAdapter;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.KBCache;
 import org.diskproject.shared.classes.util.KBConstants;
@@ -19,9 +22,12 @@ public class KBRepository implements TransactionsAPI {
   protected String tdbdir;
   protected OntFactory fac;
   protected transient TransactionsAPI transaction;
-  protected KBAPI ontkb;
+  protected KBAPI ontKB;
   private Semaphore mutex;
   protected KBCache DISKOnt;
+
+  protected Map<String, DataAdapter> dataAdapters;
+  protected Map<String, MethodAdapter> methodAdapters;
 
   protected void setConfiguration() {
     if(Config.get() == null)
@@ -29,9 +35,9 @@ public class KBRepository implements TransactionsAPI {
     PropertyListConfiguration props = Config.get().getProperties();
     this.server = props.getString("server");
     tdbdir = props.getString("storage.tdb");
-    File tdbdirf = new File(tdbdir);
-    if(!tdbdirf.exists() && !tdbdirf.mkdirs()) {
-      System.err.println("Cannot create tdb directory : " + tdbdirf.getAbsolutePath());
+    File tdbdirF = new File(tdbdir);
+    if(!tdbdirF.exists() && !tdbdirF.mkdirs()) {
+      System.err.println("Cannot create tdb directory : " + tdbdirF.getAbsolutePath());
     }
   }
   
@@ -46,23 +52,31 @@ public class KBRepository implements TransactionsAPI {
     this.transaction = new TransactionsJena(this.fac);
       
     try {
-        this.ontkb = fac.getKB(KBConstants.DISKURI(), OntSpec.PELLET, false, true);
+        this.ontKB = fac.getKB(KBConstants.DISKURI(), OntSpec.PELLET, false, true);
     } catch (Exception e) {
         e.printStackTrace();
         System.out.println("Error reading KB: " + KBConstants.DISKURI());
         return;
     }
     
-    if (this.ontkb != null) {
+    if (this.ontKB != null) {
         this.start_read();
-        this.DISKOnt = new KBCache(ontkb);
+        this.DISKOnt = new KBCache(ontKB);
         this.end();
     } else {
         return;
     }
 
   }
-  
+
+  public MethodAdapter getMethodAdapterByName (String source) {
+      for (MethodAdapter adapter: this.methodAdapters.values()) {
+          if (adapter.getName().equals(source))
+              return adapter;
+      }
+      return null;
+  }
+
   //TransactionsAPI functions
   private void acquire () {
     if (is_in_transaction()) {

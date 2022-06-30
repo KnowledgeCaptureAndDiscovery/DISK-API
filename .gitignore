@@ -18,3 +18,4 @@ packer_cache/
 log-*.txt
 .terraform
 terraform.tfstate.backup
+.vscode/settings.json

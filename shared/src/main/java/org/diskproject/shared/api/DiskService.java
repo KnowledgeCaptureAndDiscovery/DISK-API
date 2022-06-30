@@ -84,28 +84,6 @@ public interface DiskService extends DirectRestService {
       @PathParam("id") String id);
   
   /*
-   * Assertions LATER
-  @POST
-  @Path("assertions")
-  public void addAssertion(
-      @JsonProperty("assertions") Graph assertions);
-  
-  @GET
-  @Path("assertions")
-  public Graph listAssertions();
-  
-  @DELETE
-  @Path("assertions")
-  public void deleteAssertion(
-      @JsonProperty("assertions") Graph assertions);
-
-  @PUT
-  @Path("assertions")
-  public void updateAssertions (
-      @JsonProperty("assertions") Graph assertions);
-   */
-
-  /*
    * Lines of Inquiry
    */
 

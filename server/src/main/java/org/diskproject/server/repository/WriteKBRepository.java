@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
+import org.diskproject.server.adapters.MethodAdapter;
 import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.common.Triple;
 import org.diskproject.shared.classes.common.TripleDetails;
@@ -51,10 +52,6 @@ public class WriteKBRepository extends KBRepository {
         return this.DOMURI(username) + "/tlois";
     }
 
-    //public String ASSERTIONSURI (String username) {
-    //    return this.DOMURI(username) + "/assertions";
-    //}
-    
     private KBAPI getOrCreateKB (String url) {
         KBAPI kb = null;
         try {
@@ -454,32 +451,32 @@ public class WriteKBRepository extends KBRepository {
 
         this.start_write();
 
-        KBObject loiitem = userKB.createObjectOfClass(loiId, DISKOnt.getClass(DISK.LOI));
+        KBObject loiItem = userKB.createObjectOfClass(loiId, DISKOnt.getClass(DISK.LOI));
         if (loi.getName() != null)
-            userKB.setLabel(loiitem, loi.getName());
+            userKB.setLabel(loiItem, loi.getName());
         if (loi.getDescription() != null)
-            userKB.setComment(loiitem, loi.getDescription());
+            userKB.setComment(loiItem, loi.getDescription());
         if (loi.getDateCreated() != null)
-            userKB.setPropertyValue(loiitem, DISKOnt.getProperty(DISK.DATE_CREATED), userKB.createLiteral(loi.getDateCreated()));
+            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.DATE_CREATED), userKB.createLiteral(loi.getDateCreated()));
         if (loi.getDateModified() != null)
-            userKB.setPropertyValue(loiitem, DISKOnt.getProperty(DISK.DATE_MODIFIED), userKB.createLiteral(loi.getDateModified()));
+            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.DATE_MODIFIED), userKB.createLiteral(loi.getDateModified()));
         if (loi.getAuthor() != null)
-            userKB.setPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_AUTHOR), userKB.createLiteral(loi.getAuthor()));
+            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_AUTHOR), userKB.createLiteral(loi.getAuthor()));
 
         if (loi.getHypothesisQuery() != null)
-            userKB.setPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_QUERY), userKB.createLiteral(loi.getHypothesisQuery()));
+            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_QUERY), userKB.createLiteral(loi.getHypothesisQuery()));
         if (loi.getDataQuery() != null)
-            userKB.setPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY), userKB.createLiteral(loi.getDataQuery()));
+            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY), userKB.createLiteral(loi.getDataQuery()));
         if (loi.getDataSource() != null)
-            userKB.setPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE), userKB.createLiteral(loi.getDataSource()));
+            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE), userKB.createLiteral(loi.getDataSource()));
         if (loi.getNotes() != null)
-            userKB.setPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES), userKB.createLiteral(loi.getNotes()));
+            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES), userKB.createLiteral(loi.getNotes()));
         if (loi.getRelevantVariables() != null)
-            userKB.setPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_RELEVANT_VARIABLES), userKB.createLiteral(loi.getRelevantVariables()));
+            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_RELEVANT_VARIABLES), userKB.createLiteral(loi.getRelevantVariables()));
         if (loi.getQuestion() != null)
-            userKB.setPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_QUESTION), userKB.createLiteral(loi.getQuestion()));
+            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION), userKB.createLiteral(loi.getQuestion()));
         if (loi.getExplanation() != null)
-            userKB.setPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION), userKB.createLiteral(loi.getExplanation()));
+            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION), userKB.createLiteral(loi.getExplanation()));
         
         this.save(userKB);
         this.end();
@@ -499,55 +496,55 @@ public class WriteKBRepository extends KBRepository {
             return null;
         
         this.start_read();
-        KBObject loiitem = userKB.getIndividual(loiId);
-        if (loiitem == null) {
+        KBObject loiItem = userKB.getIndividual(loiId);
+        if (loiItem == null) {
             this.end();
             return null;
         }
         
         LineOfInquiry loi = new LineOfInquiry();
         loi.setId(id);
-        loi.setName(userKB.getLabel(loiitem));
-        loi.setDescription(userKB.getComment(loiitem));
+        loi.setName(userKB.getLabel(loiItem));
+        loi.setDescription(userKB.getComment(loiItem));
 
-        KBObject dateobj = userKB.getPropertyValue(loiitem, DISKOnt.getProperty(DISK.DATE_CREATED));
+        KBObject dateobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.DATE_CREATED));
         if (dateobj != null)
             loi.setDateCreated(dateobj.getValueAsString());
 
-        KBObject datasourceobj = userKB.getPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE));
+        KBObject datasourceobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE));
         if (datasourceobj != null)
             loi.setDataSource(datasourceobj.getValueAsString());
 
-        KBObject dateModifiedObj = userKB.getPropertyValue(loiitem, DISKOnt.getProperty(DISK.DATE_MODIFIED));
+        KBObject dateModifiedObj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.DATE_MODIFIED));
         if (dateModifiedObj != null)
             loi.setDateModified(dateModifiedObj.getValueAsString());
 
-        KBObject authorobj = userKB.getPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_AUTHOR));
+        KBObject authorobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_AUTHOR));
         if (authorobj != null)
             loi.setAuthor(authorobj.getValueAsString());
 
-        KBObject notesobj = userKB.getPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES));
+        KBObject notesobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES));
         if (notesobj != null) {
             loi.setNotes(notesobj.getValueAsString());
         }
 
-        KBObject rvarobj = userKB.getPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_RELEVANT_VARIABLES));
+        KBObject rvarobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_RELEVANT_VARIABLES));
         if (rvarobj != null)
             loi.setRelevantVariables(rvarobj.getValueAsString());
 
-        KBObject hqueryobj = userKB.getPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_QUERY));
+        KBObject hqueryobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_QUERY));
         if (hqueryobj != null)
             loi.setHypothesisQuery(hqueryobj.getValueAsString());
         
-        KBObject dqueryobj = userKB.getPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY));
+        KBObject dqueryobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY));
         if (dqueryobj != null)
             loi.setDataQuery(dqueryobj.getValueAsString());
 
-        KBObject questionobj = userKB.getPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_QUESTION));
+        KBObject questionobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION));
         if (questionobj != null)
             loi.setQuestion(questionobj.getValueAsString());
 
-        KBObject explobj = userKB.getPropertyValue(loiitem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION));
+        KBObject explobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION));
         if (explobj != null) {
             loi.setExplanation(explobj.getValueAsString());
         }
@@ -633,56 +630,56 @@ public class WriteKBRepository extends KBRepository {
             return false;
         
         this.start_write();
-        KBObject tloiitem = userKB.createObjectOfClass(tloiid, DISKOnt.getClass(DISK.TLOI));
+        KBObject tloiItem = userKB.createObjectOfClass(tloiid, DISKOnt.getClass(DISK.TLOI));
 
         if (tloi.getName() != null)
-            userKB.setLabel(tloiitem, tloi.getName());
+            userKB.setLabel(tloiItem, tloi.getName());
         if (tloi.getDescription() != null)
-            userKB.setComment(tloiitem, tloi.getDescription());
+            userKB.setComment(tloiItem, tloi.getDescription());
         if (tloi.getDataSource() != null)
-            userKB.setPropertyValue(tloiitem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE), userKB.createLiteral(tloi.getDataSource()));
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE), userKB.createLiteral(tloi.getDataSource()));
         if (tloi.getDateCreated() != null)
-            userKB.setPropertyValue(tloiitem, DISKOnt.getProperty(DISK.DATE_CREATED), userKB.createLiteral(tloi.getDateCreated()));
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.DATE_CREATED), userKB.createLiteral(tloi.getDateCreated()));
         if (tloi.getDateModified() != null)
-            userKB.setPropertyValue(tloiitem, DISKOnt.getProperty(DISK.DATE_MODIFIED), userKB.createLiteral(tloi.getDateModified()));
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.DATE_MODIFIED), userKB.createLiteral(tloi.getDateModified()));
         if (tloi.getAuthor() != null)
-            userKB.setPropertyValue(tloiitem, DISKOnt.getProperty(DISK.HAS_AUTHOR), userKB.createLiteral(tloi.getAuthor()));
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_AUTHOR), userKB.createLiteral(tloi.getAuthor()));
         if (tloi.getDataQuery() != null)
-            userKB.setPropertyValue(tloiitem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY), userKB.createLiteral(tloi.getDataQuery()));
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY), userKB.createLiteral(tloi.getDataQuery()));
         if (tloi.getRelevantVariables() != null)
-            userKB.setPropertyValue(tloiitem, DISKOnt.getProperty(DISK.HAS_RELEVANT_VARIABLES), userKB.createLiteral(tloi.getRelevantVariables()));
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_RELEVANT_VARIABLES), userKB.createLiteral(tloi.getRelevantVariables()));
         if (tloi.getExplanation() != null)
-            userKB.setPropertyValue(tloiitem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION), userKB.createLiteral(tloi.getExplanation()));
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION), userKB.createLiteral(tloi.getExplanation()));
         if (tloi.getConfidenceValue() > 0)
-            userKB.setPropertyValue(tloiitem, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE), userKB.createLiteral(Double.toString(tloi.getConfidenceValue())));
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE), userKB.createLiteral(Double.toString(tloi.getConfidenceValue())));
         if (tloi.getStatus() != null)
-            userKB.setPropertyValue(tloiitem, DISKOnt.getProperty(DISK.HAS_TLOI_STATUS), userKB.createLiteral(tloi.getStatus().toString()));
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_TLOI_STATUS), userKB.createLiteral(tloi.getStatus().toString()));
         
         List<String> inputList = tloi.getInputFiles();
         if (inputList != null && inputList.size() > 0) {
             for (String inputurl: inputList) {
-                userKB.addPropertyValue(tloiitem, DISKOnt.getProperty(DISK.HAS_INPUT_FILE), userKB.createLiteral(inputurl));
+                userKB.addPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_INPUT_FILE), userKB.createLiteral(inputurl));
             }
         }
 
         List<String> outputList = tloi.getOutputFiles();
         if (outputList != null && outputList.size() > 0) {
             for (String outputurl: outputList) {
-                userKB.addPropertyValue(tloiitem, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE), userKB.createLiteral(outputurl));
+                userKB.addPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE), userKB.createLiteral(outputurl));
             }
         }
         
         if (tloi.getLoiId() != null) {
             KBObject lobj = userKB.getResource(loins + tloi.getLoiId());
-            userKB.setPropertyValue(tloiitem, DISKOnt.getProperty(DISK.HAS_LOI), lobj);
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_LOI), lobj);
         }
         if (tloi.getParentHypothesisId() != null) {
             KBObject hobj = userKB.getResource(hypns + tloi.getParentHypothesisId());
-            userKB.setPropertyValue(tloiitem, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS), hobj);
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS), hobj);
         }
         for (String hypid : tloi.getResultingHypothesisIds()) {
             KBObject hobj = userKB.getResource(hypns + hypid);
-            userKB.addPropertyValue(tloiitem, DISKOnt.getProperty(DISK.HAS_RESULTING_HYPOTHESIS), hobj);
+            userKB.addPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_RESULTING_HYPOTHESIS), hobj);
         }
 
         this.save(userKB);
@@ -875,15 +872,21 @@ public class WriteKBRepository extends KBRepository {
             this.start_write();
             KBObject item = userKB.getIndividual(fullId);
             
-            //FIXME: This part refers to WINGS workflows, we need to change to methods
             KBAPI kb = userKB;
             for (WorkflowBindings bindings : bindingsList) {
-                String workflowid = WingsAdapter.get().WFLOWID(bindings.getWorkflow());
-                String workflowuri = WingsAdapter.get().WFLOWURI(bindings.getWorkflow());
+                String source = bindings.getSource();
+                MethodAdapter methodAdapter = this.getMethodAdapterByName(source);
+                if (methodAdapter == null) {
+                    System.out.println("Method adapter not found " + source);
+                    continue;
+                }
+                String workflowId = methodAdapter.getWorkflowId(bindings.getWorkflow());
+                String workflowuri = methodAdapter.getWorkflowUri(bindings.getWorkflow());
                 KBObject bindingobj = kb.createObjectOfClass(null, DISKOnt.getClass(DISK.WORKFLOW_BINDING));
                 kb.addPropertyValue(item, bindingprop, bindingobj);
 
-                kb.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_WORKFLOW), kb.getResource(workflowid));
+                kb.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_WORKFLOW), kb.getResource(workflowId));
+                kb.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_SOURCE), kb.createLiteral(source));
 
                 // Get Run details
                 if (bindings.getRun() != null) {
@@ -896,34 +899,34 @@ public class WriteKBRepository extends KBRepository {
                 }
 
                 // Creating workflow data bindings
-                for (VariableBinding vbinding : bindings.getBindings()) {
-                    String varid = vbinding.getVariable();
-                    String binding = vbinding.getBinding();
+                for (VariableBinding vBinding : bindings.getBindings()) {
+                    String varId = vBinding.getVariable();
+                    String binding = vBinding.getBinding();
                     Value bindingValue = new Value(binding, KBConstants.XSDNS() + "string");
                     KBObject varbindingobj = kb.createObjectOfClass(null, DISKOnt.getClass(DISK.VARIABLE_BINDING));
-                    kb.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_VARIABLE), kb.getResource(workflowuri + "#" + varid));
+                    kb.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_VARIABLE), kb.getResource(workflowuri + "#" + varId));
                     kb.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE), this.getKBValue(bindingValue, kb));
                     kb.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING), varbindingobj);
                 }
                 
                 // Creating parameters
                 for (VariableBinding param : bindings.getParameters()) {
-                    String varid = param.getVariable();
+                    String varId = param.getVariable();
                     String binding = param.getBinding();
                     Value bindingValue = new Value(binding, KBConstants.XSDNS() + "string");
                     KBObject paramobj = kb.createObjectOfClass(null,  DISKOnt.getClass(DISK.VARIABLE_BINDING));
-                    kb.setPropertyValue(paramobj, DISKOnt.getProperty(DISK.HAS_VARIABLE), kb.getResource(workflowuri + "#" + varid));
+                    kb.setPropertyValue(paramobj, DISKOnt.getProperty(DISK.HAS_VARIABLE), kb.getResource(workflowuri + "#" + varId));
                     kb.setPropertyValue(paramobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE), this.getKBValue(bindingValue, kb));
                     kb.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_PARAMETER), paramobj);
                 }
 
                 // Creating optional parameters
                 for (VariableBinding param : bindings.getOptionalParameters()) {
-                    String varid = param.getVariable();
+                    String varId = param.getVariable();
                     String binding = param.getBinding();
                     Value bindingValue = new Value(binding, KBConstants.XSDNS() + "string");
                     KBObject paramobj = kb.createObjectOfClass(null,  DISKOnt.getClass(DISK.VARIABLE_BINDING));
-                    kb.setPropertyValue(paramobj, DISKOnt.getProperty(DISK.HAS_VARIABLE), kb.getResource(workflowuri + "#" + varid));
+                    kb.setPropertyValue(paramobj, DISKOnt.getProperty(DISK.HAS_VARIABLE), kb.getResource(workflowuri + "#" + varId));
                     kb.setPropertyValue(paramobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE), this.getKBValue(bindingValue, kb));
                     kb.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_OPTIONAL_PARAMETER), paramobj);
                 }
@@ -960,11 +963,18 @@ public class WriteKBRepository extends KBRepository {
         
         if (kb != null) {
             this.start_write();
-            KBObject loiitem = kb.getIndividual(loiId);
+            KBObject loiItem = kb.getIndividual(loiId);
 
-            for (KBTriple t : kb.genericTripleQuery(loiitem, bindingprop, null)) {
+            for (KBTriple t : kb.genericTripleQuery(loiItem, bindingprop, null)) {
                 KBObject wbobj = t.getObject();
                 WorkflowBindings bindings = new WorkflowBindings();
+                KBObject sourceObj = kb.getPropertyValue(wbobj, DISKOnt.getProperty(DISK.HAS_SOURCE));
+                MethodAdapter methodAdapter = null;
+                if (sourceObj != null) {
+                    String source = sourceObj.getValueAsString();
+                    bindings.setSource(source);
+                    methodAdapter = this.getMethodAdapterByName(source);
+                }
 
                 // Workflow Run details
                 WorkflowRun run = new WorkflowRun();
@@ -981,9 +991,9 @@ public class WriteKBRepository extends KBRepository {
 
                 // Workflow details
                 KBObject workflowobj = kb.getPropertyValue(wbobj, DISKOnt.getProperty(DISK.HAS_WORKFLOW));
-                if (workflowobj != null) {
+                if (workflowobj != null && methodAdapter != null) {
                   bindings.setWorkflow(workflowobj.getName());
-                  String link = WingsAdapter.get().getWorkflowLink(workflowobj.getName());
+                  String link = methodAdapter.getWorkflowLink(workflowobj.getName());
                   if (link != null)
                       bindings.setWorkflowLink(link);
                 }
@@ -992,10 +1002,8 @@ public class WriteKBRepository extends KBRepository {
                 for (KBObject vbobj : kb.getPropertyValues(wbobj, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING))) {
                     KBObject varobj = kb.getPropertyValue(vbobj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
                     KBObject bindobj = kb.getPropertyValue(vbobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
-                    VariableBinding vbinding = new VariableBinding();
-                    vbinding.setVariable(varobj.getName());
-                    vbinding.setBinding(bindobj.getValueAsString());
-                    bindings.getBindings().add(vbinding);
+                    VariableBinding vBinding = new VariableBinding(varobj.getName(), bindobj.getValueAsString());
+                    bindings.getBindings().add(vBinding);
                 }
 
                 // Parameters details

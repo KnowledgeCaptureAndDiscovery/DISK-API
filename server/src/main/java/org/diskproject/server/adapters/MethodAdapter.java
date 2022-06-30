@@ -12,6 +12,11 @@ public abstract class MethodAdapter {
     private String endpointUrl;
     private String username;
     private String password;
+
+    public MethodAdapter (String adapterName, String url) {
+        this.name = adapterName;
+        this.endpointUrl = url;
+    }
     
     public MethodAdapter (String adapterName, String url, String username, String password) {
         this.name = adapterName;
@@ -42,6 +47,12 @@ public abstract class MethodAdapter {
 	public abstract List<Workflow> getWorkflowList();
 
 	public abstract List<Variable> getWorkflowVariables(String id);
+
+	public abstract String getWorkflowId(String id);
+
+	public abstract String getWorkflowUri(String id);
+
+	public abstract String getWorkflowLink(String id);
 
     // Test connection with source
     public abstract boolean ping ();

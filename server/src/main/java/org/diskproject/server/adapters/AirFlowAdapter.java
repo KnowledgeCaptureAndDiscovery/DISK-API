@@ -68,4 +68,22 @@ public class AirFlowAdapter extends MethodAdapter {
 	public List<Variable> getWorkflowVariables(String id) {
         return null;
     }
+
+    @Override
+    public String getWorkflowId(String id) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getWorkflowUri(String id) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getWorkflowLink(String id) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }
