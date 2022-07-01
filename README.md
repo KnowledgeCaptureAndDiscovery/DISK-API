@@ -11,4 +11,4 @@ metadata and outputs for posterior analysis.
 
 ## Documentation
 
-Full documentation is available at [https://disk.readthedocs.io/en/latest/](https://disk.readthedocs.io)
+Full documentation is available at [https://disk.readthedocs.io](https://disk.readthedocs.io)
