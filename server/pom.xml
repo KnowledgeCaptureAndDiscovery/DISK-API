@@ -304,7 +304,7 @@
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-util</artifactId>
-			<version>9.4.11.v20180605</version>
+			<version>9.4.10.v20180503</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/net.sourceforge.htmlunit/neko-htmlunit -->
