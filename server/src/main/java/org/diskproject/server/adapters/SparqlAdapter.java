@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.util.KBConstants;
 
 import edu.isi.kcap.ontapi.KBAPI;
@@ -147,27 +146,6 @@ public class SparqlAdapter extends DataAdapter {
         }
 
         return result;
-    }
-
-    @Override
-    public boolean validateLOI (LineOfInquiry loi, Map<String, String> values) {
-        String loiHypQuery = loi.getHypothesisQuery();
-        String loiDataQuery = loi.getDataQuery();
-        if (loiHypQuery == null || loiDataQuery == null || loiHypQuery.equals("") || loiDataQuery.equals(""))
-            return false;
-        
-        // Check that hypothesis and data query shares data
-        Set<String> inVars = interceptVariables(loi.getHypothesisQuery(), loi.getDataQuery()); 
-        if (inVars.size() == 0)
-            return false;
-
-        // All variables used on both, the hypothesis query and data query, must be set.
-        for (String variable: inVars) {
-            if (!values.containsKey(variable.substring(1))) {
-                return false;
-            }
-        }
-        return true;
     }
 
     @Override

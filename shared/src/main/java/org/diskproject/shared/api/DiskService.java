@@ -155,8 +155,9 @@ public interface DiskService extends DirectRestService {
       @PathParam("id") String id);
 
   @GET
-  @Path("runs/{id}")
+  @Path("runs/{source}/{id}")
   public WorkflowRun monitorWorkflow(
+      @PathParam("source") String source,
       @PathParam("id") String id);
 
 
@@ -212,7 +213,8 @@ public interface DiskService extends DirectRestService {
   
   @GET
   @Produces("application/json")
-  @Path("wings-data/{dataid}")
-  public String getDataFromWings(
+  @Path("outputs/{source}/{dataid}")
+  public String getOutputData(
+      @PathParam("source") String source,
       @PathParam("dataid") String dataid);
 }

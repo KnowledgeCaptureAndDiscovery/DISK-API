@@ -2,10 +2,12 @@ package org.diskproject.server.adapters;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.workflow.Variable;
+import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
+import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 public abstract class MethodAdapter {
     private String name;
@@ -40,10 +42,11 @@ public abstract class MethodAdapter {
     protected String getPassword () {
         return this.password;
     }
-    
-    // Check that a LOI is correctly configured for this adapter
-    public abstract boolean validateLOI (LineOfInquiry loi, Map<String, String> values);
 
+    public String toString () {
+        return "[" + this.name + "] " + (this.username != null ? this.username + "@" : "") + this.endpointUrl;
+    }
+    
 	public abstract List<Workflow> getWorkflowList();
 
 	public abstract List<Variable> getWorkflowVariables(String id);
@@ -53,6 +56,24 @@ public abstract class MethodAdapter {
 	public abstract String getWorkflowUri(String id);
 
 	public abstract String getWorkflowLink(String id);
+
+	public abstract String getDataUri (String id);
+
+	public abstract List<String> areFilesAvailable (Set<String> fileList);
+
+	public abstract String addData (String url, String name);
+
+	public abstract String addData (String id, String type, String contents);
+
+	public abstract Map<String, Variable> getWorkflowInputs (String id);
+
+	public abstract String runWorkflow (String wfId, List<VariableBinding> vBindings, Map<String, Variable> inputVariables);
+
+	public abstract WorkflowRun getRunStatus (String runId);
+
+	public abstract String fetchData (String dataId);
+
+	public abstract Map<String, String> getRunVariableBindings (String runId);
 
     // Test connection with source
     public abstract boolean ping ();

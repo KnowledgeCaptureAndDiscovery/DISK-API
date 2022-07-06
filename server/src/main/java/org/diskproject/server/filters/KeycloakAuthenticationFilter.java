@@ -85,7 +85,7 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
       } else if (KeycloakSessions.loadingToken.containsKey(token)) {
         try {
           //This is a hack to not make the query multiple times if we get multiple request at the same time.
-          System.err.println("WAITING");
+          System.err.println("WAITING TOKEN");
           Thread.sleep(500);
         } catch (InterruptedException e) {
           e.printStackTrace();

@@ -96,35 +96,35 @@ public class WriteKBRepository extends KBRepository {
     }
 
     //Deprecate this!
-    private void storeTripleDetails(Triple triple, String provid, KBAPI provkb) {
+    private void storeTripleDetails(Triple triple, String provId, KBAPI provKB) {
         TripleDetails details = triple.getDetails();
         if (details != null) {
-            KBObject stobj = provkb.getResource(provid + "#" + GUID.randomId("Statement"));
-            this.setKBStatement(triple, provkb, stobj);
+            KBObject stobj = provKB.getResource(provId + "#" + GUID.randomId("Statement"));
+            this.setKBStatement(triple, provKB, stobj);
 
             if (details.getConfidenceValue() > 0)
-                provkb.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE),
-                        provkb.createLiteral(triple.getDetails().getConfidenceValue()));
+                provKB.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE),
+                        provKB.createLiteral(triple.getDetails().getConfidenceValue()));
             if (details.getTriggeredLOI() != null)
-                provkb.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_TLOI),
-                        provkb.getResource(triple.getDetails().getTriggeredLOI()));
+                provKB.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_TLOI),
+                        provKB.getResource(triple.getDetails().getTriggeredLOI()));
         }
     }
 
-    private Graph updateTripleDetails(Graph graph, KBAPI provkb) {
+    private Graph updateTripleDetails(Graph graph, KBAPI provKB) {
         HashMap<String, Triple> tripleMap = new HashMap<String, Triple>();
         for (Triple t : graph.getTriples())
             tripleMap.put(t.toString(), t);
 
-        KBObject subprop = provkb.getProperty(KBConstants.RDFNS() + "subject");
-        KBObject predprop = provkb.getProperty(KBConstants.RDFNS() + "predicate");
-        KBObject objprop = provkb.getProperty(KBConstants.RDFNS() + "object");
+        KBObject subprop = provKB.getProperty(KBConstants.RDFNS() + "subject");
+        KBObject predprop = provKB.getProperty(KBConstants.RDFNS() + "predicate");
+        KBObject objprop = provKB.getProperty(KBConstants.RDFNS() + "object");
 
-        for (KBTriple kbt : provkb.genericTripleQuery(null, subprop, null)) {
+        for (KBTriple kbt : provKB.genericTripleQuery(null, subprop, null)) {
             KBObject stobj = kbt.getSubject();
             KBObject subjobj = kbt.getObject();
-            KBObject predobj = provkb.getPropertyValue(stobj, predprop);
-            KBObject objobj = provkb.getPropertyValue(stobj, objprop);
+            KBObject predobj = provKB.getPropertyValue(stobj, predprop);
+            KBObject objobj = provKB.getPropertyValue(stobj, objprop);
 
             Value value = this.getObjectValue(objobj);
             Triple triple = new Triple();
@@ -136,8 +136,8 @@ public class WriteKBRepository extends KBRepository {
             if (tripleMap.containsKey(triplestr)) {
                 Triple t = tripleMap.get(triplestr);
 
-                KBObject conf = provkb.getPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE));
-                KBObject tloi = provkb.getPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_TLOI));
+                KBObject conf = provKB.getPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE));
+                KBObject tloi = provKB.getPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_TLOI));
 
                 TripleDetails details = new TripleDetails();
                 if (conf != null && conf.getValue() != null)
@@ -259,15 +259,15 @@ public class WriteKBRepository extends KBRepository {
 
         //FIXME: remove this way of getting the p-value
         String hypotheisProv = hypothesisId + "/provenance";
-        KBAPI provkb = getOrCreateKB(hypotheisProv);
-        if (provkb == null) return false;
+        KBAPI provKB = getOrCreateKB(hypotheisProv);
+        if (provKB == null) return false;
 
         this.start_write();
         for (Triple triple : hypothesis.getGraph().getTriples()) {
             // Add triple details (confidence value, provenance, etc)
-            this.storeTripleDetails(triple, hypotheisProv, provkb);
+            this.storeTripleDetails(triple, hypotheisProv, provKB);
         }
-        this.save(provkb);
+        this.save(provKB);
         this.end();
 
         return true;
@@ -336,11 +336,11 @@ public class WriteKBRepository extends KBRepository {
         }
         hypothesis.setQuestionBindings(variableBindings);
 
-        //FIXME: dont remember what this does.
-        String provid = hypothesisId + "/provenance";
-        KBAPI provkb = getKB(provid);
-        if (provkb != null)
-            this.updateTripleDetails(graph, provkb);
+        //FIXME: There are several problems on how I store prov.
+        String provId = hypothesisId + "/provenance";
+        KBAPI provKB = getKB(provId);
+        if (provKB != null)
+            this.updateTripleDetails(graph, provKB);
         
         this.end();
         return hypothesis;
@@ -352,13 +352,13 @@ public class WriteKBRepository extends KBRepository {
 
         String userDomain = this.HYPURI(username);
         String hypothesisId = userDomain + "/" + id;
-        String provid = hypothesisId + "/provenance";
+        String provId = hypothesisId + "/provenance";
 
         KBAPI userKB = getKB(userDomain);
         KBAPI hypkb = getKB(hypothesisId);
-        KBAPI provkb = getKB(provid);
+        KBAPI provKB = getKB(provId);
 
-        if (userKB != null && hypkb != null && provkb != null) {
+        if (userKB != null && hypkb != null && provKB != null) {
             this.start_read();
             KBObject hypitem = userKB.getIndividual(hypothesisId);
             if (hypitem != null) {
@@ -384,7 +384,7 @@ public class WriteKBRepository extends KBRepository {
             }
 
             return this.start_write() && hypkb.delete() && this.save(hypkb) && this.end() && 
-                this.start_write() && provkb.delete() && this.save(provkb) && this.end();
+                this.start_write() && provKB.delete() && this.save(provKB) && this.end();
         }
         return false;
     }
@@ -422,11 +422,17 @@ public class WriteKBRepository extends KBRepository {
                 KBObject authorobj = userKB.getPropertyValue(hypobj, DISKOnt.getProperty(DISK.HAS_AUTHOR));
                 if (authorobj != null)
                     author = authorobj.getValueAsString();
-                
+
+                String question = null;
+                KBObject questionobj = userKB.getPropertyValue(hypobj, DISKOnt.getProperty(DISK.HAS_QUESTION));
+                if (questionobj != null)
+                    question = questionobj.getValueAsString();
+
                 Hypothesis item = new Hypothesis(hypobj.getName(), name, description, parentid, null);
                 if (dateCreated != null) item.setDateCreated(dateCreated);
                 if (dateModified != null) item.setDateModified(dateModified);
                 if (author != null) item.setAuthor(author);
+                if (question != null) item.setQuestion(question);
         
                 list.add(item);
             }
@@ -802,7 +808,7 @@ public class WriteKBRepository extends KBRepository {
             if (alltlois != null && alltlois.size() == 1) {
                 this.deleteHypothesis(username, hypobj.getName());
             } else {
-                System.out.println("Resulting hypotesis cannot be deleted as is being used for other tloi.");
+                System.out.println("Resulting hypothesis cannot be deleted as is being used for other tloi.");
             }
         } else {
           this.end();

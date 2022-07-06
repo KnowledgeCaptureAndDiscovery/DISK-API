@@ -8,6 +8,7 @@ public class TreeItem {
   String dateModified;
   String author;
   String parentId;
+  String question;
 
   public TreeItem() { }
   
@@ -74,5 +75,13 @@ public class TreeItem {
   
   public String getAuthor () {
 	  return this.author;
+  }
+
+  public String getQuestion () {
+    return this.question;
+  }
+
+  public void setQuestion (String id) {
+    this.question = id;
   }
 }

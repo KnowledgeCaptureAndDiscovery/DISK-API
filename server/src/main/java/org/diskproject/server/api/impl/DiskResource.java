@@ -19,7 +19,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 
 import org.diskproject.server.repository.DiskRepository;
-import org.diskproject.server.repository.WingsAdapter;
 import org.diskproject.shared.api.DiskService;
 import org.diskproject.shared.classes.common.TreeItem;
 import org.diskproject.shared.classes.hypothesis.Hypothesis;
@@ -47,7 +46,7 @@ class ErrorMessage {
 @Consumes("application/json")
 public class DiskResource implements DiskService {
 
-  private static String USERNAME = "admin", DOMAIN = "test";
+  private static String USERNAME = "admin";
 
   @Context
   HttpServletResponse response;
@@ -316,17 +315,16 @@ public class DiskResource implements DiskService {
   public List<Variable> getWorkflowVariables(
         @PathParam("source") String source,
         @PathParam("id") String id) {
-    //return WingsAdapter.get().getWorkflowVariables(id);    
     return this.repo.getWorkflowVariables(source, id);    
   }
   
   @GET
   @Override
-  @Path("runs/{id}")
+  @Path("runs/{source}/{id}")
   public WorkflowRun monitorWorkflow(
+      @PathParam("source") String source,
       @PathParam("id") String id) {
-    // Check execution status
-    return WingsAdapter.get().getWorkflowRunStatus(id);
+    return this.repo.getWorkflowRunStatus(source, id);
   }  
 
   @GET
@@ -396,14 +394,15 @@ public class DiskResource implements DiskService {
   }
   
   @GET
-  @Path("wings-data/{dataid}")
+  @Path("outputs/{source}/{dataid}")
   @Produces("application/json")
   @Override
-  public String getDataFromWings(
-      @PathParam("dataid") String dataid) {
-	String result = this.repo.getDataFromWings(USERNAME, DOMAIN, dataid);
+  public String getOutputData(
+      @PathParam("source") String source,
+      @PathParam("dataid") String dataId) {
+	String result = this.repo.getOutputData(source, dataId);
 	if (result == null) {
-		System.out.println("ERROR: " + dataid + " not available on WINGS.");
+		System.out.println("ERROR: " + dataId + " not available on " + source +".");
 		result = "";
 	} 
 	return result;

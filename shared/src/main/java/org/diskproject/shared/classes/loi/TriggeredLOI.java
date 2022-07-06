@@ -75,6 +75,10 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
     this.description = loi.getDescription();
     this.dataSource = loi.getDataSource();
     this.parentHypothesisId = hypothesisId;
+    String tableVariables = getRelevantVariables();
+    String tableExplanation = getExplanation();
+    if (tableVariables != null) this.relevantVariables = tableVariables;
+    if (tableExplanation != null) this.explanation = tableExplanation;
     workflows = new ArrayList<WorkflowBindings>();
     metaWorkflows = new ArrayList<WorkflowBindings>();
     resultingHypothesisIds = new ArrayList<String>();

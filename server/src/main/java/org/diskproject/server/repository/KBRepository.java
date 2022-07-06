@@ -80,8 +80,9 @@ public class KBRepository implements TransactionsAPI {
   //TransactionsAPI functions
   private void acquire () {
     if (is_in_transaction()) {
-      //If you get here, you are deadlocked... probably double open somewhere... 
       System.out.println("Waiting... " +  mutex.availablePermits());
+      //If you get here, you are deadlocked... probably double open somewhere... 
+      //throw new Exception("Deadlock"); This could help to solve errors...
     }
     try {
       mutex.acquire();

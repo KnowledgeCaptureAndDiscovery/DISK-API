@@ -3,8 +3,6 @@ package org.diskproject.server.adapters;
 import java.util.List;
 import java.util.Map;
 
-import org.diskproject.shared.classes.loi.LineOfInquiry;
-
 public abstract class DataAdapter {
     private String endpointUrl, name, username, password, prefix, namespace;
 
@@ -52,7 +50,7 @@ public abstract class DataAdapter {
     }
     
     public String toString () {
-        return "[" + this.name + "] " + this.username + "@" + this.endpointUrl;
+        return "[" + this.name + "] " + (this.username != null ? this.username + "@" : "") + this.endpointUrl;
     }
 
     public abstract List<DataResult> query (String queryString);
@@ -64,9 +62,6 @@ public abstract class DataAdapter {
 
     // file -> hash
     public abstract Map<String, String> getFileHashes (List<String> dsurls);
-
-    // Check that a LOI is correctly configured for this adapter
-    public abstract boolean validateLOI (LineOfInquiry loi, Map<String, String> values);
 
     // Test connection with source
     public abstract boolean ping ();

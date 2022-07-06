@@ -40,7 +40,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.diskproject.server.adapters.MethodAdapter;
-import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
@@ -61,8 +60,6 @@ import edu.isi.kcap.ontapi.OntFactory;
 import edu.isi.kcap.ontapi.OntSpec;
 
 public class WingsAdapter extends MethodAdapter {
-	static WingsAdapter singleton = null;
-
 	private Gson json;
 	private String server;
 	private String domain;
@@ -74,11 +71,6 @@ public class WingsAdapter extends MethodAdapter {
 	public String execns = "http://www.wings-workflows.org/ontology/execution.owl#";
 	public String datans = "http://www.wings-workflows.org/ontology/data.owl#";
 
-	public static WingsAdapter get() {
-	    if (singleton == null) System.out.println(" == oh no! ");
-		return singleton;
-	}
-
 	public WingsAdapter (String name, String url, String username, String password, String domain, String internalServer) {
 	    super(name, url, username, password);
 		this.server = url;
@@ -86,8 +78,6 @@ public class WingsAdapter extends MethodAdapter {
 		this.domain = domain;
 		this.cookieStore = new BasicCookieStore();
 		this.json = new Gson();
-		//FIXME: temporal
-		if (singleton == null) singleton = this;
 	}
 
 	public String DOMURI() {
@@ -123,12 +113,19 @@ public class WingsAdapter extends MethodAdapter {
 		return this.RUNURI(id) + "#" + id;
 	}
 
+	@Override
 	public String getWorkflowId(String id) {
 		return this.WFLOWID(id);
 	}
 
+	@Override
 	public String getWorkflowUri(String id) {
 		return this.WFLOWURI(id);
+	}
+
+	@Override
+	public String getDataUri (String id) {
+		return this.DATAID(id);
 	}
 
 	public String getWorkflowLink(String id) {
@@ -208,6 +205,7 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
+	@Override
 	public Map<String, String> getRunVariableBindings(String runid) {
 		String runuri = runid.replace("#.*", "");
 		try {
@@ -234,6 +232,7 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
+	@Override
 	public Map<String, Variable> getWorkflowInputs(String id) {
 		String pageid = "users/" + getUsername() + "/" + this.domain + "/workflows/getInputsJSON";
 
@@ -529,6 +528,7 @@ public class WingsAdapter extends MethodAdapter {
 		return true;
 	}
 
+	@Override
 	public String runWorkflow(String wflowname, List<VariableBinding> vbindings, Map<String, Variable> inputVariables) {
 		try {
 			wflowname = WFLOWID(wflowname);
@@ -536,13 +536,11 @@ public class WingsAdapter extends MethodAdapter {
 			String getData = postWithSpecifiedMediaType("users/"+getUsername()+"/"+domain+"/plan/getData",
 					toPost, "application/json", "application/json");
 
-			System.out.println("1> " + getData);
 			vbindings = addDataBindings(inputVariables, vbindings, getData, false);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
 			String getParams = postWithSpecifiedMediaType("users/"+getUsername()+"/"+domain+"/plan/getParameters",
 			        toPost, "application/json", "application/json");
 
-			System.out.println("2> " + getParams);
 			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
 
@@ -1082,14 +1080,13 @@ private String postWithSpecifiedMediaType(String pageid, String data, String typ
 		    EntityUtils.consume(responseEntity);
 		    httpResponse.close();
 
-			System.out.println("POST: " + pageid);
-			System.out.println("DATA: " + data);
-			System.out.println("RESPONSE: " + strResponse);
 		    return strResponse;
 		} finally {
 		    httpResponse.close();
 		}
 	} catch (Exception e) {
+		System.out.println("POST: " + pageid);
+		System.out.println("DATA: " + data);
 	    e.printStackTrace();
 	} finally {
 	    try {
@@ -1162,27 +1159,6 @@ private String upload(String pageid, String type, File file) {
 	return null;
 }
 
-    //TODO: Move this to other file when we have more adapters, and is related to SPARQL bc the variables...
-    @Override
-    public boolean validateLOI (LineOfInquiry loi, Map<String, String> values) {
-        String loiDataQuery = loi.getDataQuery();
-        Set<String> workflowVars = loi.getAllWorkflowVariables();
-        if ((loi.getWorkflows().size() == 0 && loi.getMetaWorkflows().size() == 0) || workflowVars.size() == 0)
-            return false;
-        
-        //All workflow variables must be on the data-query
-        for (String wvar: workflowVars)
-            if (!loiDataQuery.contains(wvar))
-                return false;
-
-        // All parameters must be set.
-        for (String parameter: loi.getAllWorkflowParameters())
-            if (!values.containsKey(parameter.substring(1)))
-                return false;
-
-        return true;
-    }
-
 	@Override
 	public boolean ping() {
 		if (this.login()) {
@@ -1204,4 +1180,30 @@ private String upload(String pageid, String type, File file) {
 			return false;
 		}
 	}
+
+	@Override
+	public List<String> areFilesAvailable (Set<String> filelist) {
+		return this.isFileListOnWings(filelist);
+	}
+
+	@Override
+	public String addData (String url, String name) {
+		return this.addRemoteDataToWings(url, name);
+	}
+
+	@Override
+	public String addData (String id, String type, String contents) {
+		return this.addDataToWings(id, type, contents);
+	}
+
+	@Override
+	public WorkflowRun getRunStatus (String runId) {
+		return this.getWorkflowRunStatus(runId);
+	}
+
+	@Override
+	public String fetchData (String dataId) {
+		return this.fetchDataFromWings(dataId);
+	}
+
 }

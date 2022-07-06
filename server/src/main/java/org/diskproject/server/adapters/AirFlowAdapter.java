@@ -3,6 +3,7 @@ package org.diskproject.server.adapters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -16,9 +17,10 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
-import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.workflow.Variable;
+import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
+import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 public class AirFlowAdapter extends MethodAdapter {
     private PoolingHttpClientConnectionManager connectionManager;
@@ -36,11 +38,6 @@ public class AirFlowAdapter extends MethodAdapter {
 	              .build();
     }
 
-    @Override
-    public boolean validateLOI (LineOfInquiry loi, Map<String, String> values) {
-        return false;
-    }
-    
     public void getMethodList () {
 		HttpGet userInfo = new HttpGet(this.getEndpointUrl() + "/dags?limit=100&only_active=true");
 		userInfo.addHeader(HttpHeaders.ACCEPT, "application/json");
@@ -71,19 +68,73 @@ public class AirFlowAdapter extends MethodAdapter {
 
     @Override
     public String getWorkflowId(String id) {
-        // TODO Auto-generated method stub
+        // Auto-generated method stub
         return null;
     }
 
     @Override
     public String getWorkflowUri(String id) {
-        // TODO Auto-generated method stub
+        // Auto-generated method stub
         return null;
     }
 
     @Override
     public String getWorkflowLink(String id) {
-        // TODO Auto-generated method stub
+        // Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public List<String> areFilesAvailable(Set<String> filelist) {
+        // Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String addData(String url, String name) {
+        // Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Map<String, Variable> getWorkflowInputs(String id) {
+        // Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String runWorkflow(String wfId, List<VariableBinding> vBindings, Map<String, Variable> inputVariables) {
+        // Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String addData(String id, String type, String contents) {
+        // Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public WorkflowRun getRunStatus(String runId) {
+        // Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String fetchData(String dataId) {
+        // Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Map<String, String> getRunVariableBindings(String runId) {
+        // Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getDataUri(String id) {
+        // Auto-generated method stub
         return null;
     }
 }
