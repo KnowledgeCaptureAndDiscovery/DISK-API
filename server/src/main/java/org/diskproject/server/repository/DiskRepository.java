@@ -1274,7 +1274,6 @@ public class DiskRepository extends WriteKBRepository {
             tloiBinding.setMeta(bindings.getMeta());
             tloiBindings.add(tloiBinding);
             MethodAdapter methodAdapter = getMethodAdapterByName(bindings.getSource());
-            System.out.println(methodAdapter + " -- " + dataAdapter); //FIXME
             
             for (VariableBinding vbinding : bindings.getBindings()) { //Normal variable bindings.
                 // For each Variable binding, check :
