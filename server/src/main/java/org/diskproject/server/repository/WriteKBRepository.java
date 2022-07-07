@@ -477,8 +477,10 @@ public class WriteKBRepository extends KBRepository {
             userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE), userKB.createLiteral(loi.getDataSource()));
         if (loi.getNotes() != null)
             userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES), userKB.createLiteral(loi.getNotes()));
-        if (loi.getRelevantVariables() != null)
-            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_RELEVANT_VARIABLES), userKB.createLiteral(loi.getRelevantVariables()));
+        if (loi.getTableVariables() != null)
+            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES), userKB.createLiteral(loi.getTableVariables()));
+        if (loi.getTableDescription() != null)
+            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION), userKB.createLiteral(loi.getTableDescription()));
         if (loi.getQuestion() != null)
             userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION), userKB.createLiteral(loi.getQuestion()));
         if (loi.getExplanation() != null)
@@ -534,9 +536,13 @@ public class WriteKBRepository extends KBRepository {
             loi.setNotes(notesobj.getValueAsString());
         }
 
-        KBObject rvarobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_RELEVANT_VARIABLES));
-        if (rvarobj != null)
-            loi.setRelevantVariables(rvarobj.getValueAsString());
+        KBObject tvarobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES));
+        if (tvarobj != null)
+            loi.setTableVariables(tvarobj.getValueAsString());
+
+        KBObject tdesobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION));
+        if (tdesobj != null)
+            loi.setTableDescription(tdesobj.getValueAsString());
 
         KBObject hqueryobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_QUERY));
         if (hqueryobj != null)
@@ -652,10 +658,10 @@ public class WriteKBRepository extends KBRepository {
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_AUTHOR), userKB.createLiteral(tloi.getAuthor()));
         if (tloi.getDataQuery() != null)
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY), userKB.createLiteral(tloi.getDataQuery()));
-        if (tloi.getRelevantVariables() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_RELEVANT_VARIABLES), userKB.createLiteral(tloi.getRelevantVariables()));
-        if (tloi.getExplanation() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION), userKB.createLiteral(tloi.getExplanation()));
+        if (tloi.getTableVariables() != null)
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES), userKB.createLiteral(tloi.getTableVariables()));
+        if (tloi.getTableDescription() != null)
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION), userKB.createLiteral(tloi.getTableDescription()));
         if (tloi.getConfidenceValue() > 0)
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE), userKB.createLiteral(Double.toString(tloi.getConfidenceValue())));
         if (tloi.getStatus() != null)
@@ -744,13 +750,13 @@ public class WriteKBRepository extends KBRepository {
             if (dataSourceObj != null)
                 tloi.setDataSource(dataSourceObj.getValueAsString());
 
-            KBObject rvobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_RELEVANT_VARIABLES));
+            KBObject rvobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES));
             if (rvobj != null)
-                tloi.setRelevantVariables(rvobj.getValueAsString());
+                tloi.setTableVariables(rvobj.getValueAsString());
 
             KBObject explobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION));
             if (explobj != null)
-                tloi.setExplanation(explobj.getValueAsString());
+                tloi.setTableDescription(explobj.getValueAsString());
             
             KBObject confidenceObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE));
             if (confidenceObj != null)

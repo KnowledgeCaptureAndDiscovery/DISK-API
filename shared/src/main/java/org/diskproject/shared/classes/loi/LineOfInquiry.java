@@ -17,8 +17,10 @@ public class LineOfInquiry {
   String author;
   String dateCreated;
   String dateModified;
-  String relevantVariables; //To show on the table.
-  String explanation; //To describe the table
+
+  String tableVariables;
+  String tableDescription;
+  String dataQueryExplanation;
   String dataSource;
   String question;
 
@@ -68,11 +70,11 @@ public class LineOfInquiry {
   }
 
   public String getExplanation () {
-	  return this.explanation;
+	  return this.dataQueryExplanation;
   }
   
   public void setExplanation (String e) {
-	  this.explanation = e;
+	  this.dataQueryExplanation = e;
   }
   
 
@@ -184,8 +186,8 @@ public class LineOfInquiry {
     this.workflows = workflows;
   }
   
-  public void addWorkflow(WorkflowBindings workflowid) {
-    this.workflows.add(workflowid);
+  public void addWorkflow(WorkflowBindings workflowId) {
+    this.workflows.add(workflowId);
   }
   
   public List<WorkflowBindings> getMetaWorkflows() {
@@ -224,11 +226,27 @@ public class LineOfInquiry {
 	  return this.dateModified;
   }
   
-  public String getRelevantVariables () {
-	  return this.relevantVariables;
+  public String getTableVariables () {
+	  return this.tableVariables;
   }
   
-  public void setRelevantVariables (String v) {
-	  this.relevantVariables = v;
+  public void setTableVariables (String v) {
+	  this.tableVariables = v;
+  }
+  
+  public String getTableDescription () {
+	  return this.tableDescription;
+  }
+  
+  public void setTableDescription (String v) {
+	  this.tableDescription = v;
+  }
+
+  public String getDataQueryExplanation () {
+	  return this.dataQueryExplanation;
+  }
+  
+  public void setDataQueryExplanation (String v) {
+	  this.dataQueryExplanation = v;
   }
 }

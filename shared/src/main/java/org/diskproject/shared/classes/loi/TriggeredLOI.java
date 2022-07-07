@@ -31,8 +31,9 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
   String dateCreated;
   String dateModified;
   String dataQuery;
-  String relevantVariables;
-  String explanation;
+  String tableVariables;
+  String tableDescription;
+  String dataQueryExplanation;
   String dataSource;
 
   public TriggeredLOI() {
@@ -75,10 +76,12 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
     this.description = loi.getDescription();
     this.dataSource = loi.getDataSource();
     this.parentHypothesisId = hypothesisId;
-    String tableVariables = getRelevantVariables();
-    String tableExplanation = getExplanation();
-    if (tableVariables != null) this.relevantVariables = tableVariables;
-    if (tableExplanation != null) this.explanation = tableExplanation;
+    String tableVariables = loi.getTableVariables();
+    String tableExplanation = loi.getTableDescription();
+    String dataQueryExplanation = loi.getDataQueryExplanation();
+    if (tableVariables != null) this.tableVariables = tableVariables;
+    if (tableExplanation != null) this.tableDescription = tableExplanation;
+    if (dataQueryExplanation != null) this.dataQueryExplanation = dataQueryExplanation;
     workflows = new ArrayList<WorkflowBindings>();
     metaWorkflows = new ArrayList<WorkflowBindings>();
     resultingHypothesisIds = new ArrayList<String>();
@@ -129,12 +132,20 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
     return this.dataQuery;
   }
 
-  public String getExplanation () {
-	  return this.explanation;
+  public String getTableDescription () {
+	  return this.tableDescription;
   }
 
-  public void setExplanation (String explanation) {
-	  this.explanation = explanation;
+  public void setTableDescription (String explanation) {
+	  this.tableDescription = explanation;
+  }
+
+  public String getDataQueryExplanation () {
+	  return this.dataQueryExplanation;
+  }
+
+  public void setDataQueryExplanation (String explanation) {
+	  this.dataQueryExplanation = explanation;
   }
 
   public String getName() {
@@ -145,12 +156,12 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
     this.name = name;
   }
 
-  public String getRelevantVariables() {
-    return relevantVariables;
+  public String getTableVariables() {
+    return tableVariables;
   }
 
-  public void setRelevantVariables(String v) {
-    this.relevantVariables = v;
+  public void setTableVariables(String v) {
+    this.tableVariables = v;
   }
 
   public String getDescription() {
