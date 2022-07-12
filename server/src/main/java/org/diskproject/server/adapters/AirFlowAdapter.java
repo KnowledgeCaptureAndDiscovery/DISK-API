@@ -17,6 +17,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
+import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;

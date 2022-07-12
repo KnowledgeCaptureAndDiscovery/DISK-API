@@ -1,10 +1,11 @@
-package org.diskproject.server.adapters;
+package org.diskproject.shared.classes.adapters;
 
 import java.util.List;
 import java.util.Map;
 
 public abstract class DataAdapter {
     private String endpointUrl, name, username, password, prefix, namespace;
+    private String description;
 
     public DataAdapter (String URI, String name) {
         this.endpointUrl = URI;
@@ -18,6 +19,14 @@ public abstract class DataAdapter {
         this.name = name;
         this.username = username;
         this.password = password;
+    }
+
+    public String getDescription () {
+        return this.description;
+    }
+
+    public void setDescription (String desc) {
+        this.description = desc;
     }
     
     public String getEndpointUrl () {

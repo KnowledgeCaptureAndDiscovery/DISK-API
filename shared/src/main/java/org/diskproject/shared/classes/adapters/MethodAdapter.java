@@ -1,4 +1,4 @@
-package org.diskproject.server.adapters;
+package org.diskproject.shared.classes.adapters;
 
 import java.util.List;
 import java.util.Map;
@@ -14,6 +14,7 @@ public abstract class MethodAdapter {
     private String endpointUrl;
     private String username;
     private String password;
+    private String description;
 
     public MethodAdapter (String adapterName, String url) {
         this.name = adapterName;
@@ -25,6 +26,14 @@ public abstract class MethodAdapter {
         this.endpointUrl = url;
         this.username = username;
         this.password = password;
+    }
+
+    public String getDescription () {
+        return this.description;
+    }
+
+    public void setDescription (String desc) {
+        this.description = desc;
     }
     
     public String getName () {

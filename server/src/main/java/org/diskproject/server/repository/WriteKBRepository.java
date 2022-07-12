@@ -6,7 +6,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
-import org.diskproject.server.adapters.MethodAdapter;
+import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.common.Triple;
 import org.diskproject.shared.classes.common.TripleDetails;

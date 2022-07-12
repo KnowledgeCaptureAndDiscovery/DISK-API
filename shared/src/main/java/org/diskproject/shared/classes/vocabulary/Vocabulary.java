@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Vocabulary {
-  String namespace;
+  String namespace, description;
   
   Map<String, Type> types;
   Map<String, Property> properties;
@@ -49,6 +49,14 @@ public class Vocabulary {
 
   public void setNamespace(String ns) {
     this.namespace = ns;
+  }
+
+  public String getDescription () {
+    return this.description;
+  }
+
+  public void setDescription (String desc) {
+    this.description = desc;
   }
 
   public void addType(Type category) {

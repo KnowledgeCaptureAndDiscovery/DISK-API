@@ -34,9 +34,9 @@ public class Config {
     String configFile = null;
     String home = System.getProperty("user.home");
     if (home != null && !home.equals(""))
-        configFile = home + File.separator + ".disk" + File.separator + "server.properties";
+        configFile = home + File.separator + ConfigKeys.LOCAL_DIR + File.separator + ConfigKeys.FILENAME;
     else
-        configFile = "/etc/disk/server.properties";
+        configFile = ConfigKeys.SYSTEM_DIR + File.separator + ConfigKeys.FILENAME;
     // Create configFile if it doesn't exist (portal.properties)
     File cFile = new File(configFile);
     if (!cFile.exists()) {
@@ -61,7 +61,7 @@ public class Config {
     String storageDir = null;
     String home = System.getProperty("user.home");
     if (home != null && !home.equals(""))
-        storageDir = home + File.separator + ".disk" + File.separator + "storage";
+        storageDir = home + File.separator + ConfigKeys.LOCAL_DIR + File.separator + "storage";
     else
         storageDir = System.getProperty("java.io.tmpdir") +
                 File.separator + "disk" + File.separator + "storage";

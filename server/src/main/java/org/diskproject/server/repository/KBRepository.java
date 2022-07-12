@@ -5,10 +5,10 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
-import org.diskproject.server.adapters.DataAdapter;
-import org.diskproject.server.adapters.MethodAdapter;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.KBCache;
+import org.diskproject.shared.classes.adapters.DataAdapter;
+import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.util.KBConstants;
 
 import edu.isi.kcap.ontapi.KBAPI;

@@ -25,6 +25,7 @@ import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.question.Question;
+import org.diskproject.shared.classes.responses.DataAdapterResponse;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.Workflow;
@@ -64,8 +65,8 @@ public class DiskResource implements DiskService {
   @GET
   @Path("server/endpoints")
   @Override
-  public Map<String, String> getEndpoints () {
-      return this.repo.getEndpoints();
+  public List<DataAdapterResponse> getEndpoints () {
+      return this.repo.getDataAdapters();
   }
   
   /*

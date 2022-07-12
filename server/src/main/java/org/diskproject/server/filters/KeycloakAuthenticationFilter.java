@@ -90,6 +90,7 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
         } catch (InterruptedException e) {
           e.printStackTrace();
         }
+        //FIXME: This can be stack overflow
         return KeycloakSessions.getKeycloakUser(token);
       } else {
         return KeycloakSessions.fetchKeycloakUser(token);

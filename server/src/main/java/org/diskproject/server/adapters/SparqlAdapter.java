@@ -9,6 +9,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.diskproject.shared.classes.adapters.DataAdapter;
+import org.diskproject.shared.classes.adapters.DataResult;
 import org.diskproject.shared.classes.util.KBConstants;
 
 import edu.isi.kcap.ontapi.KBAPI;

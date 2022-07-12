@@ -1,4 +1,4 @@
-package org.diskproject.server.adapters;
+package org.diskproject.shared.classes.adapters;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;

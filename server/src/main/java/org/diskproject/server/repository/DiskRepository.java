@@ -25,12 +25,14 @@ import java.util.regex.Pattern;
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.apache.commons.lang.SerializationUtils;
 import org.diskproject.server.adapters.AirFlowAdapter;
-import org.diskproject.server.adapters.DataAdapter;
-import org.diskproject.server.adapters.DataResult;
-import org.diskproject.server.adapters.MethodAdapter;
 import org.diskproject.server.adapters.SparqlAdapter;
 import org.diskproject.server.util.Config;
+import org.diskproject.server.util.ConfigKeys;
 import org.diskproject.server.util.KBCache;
+import org.diskproject.server.util.VocabularyConfiguration;
+import org.diskproject.shared.classes.adapters.DataAdapter;
+import org.diskproject.shared.classes.adapters.DataResult;
+import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.common.TreeItem;
 import org.diskproject.shared.classes.common.Triple;
@@ -43,6 +45,7 @@ import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.loi.TriggeredLOI.Status;
 import org.diskproject.shared.classes.question.Question;
 import org.diskproject.shared.classes.question.QuestionVariable;
+import org.diskproject.shared.classes.responses.DataAdapterResponse;
 import org.diskproject.shared.classes.util.GUID;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.vocabulary.Individual;
@@ -80,8 +83,9 @@ public class DiskRepository extends WriteKBRepository {
     static DataMonitor dataThread;
 
     private Map<String, List<List<String>>> optionsCache;
-    private Map<String, KBAPI> externalOntologies;
-    private Map<String, String> externalOntologiesNamespaces;
+    private Map<String, VocabularyConfiguration> externalVocabularies;
+    //private Map<String, KBAPI> externalOntologies;
+    //private Map<String, String> externalOntologiesNamespaces;
 
     public static void main(String[] args) {
         get();
@@ -155,12 +159,13 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     private void loadKBFromConfig () {
-        this.externalOntologies = new HashMap<String, KBAPI>();
-        this.externalOntologiesNamespaces = new HashMap<String, String>();
+        //this.externalOntologies = new HashMap<String, KBAPI>();
+        //this.externalOntologiesNamespaces = new HashMap<String, String>();
+        this.externalVocabularies = new HashMap<String, VocabularyConfiguration>();
 
         PropertyListConfiguration cfg = this.getConfig();
         Map<String, Map<String,String>> ontologies = new HashMap<String, Map<String,String>>();
-        Iterator<String> a = cfg.getKeys("vocabularies");
+        Iterator<String> a = cfg.getKeys(ConfigKeys.VOCABULARIES);
         while (a.hasNext()) {
             String key = a.next();
             String sp[] = key.split("\\.");
@@ -179,9 +184,15 @@ public class DiskRepository extends WriteKBRepository {
 
         for (String name: ontologies.keySet()) {
             Map<String,String> cur = ontologies.get(name);
-            String curUrl= cur.get("url"),
-                   curPrefix = cur.get("prefix"),
-                   curNamespace = cur.get("namespace");
+            // Check minimal fields
+            if (!(cur.containsKey(ConfigKeys.URL) && cur.containsKey(ConfigKeys.PREFIX) && cur.containsKey(ConfigKeys.NAMESPACE))) {
+                System.err.println("Error reading configuration file. Vocabularies must have '" 
+                        + ConfigKeys.URL + "', '" + ConfigKeys.PREFIX + "' and '" + ConfigKeys.NAMESPACE +"'");
+                continue;
+            }
+            String curUrl= cur.get(ConfigKeys.URL),
+                   curPrefix = cur.get(ConfigKeys.PREFIX),
+                   curNamespace = cur.get(ConfigKeys.NAMESPACE);
 
             KBAPI curKB = null;
             try {
@@ -190,12 +201,18 @@ public class DiskRepository extends WriteKBRepository {
                 System.out.println("Could not load " + curUrl);
             }
             if (curKB != null) {
-                this.externalOntologies.put(curPrefix, curKB);
-                this.externalOntologiesNamespaces.put(curPrefix, curNamespace);
+                VocabularyConfiguration vc = new VocabularyConfiguration(curPrefix, curUrl, curNamespace);
+                vc.setKB(curKB);
+                if (cur.containsKey(ConfigKeys.DESCRIPTION))
+                    vc.setDescription(cur.get(ConfigKeys.DESCRIPTION));
+
+                this.externalVocabularies.put(curPrefix, vc);
+                //this.externalOntologies.put(curPrefix, curKB);
+                //this.externalOntologiesNamespaces.put(curPrefix, curNamespace);
             }
         }
 
-        if (this.externalOntologies.size() == 0) {
+        if (this.externalVocabularies.size() == 0) {
             System.err.println("WARNING: No external vocabularies found on the configuration file.");
         }
     }
@@ -212,13 +229,16 @@ public class DiskRepository extends WriteKBRepository {
                 this.save(kb);
                 this.end(); this.start_write();
             }
-            for (String kbPrefix: this.externalOntologies.keySet()) {
-                KBAPI kb = this.externalOntologies.get(kbPrefix);
+            for (VocabularyConfiguration vc: this.externalVocabularies.values()) {
+                KBAPI kb = vc.getKB();
                 System.out.println("Reloading " + kb.getURI());
                 kb.removeAllTriples();
                 kb.delete();
                 this.save(kb);
-                this.end(); this.start_write();
+                this.end(); 
+
+                vc.setKB(null);
+                this.start_write();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -238,7 +258,7 @@ public class DiskRepository extends WriteKBRepository {
         //Reads data adapters from config file.
         PropertyListConfiguration cfg = this.getConfig();
         Map<String, Map<String,String>> endpoints = new HashMap<String, Map<String,String>>();
-        Iterator<String> a = cfg.getKeys("data-adapters");
+        Iterator<String> a = cfg.getKeys(ConfigKeys.DATA_ADAPTERS);
         while (a.hasNext()) {
             String key = a.next();
             String sp[] = key.split("\\.");
@@ -257,20 +277,29 @@ public class DiskRepository extends WriteKBRepository {
         
         for (String name: endpoints.keySet()) {
             Map<String,String> cur = endpoints.get(name);
-            String curURI = cur.get("endpoint"),
-                   curType = cur.get("type");
-            String curUser = null, curPass = null, curNamespace = null, curPrefix = null;
-            if (cur.containsKey("username")) curUser = cur.get("username");
-            if (cur.containsKey("password")) curPass = cur.get("password");
-            if (cur.containsKey("namespace")) curNamespace = cur.get("namespace");
-            if (cur.containsKey("prefix")) curPrefix = cur.get("prefix");
+            if (!(cur.containsKey(ConfigKeys.ENDPOINT) && cur.containsKey(ConfigKeys.TYPE))) {
+                System.err.println("Error reading configuration file. Data adapters must have '" + ConfigKeys.ENDPOINT + "' and '" + ConfigKeys.TYPE + "'");
+                continue; 
+            }
+
+            String curURI = cur.get(ConfigKeys.ENDPOINT),
+                   curType = cur.get(ConfigKeys.TYPE);
+            String curUser = null, curPass = null, curNamespace = null, curPrefix = null, curDesc = null;
+            if (cur.containsKey(ConfigKeys.USERNAME))   curUser = cur.get(ConfigKeys.USERNAME);
+            if (cur.containsKey(ConfigKeys.PASSWORD))   curPass = cur.get(ConfigKeys.PASSWORD);
+            if (cur.containsKey(ConfigKeys.NAMESPACE))  curNamespace = cur.get(ConfigKeys.NAMESPACE);
+            if (cur.containsKey(ConfigKeys.PREFIX))     curPrefix = cur.get(ConfigKeys.PREFIX);
+            if (cur.containsKey(ConfigKeys.DESCRIPTION)) curDesc = cur.get(ConfigKeys.DESCRIPTION);
 
             switch (curType) {
-                case "sparql":
+                case ConfigKeys.DATA_TYPE_SPARQL:
                     DataAdapter curAdapter = new SparqlAdapter(curURI, name, curUser, curPass);
                     if (curNamespace != null && curPrefix != null) {
                         curAdapter.setPrefix(curPrefix, curNamespace);
                         //this.vocabularies.put(curURI, this.initializeVocabularyFromDataAdapter();
+                    }
+                    if (curDesc != null) {
+                        curAdapter.setDescription(curDesc);
                     }
                     this.dataAdapters.put(curURI, curAdapter);
                     break;
@@ -296,12 +325,20 @@ public class DiskRepository extends WriteKBRepository {
         return null;
     }
 
+    public List<DataAdapterResponse> getDataAdapters () {
+        List<DataAdapterResponse> adapters = new ArrayList<DataAdapterResponse>();
+        for (DataAdapter da: this.dataAdapters.values()) {
+            adapters.add(new DataAdapterResponse(da));
+        }
+        return adapters;
+    }
+
     // -- Method adapters
     private void initializeMethodAdapters () {
         //Reads method adapters from config file.
         PropertyListConfiguration cfg = this.getConfig();
         Map<String, Map<String,String>> adapters = new HashMap<String, Map<String,String>>();
-        Iterator<String> a = cfg.getKeys("method-adapters");
+        Iterator<String> a = cfg.getKeys(ConfigKeys.METHOD_ADAPTERS);
         while (a.hasNext()) {
             String key = a.next();
             String sp[] = key.split("\\.");
@@ -320,19 +357,23 @@ public class DiskRepository extends WriteKBRepository {
         
         for (String name: adapters.keySet()) {
             Map<String,String> cur = adapters.get(name);
-            String curURI = cur.get("endpoint"), curType = cur.get("type");
+            if (!(cur.containsKey(ConfigKeys.ENDPOINT) && cur.containsKey(ConfigKeys.TYPE))) {
+                System.err.println("Error reading configuration file. Method adapters must have '" + ConfigKeys.ENDPOINT + "' and '" + ConfigKeys.TYPE + "'");
+                continue; 
+            }
+            String curURI = cur.get(ConfigKeys.ENDPOINT), curType = cur.get(ConfigKeys.TYPE);
             String curUser = null, curPass = null, curDomain = null, curInternalServer = null;
-            if (cur.containsKey("username")) curUser = cur.get("username");
-            if (cur.containsKey("password")) curPass = cur.get("password");
-            if (cur.containsKey("domain")) curDomain = cur.get("domain");
-            if (cur.containsKey("internal_server")) curInternalServer = cur.get("internal_server");
+            if (cur.containsKey(ConfigKeys.USERNAME)) curUser = cur.get(ConfigKeys.USERNAME);
+            if (cur.containsKey(ConfigKeys.PASSWORD)) curPass = cur.get(ConfigKeys.PASSWORD);
+            if (cur.containsKey(ConfigKeys.DOMAIN)) curDomain = cur.get(ConfigKeys.DOMAIN);
+            if (cur.containsKey(ConfigKeys.INTERNAL_SERVER)) curInternalServer = cur.get(ConfigKeys.INTERNAL_SERVER);
 
             MethodAdapter curAdapter = null;
             switch (curType) {
-                case "wings":
+                case ConfigKeys.METHOD_TYPE_WINGS:
                     curAdapter = new WingsAdapter(name, curURI, curUser, curPass, curDomain, curInternalServer);
                     break;
-                case "airflow":
+                case ConfigKeys.METHOD_TYPE_AIRFLOW:
                     curAdapter = new AirFlowAdapter(name, curURI, curUser, curPass);
                     break;
                 default:
@@ -388,9 +429,9 @@ public class DiskRepository extends WriteKBRepository {
                     this.initializeVocabularyFromKB(this.questionKB, KBConstants.QUESTIONSNS()));
 
             // Load vocabularies from config file
-            for (String prefix: this.externalOntologies.keySet()) {
-                KBAPI cur = this.externalOntologies.get(prefix);
-                this.vocabularies.put(prefix, this.initializeVocabularyFromKB(cur, this.externalOntologiesNamespaces.get(prefix)));
+            for (VocabularyConfiguration vc: this.externalVocabularies.values()) {
+                KBAPI cur = vc.getKB();
+                this.vocabularies.put(vc.getPrefix(), this.initializeVocabularyFromKB(cur, vc.getNamespace()));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -548,9 +589,9 @@ public class DiskRepository extends WriteKBRepository {
         if (localDomain != null && !localDomain.equals("") && value.charAt(0) == ':') { // replace ":" for local domain
             value = localDomain + value.substring(1);
         } else {
-            for (String prefix: this.externalOntologiesNamespaces.keySet()) {
+            for (String prefix: this.externalVocabularies.keySet()) {
                 if (value.startsWith(prefix + ":")) {
-                    String namespace = this.externalOntologiesNamespaces.get(prefix);
+                    String namespace = this.externalVocabularies.get(prefix).getNamespace();
                     value = namespace + value.substring(prefix.length() + 1);
                 }
             }
@@ -911,8 +952,8 @@ public class DiskRepository extends WriteKBRepository {
                         + "PREFIX rdfs: <" + KBConstants.RDFSNS() + ">\n"
                         + "PREFIX rdf:  <" + KBConstants.RDFNS() + ">\n"                
                         + "PREFIX disk: <" + KBConstants.DISKNS() + ">\n";
-        for (String prefix: this.externalOntologiesNamespaces.keySet()) {
-            prefixes += "PREFIX " + prefix + ": <" + this.externalOntologiesNamespaces.get(prefix) + ">\n";
+        for (VocabularyConfiguration vc: this.externalVocabularies.values()) {
+            prefixes += "PREFIX " + vc.getPrefix() + ": <" + vc.getNamespace() + ">\n";
         }
         return prefixes;
     }

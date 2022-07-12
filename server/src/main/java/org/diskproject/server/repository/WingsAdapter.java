@@ -39,7 +39,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
-import org.diskproject.server.adapters.MethodAdapter;
+import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;

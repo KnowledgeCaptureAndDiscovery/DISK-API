@@ -18,6 +18,7 @@ import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.question.Question;
+import org.diskproject.shared.classes.responses.DataAdapterResponse;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.Workflow;
@@ -32,7 +33,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public interface DiskService extends DirectRestService {
   @GET
   @Path("server/endpoints")
-  public Map<String, String> getEndpoints();
+  public List<DataAdapterResponse> getEndpoints();
   
    /*
    * Vocabulary
