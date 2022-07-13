@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Vocabulary {
-  String namespace, description;
+  String namespace, description, prefix, title;
   
   Map<String, Type> types;
   Map<String, Property> properties;
@@ -23,6 +23,22 @@ public class Vocabulary {
     this.types = new HashMap<String, Type>();
     this.properties = new HashMap<String, Property>();
     this.individuals = new HashMap<String, Individual>();
+  }
+
+  public void setPrefix (String prefix) {
+    this.prefix = prefix;
+  }
+
+  public String getPrefix () {
+    return this.prefix;
+  }
+
+  public void setTitle (String title) {
+    this.title = title;
+  }
+
+  public String getTitle () {
+    return this.title;
   }
   
   public void refreshChildren() {

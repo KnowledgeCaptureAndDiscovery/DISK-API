@@ -45,7 +45,7 @@ import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.loi.TriggeredLOI.Status;
 import org.diskproject.shared.classes.question.Question;
 import org.diskproject.shared.classes.question.QuestionVariable;
-import org.diskproject.shared.classes.responses.DataAdapterResponse;
+import org.diskproject.shared.classes.util.DataAdapterResponse;
 import org.diskproject.shared.classes.util.GUID;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.vocabulary.Individual;
@@ -185,14 +185,15 @@ public class DiskRepository extends WriteKBRepository {
         for (String name: ontologies.keySet()) {
             Map<String,String> cur = ontologies.get(name);
             // Check minimal fields
-            if (!(cur.containsKey(ConfigKeys.URL) && cur.containsKey(ConfigKeys.PREFIX) && cur.containsKey(ConfigKeys.NAMESPACE))) {
+            if (!(cur.containsKey(ConfigKeys.URL) && cur.containsKey(ConfigKeys.PREFIX) && cur.containsKey(ConfigKeys.NAMESPACE) && cur.containsKey(ConfigKeys.TITLE))) {
                 System.err.println("Error reading configuration file. Vocabularies must have '" 
-                        + ConfigKeys.URL + "', '" + ConfigKeys.PREFIX + "' and '" + ConfigKeys.NAMESPACE +"'");
+                        + ConfigKeys.URL + "', '"+ ConfigKeys.TITLE + "', '" + ConfigKeys.PREFIX + "' and '" + ConfigKeys.NAMESPACE +"'");
                 continue;
             }
             String curUrl= cur.get(ConfigKeys.URL),
                    curPrefix = cur.get(ConfigKeys.PREFIX),
-                   curNamespace = cur.get(ConfigKeys.NAMESPACE);
+                   curNamespace = cur.get(ConfigKeys.NAMESPACE),
+                   curTitle = cur.get(ConfigKeys.TITLE);
 
             KBAPI curKB = null;
             try {
@@ -201,7 +202,7 @@ public class DiskRepository extends WriteKBRepository {
                 System.out.println("Could not load " + curUrl);
             }
             if (curKB != null) {
-                VocabularyConfiguration vc = new VocabularyConfiguration(curPrefix, curUrl, curNamespace);
+                VocabularyConfiguration vc = new VocabularyConfiguration(curPrefix, curUrl, curNamespace, curTitle);
                 vc.setKB(curKB);
                 if (cur.containsKey(ConfigKeys.DESCRIPTION))
                     vc.setDescription(cur.get(ConfigKeys.DESCRIPTION));
@@ -424,14 +425,16 @@ public class DiskRepository extends WriteKBRepository {
         try {
             this.start_read();
             this.vocabularies.put(KBConstants.DISKURI(),
-                    this.initializeVocabularyFromKB(this.ontKB, KBConstants.DISKNS()));
+                    this.initializeVocabularyFromKB(this.ontKB, KBConstants.DISKNS(),
+                        "disk:", "The DISK Ontology", "DISK Main ontology. Defines all resources used on the DISK system."));
             this.vocabularies.put(KBConstants.QUESTIONSURI(),
-                    this.initializeVocabularyFromKB(this.questionKB, KBConstants.QUESTIONSNS()));
+                    this.initializeVocabularyFromKB(this.questionKB, KBConstants.QUESTIONSNS(),
+                    "sqo:", "Scientific Question Ontology", "Ontology to define questions templates."));
 
             // Load vocabularies from config file
             for (VocabularyConfiguration vc: this.externalVocabularies.values()) {
                 KBAPI cur = vc.getKB();
-                this.vocabularies.put(vc.getPrefix(), this.initializeVocabularyFromKB(cur, vc.getNamespace()));
+                this.vocabularies.put(vc.getPrefix(), this.initializeVocabularyFromKB(cur, vc.getNamespace(), vc.getPrefix(), vc.getTitle(), vc.getDescription()));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -444,8 +447,11 @@ public class DiskRepository extends WriteKBRepository {
         return this.vocabularies.get(uri);
     }
 
-    public Vocabulary initializeVocabularyFromKB(KBAPI kb, String ns) {
+    public Vocabulary initializeVocabularyFromKB(KBAPI kb, String ns, String prefix, String title, String description) {
         Vocabulary vocabulary = new Vocabulary(ns);
+        vocabulary.setPrefix(prefix);
+        vocabulary.setTitle(title);
+        if (description != null) vocabulary.setDescription(description);
         this.fetchTypesAndIndividualsFromKB(kb, vocabulary);
         this.fetchPropertiesFromKB(kb, vocabulary);
         return vocabulary;

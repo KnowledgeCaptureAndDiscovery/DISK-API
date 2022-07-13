@@ -25,7 +25,8 @@ import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.question.Question;
-import org.diskproject.shared.classes.responses.DataAdapterResponse;
+import org.diskproject.shared.classes.util.DataAdapterResponse;
+import org.diskproject.shared.classes.util.ExternalDataRequest;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.Workflow;
@@ -394,19 +395,17 @@ public class DiskResource implements DiskService {
 	return this.repo.getNarratives(USERNAME, tloiid);
   }
   
-  @GET
-  @Path("outputs/{source}/{dataid}")
-  @Produces("application/json")
+  @POST
+  @Path("getData")
+  @Produces("text/html")
   @Override
   public String getOutputData(
-      @PathParam("source") String source,
-      @PathParam("dataid") String dataId) {
-	String result = this.repo.getOutputData(source, dataId);
-	if (result == null) {
-		System.out.println("ERROR: " + dataId + " not available on " + source +".");
-		result = "";
-	} 
-	return result;
+      @JsonProperty("request") ExternalDataRequest r) {
+	  String result = this.repo.getOutputData(r.getSource(), r.getDataId());
+	  if (result == null) {
+		  System.out.println("ERROR: " + r.getDataId() + " not available on " + r.getSource() + ".");
+		  result = "";
+	  } 
+	  return result;
   }
-  
 }

@@ -12,6 +12,7 @@ public class ConfigKeys {
     public static final String METHOD_ADAPTERS  = "method-adapters";
 
 
+    public static final String TITLE            = "title";
     public static final String PREFIX           = "prefix";
     public static final String URL              = "url";
     public static final String NAMESPACE        = "namespace";

@@ -18,7 +18,8 @@ import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.question.Question;
-import org.diskproject.shared.classes.responses.DataAdapterResponse;
+import org.diskproject.shared.classes.util.DataAdapterResponse;
+import org.diskproject.shared.classes.util.ExternalDataRequest;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.Workflow;
@@ -212,10 +213,9 @@ public interface DiskService extends DirectRestService {
       @QueryParam("variables") String variables,
       @QueryParam("query") String query);
   
-  @GET
-  @Produces("application/json")
-  @Path("outputs/{source}/{dataid}")
+  @POST
+  @Path("getData")
+  @Produces("text/html")
   public String getOutputData(
-      @PathParam("source") String source,
-      @PathParam("dataid") String dataid);
+      @JsonProperty("request") ExternalDataRequest r);
 }

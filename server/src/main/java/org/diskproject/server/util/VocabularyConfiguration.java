@@ -5,14 +5,15 @@ import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import edu.isi.kcap.ontapi.KBAPI;
 
 public class VocabularyConfiguration {
-    private String prefix, url,  namespace, description;
+    private String prefix, url,  namespace, description, title;
     private KBAPI kb;
     private Vocabulary vocabulary;
 
-    public VocabularyConfiguration (String prefix, String url, String namespace) {
+    public VocabularyConfiguration (String prefix, String url, String namespace, String title) {
         this.prefix = prefix;
         this.url = url;
         this.namespace = namespace;
+        this.title = title;
     }
 
     public void setKB (KBAPI kb) {
@@ -33,6 +34,14 @@ public class VocabularyConfiguration {
 
     public String getURL () {
         return this.url;
+    }
+
+    public String getTitle () {
+        return this.title;
+    }
+
+    public void setTitle (String title) {
+        this.title = title;
     }
 
     public String getNamespace () {

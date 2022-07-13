@@ -1,4 +1,4 @@
-package org.diskproject.shared.classes.responses;
+package org.diskproject.shared.classes.util;
 
 import org.diskproject.shared.classes.adapters.DataAdapter;
 
