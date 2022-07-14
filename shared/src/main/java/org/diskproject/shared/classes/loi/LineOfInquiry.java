@@ -83,33 +83,7 @@ public class LineOfInquiry {
     List<WorkflowBindings> wfs = new ArrayList<WorkflowBindings>(workflows);
     wfs.addAll(metaWorkflows);
     for (WorkflowBindings wb: wfs) {
-      List<String> vars = wb.getSparqlVariables();
-      for (String v: vars) {
-        allVars.add(v);
-      }
-    }
-    return allVars;
-  }
-
-  public Set<String> getAllWorkflowParameters () {
-    Set<String> allVars = new HashSet<String>();
-    List<WorkflowBindings> wfs = new ArrayList<WorkflowBindings>(workflows);
-    wfs.addAll(metaWorkflows);
-    for (WorkflowBindings wb: wfs) {
-      List<String> vars = wb.getSparqlParameters();
-      for (String v: vars) {
-        allVars.add(v);
-      }
-    }
-    return allVars;
-  }
-
-  public Set<String> getAllWorkflowCollectionVariables () {
-    Set<String> allVars = new HashSet<String>();
-    List<WorkflowBindings> wfs = new ArrayList<WorkflowBindings>(workflows);
-    wfs.addAll(metaWorkflows);
-    for (WorkflowBindings wb: wfs) {
-      List<String> vars = wb.getCollectionVariables();
+      List<String> vars = wb.getAllVariables();
       for (String v: vars) {
         allVars.add(v);
       }

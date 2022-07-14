@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.common.Graph;
@@ -887,9 +888,8 @@ public class WriteKBRepository extends KBRepository {
         
         if (userKB != null) {
             this.start_write();
-            KBObject item = userKB.getIndividual(fullId);
+            KBObject item = userKB.getIndividual(fullId); //This is a LOI or TLOI
             
-            KBAPI kb = userKB;
             for (WorkflowBindings bindings : bindingsList) {
                 String source = bindings.getSource();
                 MethodAdapter methodAdapter = this.getMethodAdapterByName(source);
@@ -897,22 +897,47 @@ public class WriteKBRepository extends KBRepository {
                     System.out.println("Method adapter not found " + source);
                     continue;
                 }
-                String workflowId = methodAdapter.getWorkflowId(bindings.getWorkflow());
+                String workflowId  = methodAdapter.getWorkflowId(bindings.getWorkflow());
                 String workflowuri = methodAdapter.getWorkflowUri(bindings.getWorkflow());
-                KBObject bindingobj = kb.createObjectOfClass(null, DISKOnt.getClass(DISK.WORKFLOW_BINDING));
-                kb.addPropertyValue(item, bindingprop, bindingobj);
+                KBObject bindingobj = userKB.createObjectOfClass(null, DISKOnt.getClass(DISK.WORKFLOW_BINDING));
+                userKB.addPropertyValue(item, bindingprop, bindingobj);
 
-                kb.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_WORKFLOW), kb.getResource(workflowId));
-                kb.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_SOURCE), kb.createLiteral(source));
+                userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_WORKFLOW), userKB.getResource(workflowId));
+                userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_SOURCE), userKB.createLiteral(source));
 
                 // Get Run details
-                if (bindings.getRun() != null) {
-                    if (bindings.getRun().getId() != null)
-                        kb.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_ID), kb.createLiteral(bindings.getRun().getId()));
-                    if (bindings.getRun().getStatus() != null)
-                        kb.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_STATUS), kb.createLiteral(bindings.getRun().getStatus()));
-                    if (bindings.getRun().getLink() != null)
-                        kb.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_RUN_LINK), kb.createLiteral(bindings.getRun().getLink()));
+                WorkflowRun run = bindings.getRun();
+                if (run != null) {
+                    if (run.getId() != null)
+                        userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_ID), userKB.createLiteral(run.getId()));
+                    if (run.getStatus() != null)
+                        userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_STATUS), userKB.createLiteral(run.getStatus()));
+                    if (run.getLink() != null)
+                        userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_RUN_LINK), userKB.createLiteral(run.getLink()));
+                    if (run.getStartDate() != null)
+                        userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_RUN_START_DATE), userKB.createLiteral(run.getStartDate()));
+                    if (run.getEndDate() != null)
+                        userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_RUN_END_DATE), userKB.createLiteral(run.getEndDate()));
+
+                    // Input Files
+                     Map<String, String> inputs = run.getFiles();
+                     if (inputs != null) for (String name: inputs.keySet()) {
+                        String url = inputs.get(name);
+                        KBObject fileBinding = userKB.createObjectOfClass(null, DISKOnt.getClass(DISK.VARIABLE_BINDING));
+                        userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_VARIABLE), userKB.getResource(workflowuri + "#FILE-" + name.replaceAll(" ", "_")));
+                        userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE), userKB.createLiteral(url));
+                        userKB.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_INPUT_FILE), fileBinding);
+                     }
+
+                    // Output Files
+                     Map<String, String> outputs = run.getOutputs();
+                     if (outputs != null) for (String name: outputs.keySet()) {
+                        String url = outputs.get(name);
+                        KBObject fileBinding = userKB.createObjectOfClass(null, DISKOnt.getClass(DISK.VARIABLE_BINDING));
+                        userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_VARIABLE), userKB.getResource(workflowuri + "#FILE-" + name.replaceAll(" ", "_")));
+                        userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE), userKB.createLiteral(url));
+                        userKB.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE), fileBinding);
+                     }
                 }
 
                 // Creating workflow data bindings
@@ -920,50 +945,27 @@ public class WriteKBRepository extends KBRepository {
                     String varId = vBinding.getVariable();
                     String binding = vBinding.getBinding();
                     Value bindingValue = new Value(binding, KBConstants.XSDNS() + "string");
-                    KBObject varbindingobj = kb.createObjectOfClass(null, DISKOnt.getClass(DISK.VARIABLE_BINDING));
-                    kb.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_VARIABLE), kb.getResource(workflowuri + "#" + varId));
-                    kb.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE), this.getKBValue(bindingValue, kb));
-                    kb.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING), varbindingobj);
+                    KBObject varbindingobj = userKB.createObjectOfClass(null, DISKOnt.getClass(DISK.VARIABLE_BINDING));
+                    userKB.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_VARIABLE), userKB.getResource(workflowuri + "#" + varId));
+                    userKB.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE), this.getKBValue(bindingValue, userKB));
+                    userKB.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING), varbindingobj);
                 }
                 
-                // Creating parameters
-                for (VariableBinding param : bindings.getParameters()) {
-                    String varId = param.getVariable();
-                    String binding = param.getBinding();
-                    Value bindingValue = new Value(binding, KBConstants.XSDNS() + "string");
-                    KBObject paramobj = kb.createObjectOfClass(null,  DISKOnt.getClass(DISK.VARIABLE_BINDING));
-                    kb.setPropertyValue(paramobj, DISKOnt.getProperty(DISK.HAS_VARIABLE), kb.getResource(workflowuri + "#" + varId));
-                    kb.setPropertyValue(paramobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE), this.getKBValue(bindingValue, kb));
-                    kb.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_PARAMETER), paramobj);
-                }
-
-                // Creating optional parameters
-                for (VariableBinding param : bindings.getOptionalParameters()) {
-                    String varId = param.getVariable();
-                    String binding = param.getBinding();
-                    Value bindingValue = new Value(binding, KBConstants.XSDNS() + "string");
-                    KBObject paramobj = kb.createObjectOfClass(null,  DISKOnt.getClass(DISK.VARIABLE_BINDING));
-                    kb.setPropertyValue(paramobj, DISKOnt.getProperty(DISK.HAS_VARIABLE), kb.getResource(workflowuri + "#" + varId));
-                    kb.setPropertyValue(paramobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE), this.getKBValue(bindingValue, kb));
-                    kb.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_OPTIONAL_PARAMETER), paramobj);
-                }
-
-                String hypid = bindings.getMeta().getHypothesis();
-                String revhypid = bindings.getMeta().getRevisedHypothesis();
-                if (hypid != null)
-                    kb.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_VARIABLE),
-                            kb.getResource(workflowuri + "#" + hypid));
-                if (revhypid != null)
-                    kb.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_REVISED_HYPOTHESIS_VARIABLE),
-                            kb.getResource(workflowuri + "#" + revhypid));
+                String hypId = bindings.getMeta().getHypothesis();
+                String revhypId = bindings.getMeta().getRevisedHypothesis();
+                if (hypId != null)
+                    userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_VARIABLE),
+                            userKB.getResource(workflowuri + "#" + hypId));
+                if (revhypId != null)
+                    userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_REVISED_HYPOTHESIS_VARIABLE),
+                            userKB.getResource(workflowuri + "#" + revhypId));
             }
             
-            this.save(kb);
+            this.save(userKB);
             this.end();
         }
     }
 
-    
     private List<WorkflowBindings> loadWorkflowsBindings (String userDomain, String id) {
         return loadBindings(userDomain, id, DISKOnt.getProperty(DISK.HAS_WORKFLOW_BINDING));
     }
@@ -983,9 +985,9 @@ public class WriteKBRepository extends KBRepository {
             KBObject loiItem = kb.getIndividual(loiId);
 
             for (KBTriple t : kb.genericTripleQuery(loiItem, bindingprop, null)) {
-                KBObject wbobj = t.getObject();
+                KBObject wbObj = t.getObject();
                 WorkflowBindings bindings = new WorkflowBindings();
-                KBObject sourceObj = kb.getPropertyValue(wbobj, DISKOnt.getProperty(DISK.HAS_SOURCE));
+                KBObject sourceObj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_SOURCE));
                 MethodAdapter methodAdapter = null;
                 if (sourceObj != null) {
                     String source = sourceObj.getValueAsString();
@@ -995,19 +997,39 @@ public class WriteKBRepository extends KBRepository {
 
                 // Workflow Run details
                 WorkflowRun run = new WorkflowRun();
-                KBObject robj = kb.getPropertyValue(wbobj, DISKOnt.getProperty(DISK.HAS_ID));
-                if (robj != null)
-                    run.setId(robj.getValue().toString());
-                KBObject statusobj = kb.getPropertyValue(wbobj, DISKOnt.getProperty(DISK.HAS_STATUS));
-                if (statusobj != null)
-                    run.setStatus(statusobj.getValue().toString());
-                KBObject linkobj = kb.getPropertyValue(wbobj, DISKOnt.getProperty(DISK.HAS_RUN_LINK));
-                if (linkobj != null)
-                    run.setLink(linkobj.getValue().toString());
+                KBObject runIdObj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_ID));
+                if (runIdObj != null)
+                    run.setId(runIdObj.getValue().toString());
+                KBObject statusObj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_STATUS));
+                if (statusObj != null)
+                    run.setStatus(statusObj.getValue().toString());
+                KBObject linkObj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_RUN_LINK));
+                if (linkObj != null)
+                    run.setLink(linkObj.getValue().toString());
+                KBObject runStartObj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_RUN_START_DATE));
+                if (runStartObj != null)
+                    run.setStartDate(runStartObj.getValue().toString());
+                KBObject runEndObj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_RUN_END_DATE));
+                if (runEndObj != null)
+                    run.setEndDate(runEndObj.getValue().toString());
+
+                // Inputs
+                for (KBObject inputObj : kb.getPropertyValues(wbObj, DISKOnt.getProperty(DISK.HAS_INPUT_FILE))) {
+                    KBObject name = kb.getPropertyValue(inputObj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
+                    KBObject url = kb.getPropertyValue(inputObj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
+                    run.addFile(name.getName(), url.getValueAsString());
+                }
+
+                // Outputs
+                for (KBObject outputObj : kb.getPropertyValues(wbObj, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE))) {
+                    KBObject name = kb.getPropertyValue(outputObj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
+                    KBObject url = kb.getPropertyValue(outputObj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
+                    run.addOutput(name.getName(), url.getValueAsString());
+                }
                 bindings.setRun(run);
 
                 // Workflow details
-                KBObject workflowobj = kb.getPropertyValue(wbobj, DISKOnt.getProperty(DISK.HAS_WORKFLOW));
+                KBObject workflowobj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_WORKFLOW));
                 if (workflowobj != null && methodAdapter != null) {
                   bindings.setWorkflow(workflowobj.getName());
                   String link = methodAdapter.getWorkflowLink(workflowobj.getName());
@@ -1016,33 +1038,17 @@ public class WriteKBRepository extends KBRepository {
                 }
 
                 // Variable binding details
-                for (KBObject vbobj : kb.getPropertyValues(wbobj, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING))) {
+                for (KBObject vbobj : kb.getPropertyValues(wbObj, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING))) {
                     KBObject varobj = kb.getPropertyValue(vbobj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
                     KBObject bindobj = kb.getPropertyValue(vbobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
                     VariableBinding vBinding = new VariableBinding(varobj.getName(), bindobj.getValueAsString());
                     bindings.getBindings().add(vBinding);
                 }
 
-                // Parameters details
-                for (KBObject vbobj : kb.getPropertyValues(wbobj, DISKOnt.getProperty(DISK.HAS_PARAMETER))) {
-                    KBObject varobj = kb.getPropertyValue(vbobj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
-                    KBObject bindobj = kb.getPropertyValue(vbobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
-                    VariableBinding param = new VariableBinding(varobj.getName(),bindobj.getValueAsString());
-                    bindings.addParameter(param);
-                }
-
-                // Optional parameters details
-                for (KBObject vbobj : kb.getPropertyValues(wbobj, DISKOnt.getProperty(DISK.HAS_OPTIONAL_PARAMETER))) {
-                    KBObject varobj = kb.getPropertyValue(vbobj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
-                    KBObject bindobj = kb.getPropertyValue(vbobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
-                    VariableBinding optionalParam = new VariableBinding(varobj.getName(),bindobj.getValueAsString());
-                    bindings.addOptionalParameter(optionalParam);
-                }
-
-                KBObject hypobj = kb.getPropertyValue(wbobj, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_VARIABLE));
+                KBObject hypobj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_VARIABLE));
                 if (hypobj != null)
                     bindings.getMeta().setHypothesis(hypobj.getName());
-                KBObject revhypobj = kb.getPropertyValue(wbobj, DISKOnt.getProperty(DISK.HAS_REVISED_HYPOTHESIS_VARIABLE));
+                KBObject revhypobj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_REVISED_HYPOTHESIS_VARIABLE));
                 if (revhypobj != null)
                     bindings.getMeta().setRevisedHypothesis(revhypobj.getName());
 

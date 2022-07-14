@@ -29,8 +29,6 @@ public class DISK {
     public static final String HAS_DATA_QUERY_DESCRIPTION = "dataQueryDescription";
 
     public static final String HAS_TLOI_STATUS = "hasTriggeredLineOfInquiryStatus";
-    public static final String HAS_INPUT_FILE = "hasInputFile";
-    public static final String HAS_OUTPUT_FILE = "hasOutputFile";
     public static final String HAS_LOI = "hasLineOfInquiry";
     public static final String HAS_RESULTING_HYPOTHESIS = "hasResultingHypothesis";
 
@@ -38,9 +36,13 @@ public class DISK {
     public static final String HAS_METAWORKFLOW_BINDING = "hasMetaWorkflowBinding";
 
     public static final String HAS_WORKFLOW = "hasWorkflow";
-    public static final String HAS_ID = "hasId";
-    public static final String HAS_STATUS = "hasStatus";
+    public static final String HAS_ID = "hasId"; //Has run ID
+    public static final String HAS_STATUS = "hasRunStatus";
     public static final String HAS_RUN_LINK = "hasRunLink";
+    public static final String HAS_RUN_START_DATE = "hasRunStartDate";
+    public static final String HAS_RUN_END_DATE = "hasRunEndDate";
+    public static final String HAS_INPUT_FILE = "hasInputFile";
+    public static final String HAS_OUTPUT_FILE = "hasOutputFile";
     public static final String HAS_PARAMETER = "hasParameter";
     public static final String HAS_OPTIONAL_PARAMETER = "hasOptionalParameter";
     public static final String HAS_HYPOTHESIS_VARIABLE = "hasHypothesisVariable";

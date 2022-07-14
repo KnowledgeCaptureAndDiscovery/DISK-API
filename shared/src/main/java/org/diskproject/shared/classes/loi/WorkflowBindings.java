@@ -8,17 +8,15 @@ import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 public class WorkflowBindings implements Comparable<WorkflowBindings>{
-  String source;          // This is the ID of the source
+  String source;          // This is the ID of the method source
   String workflow;
   String workflowLink;
-  List<VariableBinding> bindings, parameters, optionalParameters;
+  List<VariableBinding> bindings;
   WorkflowRun run;
   MetaWorkflowDetails meta;
 
   public WorkflowBindings() {
     bindings = new ArrayList<VariableBinding>();
-    parameters = new ArrayList<VariableBinding>();
-    optionalParameters = new ArrayList<VariableBinding>();
     run = new WorkflowRun();
     meta = new MetaWorkflowDetails();
   }
@@ -27,21 +25,14 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
     this.workflow = workflow;
     this.workflowLink = workflowLink;
     bindings = new ArrayList<VariableBinding>();
-    parameters = new ArrayList<VariableBinding>();
-    optionalParameters = new ArrayList<VariableBinding>();
     run = new WorkflowRun();
     meta = new MetaWorkflowDetails();
   }
 
-  public WorkflowBindings(String workflow, String workflowLink,
-          List<VariableBinding> bindings,
-          List<VariableBinding> parameters,
-          List<VariableBinding> optionalParameters) {
+  public WorkflowBindings(String workflow, String workflowLink, List<VariableBinding> bindings) {
     this.workflow = workflow;
     this.workflowLink = workflowLink;
     this.bindings = bindings;
-    this.parameters = parameters;
-    this.optionalParameters = optionalParameters;
     run = new WorkflowRun();
     meta = new MetaWorkflowDetails();
   }
@@ -90,57 +81,11 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
     this.bindings.add(binding);
   }
   
-  public List<VariableBinding> getParameters () {
-	  return parameters;
-  }
-  
-  public void setParameters (List<VariableBinding> params) {
-	  this.parameters = params;
-  }
-  
-  public void addParameter (VariableBinding param) {
-    this.parameters.add(param);
-  }
-  
-  public List<VariableBinding> getOptionalParameters () {
-	  return optionalParameters;
-  }
-  
-  public void setOptionalParameters (List<VariableBinding> optionalParameters) {
-	this.optionalParameters = optionalParameters;
-  }
-  
-  public void addOptionalParameter (VariableBinding binding) {
-	  this.optionalParameters.add(binding);
-  }
-  
-  public List<String> getSparqlVariables () {
+  public List<String> getAllVariables () {
     List<String> vars = new ArrayList<String>();
     for (VariableBinding b: bindings) {
       for (String v: b.getBindingAsArray()) {
         vars.add(v);
-      }
-    }
-    return vars;
-  }
-
-  public List<String> getSparqlParameters () {
-    List<String> vars = new ArrayList<String>();
-    for (VariableBinding b: parameters) {
-      for (String v: b.getBindingAsArray()) {
-        vars.add(v);
-      }
-    }
-    return vars;
-  }
-
-  public List<String> getCollectionVariables () {
-    List<String> vars = new ArrayList<String>();
-    for (VariableBinding b: bindings) {
-      if (b.isCollection()) {
-        for (String v: b.getBindingAsArray()) {
-          vars.add(v);
-        }
       }
     }
     return vars;
@@ -181,16 +126,6 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
     int i=0;
     String description = "{";
     for (VariableBinding vBinding : bindings) {
-      if (i > 0) description += ", ";
-      description += vBinding.getVariable() + " = " + vBinding.getBinding();
-      i++;
-    }
-    for (VariableBinding vBinding : parameters) {
-      if (i > 0) description += ", ";
-      description += vBinding.getVariable() + " = " + vBinding.getBinding();
-      i++;
-    }
-    for (VariableBinding vBinding : optionalParameters) {
       if (i > 0) description += ", ";
       description += vBinding.getVariable() + " = " + vBinding.getBinding();
       i++;

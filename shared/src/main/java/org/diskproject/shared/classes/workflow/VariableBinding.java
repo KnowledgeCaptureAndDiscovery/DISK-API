@@ -9,8 +9,7 @@ public class VariableBinding implements Serializable, Comparable<VariableBinding
   String variable;
   String binding;
    
-  public VariableBinding(String v, String b)
-  {
+  public VariableBinding(String v, String b) {
 	  variable = v;
 	  binding = b;
   }

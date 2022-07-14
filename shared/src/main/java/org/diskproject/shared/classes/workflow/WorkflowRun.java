@@ -70,6 +70,11 @@ public class WorkflowRun {
   public Map<String, String> getOutputs () {
 	  return outputs;
   }
+
+  public void addOutput (String name, String link) {
+	  if (outputs == null) outputs = new HashMap<String, String>();
+	  outputs.put(name, link);
+  }
   
   public void addFile (String name, String link) {
 	  if (files == null) files = new HashMap<String, String>();
