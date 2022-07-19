@@ -283,19 +283,22 @@ public class DiskRepository extends WriteKBRepository {
 
             String curURI = cur.get(ConfigKeys.ENDPOINT),
                    curType = cur.get(ConfigKeys.TYPE);
-            String curUser = null, curPass = null, curNamespace = null, curPrefix = null, curDesc = null;
+            String curUser = null, curPass = null, curNamespace = null, curPrefix = null, curDesc = null, curPrefixRes = null;
             if (cur.containsKey(ConfigKeys.USERNAME))   curUser = cur.get(ConfigKeys.USERNAME);
             if (cur.containsKey(ConfigKeys.PASSWORD))   curPass = cur.get(ConfigKeys.PASSWORD);
             if (cur.containsKey(ConfigKeys.NAMESPACE))  curNamespace = cur.get(ConfigKeys.NAMESPACE);
             if (cur.containsKey(ConfigKeys.PREFIX))     curPrefix = cur.get(ConfigKeys.PREFIX);
             if (cur.containsKey(ConfigKeys.DESCRIPTION)) curDesc = cur.get(ConfigKeys.DESCRIPTION);
+            if (cur.containsKey(ConfigKeys.PREFIX_RESOLUTION)) curPrefixRes = cur.get(ConfigKeys.PREFIX_RESOLUTION);
 
             switch (curType) {
                 case ConfigKeys.DATA_TYPE_SPARQL:
                     DataAdapter curAdapter = new SparqlAdapter(curURI, name, curUser, curPass);
                     if (curNamespace != null && curPrefix != null) {
                         curAdapter.setPrefix(curPrefix, curNamespace);
-                        //this.vocabularies.put(curURI, this.initializeVocabularyFromDataAdapter();
+                    }
+                    if (curPrefixRes != null) {
+                        curAdapter.setPrefixResolution(curPrefixRes);
                     }
                     if (curDesc != null) {
                         curAdapter.setDescription(curDesc);

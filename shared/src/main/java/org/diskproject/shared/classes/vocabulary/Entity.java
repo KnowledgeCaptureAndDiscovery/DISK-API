@@ -4,6 +4,7 @@ public class Entity {
   String id;
   String name;
   String label;
+  String description;
   
   String parent;
   
@@ -29,6 +30,14 @@ public class Entity {
 
   public void setLabel(String label) {
     this.label = label;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String desc) {
+    this.description = desc;
   }
   
   @Override

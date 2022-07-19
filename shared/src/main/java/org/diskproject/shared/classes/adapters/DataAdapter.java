@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class DataAdapter {
-    private String endpointUrl, name, username, password, prefix, namespace;
-    private String description;
+    private String endpointUrl, name, username, password, description;
+    private String prefix, namespace, prefixResolution;
 
     public DataAdapter (String URI, String name) {
         this.endpointUrl = URI;
@@ -52,6 +52,14 @@ public abstract class DataAdapter {
     
     public String getPrefix () {
         return this.prefix;
+    }
+
+    public void setPrefixResolution (String prefixResolution) {
+        this.prefixResolution = prefixResolution;
+    }
+    
+    public String getPrefixResolution () {
+        return this.prefixResolution;
     }
     
     public String getNamespace () {
