@@ -1171,9 +1171,7 @@ private String upload(String pageid, String type, File file) {
 				System.out.print("OK\n");
 				return true;
 			} catch (Exception e) {
-				System.out.print("\n");
-				System.err.print("ERROR: WINGS adapter could not open KB: " + liburi);
-				System.err.print(e.toString());
+				System.err.print("\nERROR: WINGS adapter could not open KB: " + liburi);
 				return false;
 			}
 		} else {

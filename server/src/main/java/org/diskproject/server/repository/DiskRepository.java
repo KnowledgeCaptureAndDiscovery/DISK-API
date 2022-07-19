@@ -36,8 +36,6 @@ import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.common.TreeItem;
 import org.diskproject.shared.classes.common.Triple;
-import org.diskproject.shared.classes.common.TripleDetails;
-import org.diskproject.shared.classes.common.TripleUtil;
 import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.WorkflowBindings;
@@ -426,10 +424,10 @@ public class DiskRepository extends WriteKBRepository {
             this.start_read();
             this.vocabularies.put(KBConstants.DISKURI(),
                     this.initializeVocabularyFromKB(this.ontKB, KBConstants.DISKNS(),
-                        "disk:", "The DISK Ontology", "DISK Main ontology. Defines all resources used on the DISK system."));
+                        "disk", "The DISK Ontology", "DISK Main ontology. Defines all resources used on the DISK system."));
             this.vocabularies.put(KBConstants.QUESTIONSURI(),
                     this.initializeVocabularyFromKB(this.questionKB, KBConstants.QUESTIONSNS(),
-                    "sqo:", "Scientific Question Ontology", "Ontology to define questions templates."));
+                    "sqo", "Scientific Question Ontology", "Ontology to define questions templates."));
 
             // Load vocabularies from config file
             for (VocabularyConfiguration vc: this.externalVocabularies.values()) {
@@ -464,10 +462,13 @@ public class DiskRepository extends WriteKBRepository {
 
             KBObject domCls = kb.getPropertyDomain(prop);
             KBObject rangeCls = kb.getPropertyRange(prop);
+            String desc = kb.getComment(prop);
 
             Property mProp = new Property();
             mProp.setId(prop.getID());
             mProp.setName(prop.getName());
+            if (desc != null)
+                mProp.setDescription(desc);
 
             String label = this.createPropertyLabel(prop.getName());
             mProp.setLabel(label);
@@ -521,12 +522,15 @@ public class DiskRepository extends WriteKBRepository {
                 continue;
             }
 
+            String desc = kb.getComment(cls);
             Type type = vocabulary.getType(clsId);
             if (type == null) {
                 type = new Type();
                 type.setId(clsId);
                 type.setName(cls.getName());
                 type.setLabel(kb.getLabel(cls));
+                if (desc != null)
+                    type.setDescription(desc);
                 vocabulary.addType(type);
             }
         }
@@ -1765,7 +1769,7 @@ public class DiskRepository extends WriteKBRepository {
         return methodAdapter.fetchData(methodAdapter.getDataUri(id));
     }
 
-    /* Retrieves the revised_hypothesis from wings and stores it as a disk-hypothesis (quad) */
+    /* Retrieves the revised_hypothesis from wings and stores it as a disk-hypothesis (quad) /
     private String fetchOutputHypothesis(String username, WorkflowBindings bindings, TriggeredLOI tloi) {
         String varname = bindings.getMeta().getRevisedHypothesis();
         MethodAdapter methodAdapter = getMethodAdapterByName(bindings.getSource());
@@ -1821,7 +1825,7 @@ public class DiskRepository extends WriteKBRepository {
             return newHypothesis.getId();
         }
         return null;
-    }
+    }*/
 
     /*
      * Threads
