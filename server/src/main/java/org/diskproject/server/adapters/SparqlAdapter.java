@@ -47,7 +47,7 @@ public class SparqlAdapter extends DataAdapter {
     }
 
     @Override
-    public List<DataResult> query(String queryString) {
+    public List<DataResult> query(String queryString) throws Exception {
         ArrayList<ArrayList<SparqlQuerySolution>> solutions = null;
         try {
             String user = this.getUsername(), pass = this.getPassword();
@@ -58,8 +58,7 @@ public class SparqlAdapter extends DataAdapter {
                 solutions = plainKb.sparqlQueryRemote(queryString, this.getEndpointUrl());
             }
         } catch (Exception e) {
-            System.out.println(queryString);
-            System.err.println(e);
+            throw e;
         }
         List<DataResult> results = new ArrayList<DataResult>();
 
@@ -88,7 +87,6 @@ public class SparqlAdapter extends DataAdapter {
     }
 
     @Override
-    // TODO: Handle exception
     public List<DataResult> queryOptions(String varname, String queryPart) throws Exception {
         String name = varname.substring(1);
         String labelVar = varname + "Label";
@@ -131,7 +129,7 @@ public class SparqlAdapter extends DataAdapter {
     }
 
     @Override
-    public Map<String, String> getFileHashes(List<String> files) {
+    public Map<String, String> getFileHashes(List<String> files) throws Exception {
         String query = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
                 + "SELECT DISTINCT ?file ?sha WHERE {\n"
                 + "  ?page ?contentUrl ?file .\n"
@@ -144,17 +142,21 @@ public class SparqlAdapter extends DataAdapter {
                 + "}";
 
         Map<String, String> result = new HashMap<String, String>();
-        // TODO: Handle exception
-        List<DataResult> solutions = this.query(query);
+        try {
+            List<DataResult> solutions = this.query(query);
 
-        for (DataResult solution : solutions) {
-            String filename = solution.getValue("file");
-            String sha = solution.getValue("sha");
-            if (filename != null && sha != null)
-                result.put(filename, sha);
+            for (DataResult solution : solutions) {
+                String filename = solution.getValue("file");
+                String sha = solution.getValue("sha");
+                if (filename != null && sha != null)
+                    result.put(filename, sha);
+            }
+
+            return result;
+        } catch (Exception e) {
+            throw e;
         }
 
-        return result;
     }
 
     @Override

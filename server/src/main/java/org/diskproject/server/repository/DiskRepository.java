@@ -1538,21 +1538,24 @@ public class DiskRepository extends WriteKBRepository {
         // TODO: here connect with minio.
         Map<String, String> nameToUrl = new HashMap<String, String>();
         Map<String, String> urlToName = new HashMap<String, String>();
+        try {
 
-        Map<String, String> hashes = dataAdapter.getFileHashes(dsurls);
-        for (String file : hashes.keySet()) {
-            String hash = hashes.get(file);
-            String newName = "SHA" + hash.substring(0, 6) + "_" + file.replaceAll("^.*\\/", "");
-            nameToUrl.put(newName, file);
-            urlToName.put(file, newName);
+            Map<String, String> hashes = dataAdapter.getFileHashes(dsurls);
+            for (String file : hashes.keySet()) {
+                String hash = hashes.get(file);
+                String newName = "SHA" + hash.substring(0, 6) + "_" + file.replaceAll("^.*\\/", "");
+                nameToUrl.put(newName, file);
+                urlToName.put(file, newName);
+            }
+
+            // Show files with no hash
+            for (String file : dsurls) {
+                if (!urlToName.containsKey(file))
+                    System.out.println("Warning: file " + file + " does not contain hash on " + dataAdapter.getName());
+            }
+        } catch (Exception e) {
+            throw e;
         }
-
-        // Show files with no hash
-        for (String file : dsurls) {
-            if (!urlToName.containsKey(file))
-                System.out.println("Warning: file " + file + " does not contain hash on " + dataAdapter.getName());
-        }
-
         Set<String> names = nameToUrl.keySet();
         List<String> availableFiles = methodAdapter.areFilesAvailable(names);
         names.removeAll(availableFiles);
