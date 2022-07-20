@@ -1206,7 +1206,7 @@ public class DiskRepository extends WriteKBRepository {
                         System.out.println(e.toString());
                         System.out.println("Error querying:\n" + query);
                         throw e;
-                    }
+                    } 
                     if (allSolutions != null)
                         for (List<SparqlQuerySolution> row : allSolutions) {
                             // One match per cell, store variables on cur.
@@ -1239,6 +1239,8 @@ public class DiskRepository extends WriteKBRepository {
             this.end();
         } catch (Exception e) {
             throw e;
+        } finally {
+            this.end();
         }
 
         Map<LineOfInquiry, List<Map<String, String>>> results = new HashMap<LineOfInquiry, List<Map<String, String>>>();
