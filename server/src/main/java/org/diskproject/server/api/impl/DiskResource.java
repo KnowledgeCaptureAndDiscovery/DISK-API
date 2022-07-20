@@ -19,7 +19,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 
-import org.apache.jena.atlas.io.IO;
 import org.diskproject.server.repository.DiskRepository;
 import org.diskproject.shared.api.DiskService;
 import org.diskproject.shared.classes.common.TreeItem;

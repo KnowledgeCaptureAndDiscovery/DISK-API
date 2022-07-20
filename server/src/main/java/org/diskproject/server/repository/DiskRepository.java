@@ -63,6 +63,7 @@ import edu.isi.kcap.ontapi.KBTriple;
 import edu.isi.kcap.ontapi.OntSpec;
 import edu.isi.kcap.ontapi.SparqlQuerySolution;
 import javax.ws.rs.NotFoundException;
+
 public class DiskRepository extends WriteKBRepository {
     static DiskRepository singleton;
     private static boolean creatingKB = false;
@@ -1218,7 +1219,7 @@ public class DiskRepository extends WriteKBRepository {
                         System.out.println(e.toString());
                         System.out.println("Error querying:\n" + query);
                         throw e;
-                    } 
+                    }
                     if (allSolutions != null)
                         for (List<SparqlQuerySolution> row : allSolutions) {
                             // One match per cell, store variables on cur.
