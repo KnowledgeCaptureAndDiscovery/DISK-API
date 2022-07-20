@@ -75,7 +75,7 @@ public abstract class DataAdapter {
     //This data query must return two variable names:
     static public String VARURI = "uri";
     static public String VARLABEL = "label";
-    public abstract List<DataResult> queryOptions (String varname, String constraintQuery);
+    public abstract List<DataResult> queryOptions (String varname, String constraintQuery) throws Exception;
 
     // file -> hash
     public abstract Map<String, String> getFileHashes (List<String> dsurls);

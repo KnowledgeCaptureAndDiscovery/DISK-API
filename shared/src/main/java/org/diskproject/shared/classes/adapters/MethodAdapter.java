@@ -70,7 +70,7 @@ public abstract class MethodAdapter {
 
 	public abstract List<String> areFilesAvailable (Set<String> fileList);
 
-	public abstract String addData (String url, String name);
+	public abstract String addData (String url, String name) throws Exception;
 
 	public abstract String addData (String id, String type, String contents);
 
