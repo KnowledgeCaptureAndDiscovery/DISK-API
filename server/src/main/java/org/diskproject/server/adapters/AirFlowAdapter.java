@@ -27,43 +27,44 @@ public class AirFlowAdapter extends MethodAdapter {
     private PoolingHttpClientConnectionManager connectionManager;
     private CloseableHttpClient httpClient;
 
-    public AirFlowAdapter (String adapterName, String url, String username, String password) {
+    public AirFlowAdapter(String adapterName, String url, String username, String password) {
         super(adapterName, url, username, password);
         CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, "X};83^adj4cC`Z&>"));
-        
+        credentialsProvider.setCredentials(AuthScope.ANY,
+                new UsernamePasswordCredentials(username, "X};83^adj4cC`Z&>"));
+
         connectionManager = new PoolingHttpClientConnectionManager();
-		httpClient = HttpClients.custom()
-	              .setConnectionManager(connectionManager)
-	              .setDefaultCredentialsProvider(credentialsProvider)
-	              .build();
+        httpClient = HttpClients.custom()
+                .setConnectionManager(connectionManager)
+                .setDefaultCredentialsProvider(credentialsProvider)
+                .build();
     }
 
-    public void getMethodList () {
-		HttpGet userInfo = new HttpGet(this.getEndpointUrl() + "/dags?limit=100&only_active=true");
-		userInfo.addHeader(HttpHeaders.ACCEPT, "application/json");
-		
-		try (CloseableHttpResponse httpResponse = httpClient.execute(userInfo)) {
-		    HttpEntity responseEntity = httpResponse.getEntity();
-		    String strResponse = EntityUtils.toString(responseEntity);
-		    System.out.println(strResponse);
-		} catch (Exception e) {
+    public void getMethodList() {
+        HttpGet userInfo = new HttpGet(this.getEndpointUrl() + "/dags?limit=100&only_active=true");
+        userInfo.addHeader(HttpHeaders.ACCEPT, "application/json");
+
+        try (CloseableHttpResponse httpResponse = httpClient.execute(userInfo)) {
+            HttpEntity responseEntity = httpResponse.getEntity();
+            String strResponse = EntityUtils.toString(responseEntity);
+            System.out.println(strResponse);
+        } catch (Exception e) {
             System.err.println("Could not list methods");
         }
     }
-    
+
     @Override
     public boolean ping() {
         return false;
     }
 
     @Override
-	public List<Workflow> getWorkflowList() {
+    public List<Workflow> getWorkflowList() {
         List<Workflow> list = new ArrayList<Workflow>();
         return list;
     }
 
-	public List<Variable> getWorkflowVariables(String id) {
+    public List<Variable> getWorkflowVariables(String id) {
         return null;
     }
 

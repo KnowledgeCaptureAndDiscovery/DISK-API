@@ -10,12 +10,12 @@ public class KBCache {
     private Map<String, KBObject> properties;
     private Map<String, KBObject> classes;
 
-    public KBCache (KBAPI kb) {
+    public KBCache(KBAPI kb) {
         this.properties = new HashMap<String, KBObject>();
         this.classes = new HashMap<String, KBObject>();
 
         for (KBObject classObj : kb.getAllClasses())
-            if(classObj != null && classObj.getName() != null)
+            if (classObj != null && classObj.getName() != null)
                 this.classes.put(classObj.getName(), classObj);
 
         for (KBObject propObj : kb.getAllObjectProperties())
@@ -26,12 +26,12 @@ public class KBCache {
             if (propObj != null && propObj.getName() != null)
                 this.properties.put(propObj.getName(), propObj);
     }
-    
-    public KBObject getClass (String name) {
+
+    public KBObject getClass(String name) {
         return this.classes.get(name);
     }
-    
-    public KBObject getProperty (String name) {
+
+    public KBObject getProperty(String name) {
         return this.properties.get(name);
     }
 }

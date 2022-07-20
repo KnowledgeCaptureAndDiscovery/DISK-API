@@ -22,21 +22,22 @@ import edu.isi.kcap.ontapi.jena.KBAPIJena;
 public class SparqlAdapter extends DataAdapter {
     private final KBAPI plainKb = new KBAPIJena(OntSpec.PLAIN);
     private final static Pattern varPattern = Pattern.compile("\\?(.+?)\\b");
-    
-    public SparqlAdapter (String endpoint, String name, String username, String password) {
+
+    public SparqlAdapter(String endpoint, String name, String username, String password) {
         super(endpoint, name, username, password);
     }
-    
-    public static Set<String> interceptVariables (final String queryA, final String queryB) {
+
+    public static Set<String> interceptVariables(final String queryA, final String queryB) {
         Set<String> A = new HashSet<String>();
         Matcher a = varPattern.matcher(queryA);
-        while (a.find()) A.add(a.group());
-        
+        while (a.find())
+            A.add(a.group());
+
         Set<String> B = new HashSet<String>();
         Matcher b = varPattern.matcher(queryB);
         while (b.find()) {
             String v = b.group();
-            for (String v2: A) {
+            for (String v2 : A) {
                 if (v.equals(v2)) {
                     B.add(v);
                 }
@@ -44,14 +45,15 @@ public class SparqlAdapter extends DataAdapter {
         }
         return B;
     }
-    
+
     @Override
-    public List<DataResult> query (String queryString) {
+    public List<DataResult> query(String queryString) {
         ArrayList<ArrayList<SparqlQuerySolution>> solutions = null;
         try {
             String user = this.getUsername(), pass = this.getPassword();
             if (user != null && pass != null) {
-                solutions = plainKb.sparqlQueryRemote(queryString, this.getEndpointUrl(), this.getUsername(), this.getPassword());
+                solutions = plainKb.sparqlQueryRemote(queryString, this.getEndpointUrl(), this.getUsername(),
+                        this.getPassword());
             } else {
                 solutions = plainKb.sparqlQueryRemote(queryString, this.getEndpointUrl());
             }
@@ -72,7 +74,7 @@ public class SparqlAdapter extends DataAdapter {
                             curResult.addValue(varName, varValue.getValueAsString());
                         } else {
                             String name = varValue.getName();
-                            name = name.replaceAll("-", "%"); //Semantic media wiki changes % to - 
+                            name = name.replaceAll("-", "%"); // Semantic media wiki changes % to -
                             curResult.addValue(varName, varValue.getID(), name);
                         }
                     } else {
@@ -86,15 +88,15 @@ public class SparqlAdapter extends DataAdapter {
     }
 
     @Override
-    public List<DataResult> queryOptions (String varname, String queryPart) {
+    public List<DataResult> queryOptions(String varname, String queryPart) {
         String name = varname.substring(1);
         String labelVar = varname + "Label";
         String query = "PREFIX xsd:  <" + KBConstants.XSDNS() + ">\n" +
-                       "PREFIX rdfs: <" + KBConstants.RDFSNS() + ">\n" +
-                       "PREFIX rdf:  <" + KBConstants.RDFNS() + ">\n" +
-                       "SELECT DISTINCT " + varname + " " + labelVar + " WHERE {\n" +
-                       queryPart;
-        
+                "PREFIX rdfs: <" + KBConstants.RDFSNS() + ">\n" +
+                "PREFIX rdf:  <" + KBConstants.RDFNS() + ">\n" +
+                "SELECT DISTINCT " + varname + " " + labelVar + " WHERE {\n" +
+                queryPart;
+
         if (!queryPart.contains(labelVar))
             query += "\n  OPTIONAL { " + varname + " rdfs:label " + labelVar + " . }";
         query += "\n}";
@@ -102,7 +104,7 @@ public class SparqlAdapter extends DataAdapter {
         List<DataResult> solutions = this.query(query);
         List<DataResult> fixedSolutions = new ArrayList<DataResult>();
 
-        for (DataResult solution: solutions) {
+        for (DataResult solution : solutions) {
             DataResult cur = new DataResult();
             String valUrl = solution.getValue(name);
             String valName = solution.getName(name);
@@ -111,7 +113,7 @@ public class SparqlAdapter extends DataAdapter {
                 label = valName;
             } else if (label == null) {
                 label = valUrl.replaceAll("^.*\\/", "");
-                //Try to remove mediawiki stuff
+                // Try to remove mediawiki stuff
                 label = label.replaceAll("Property-3A", "");
                 label = label.replaceAll("-28E-29", "");
                 label = label.replaceAll("_", " ");
@@ -125,7 +127,7 @@ public class SparqlAdapter extends DataAdapter {
     }
 
     @Override
-    public Map<String, String> getFileHashes (List<String> files) {
+    public Map<String, String> getFileHashes(List<String> files) {
         String query = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
                 + "SELECT DISTINCT ?file ?sha WHERE {\n"
                 + "  ?page ?contentUrl ?file .\n"
@@ -139,8 +141,8 @@ public class SparqlAdapter extends DataAdapter {
 
         Map<String, String> result = new HashMap<String, String>();
         List<DataResult> solutions = this.query(query);
-        
-        for (DataResult solution: solutions) {
+
+        for (DataResult solution : solutions) {
             String filename = solution.getValue("file");
             String sha = solution.getValue("sha");
             if (filename != null && sha != null)
