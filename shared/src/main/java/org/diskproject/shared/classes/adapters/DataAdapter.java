@@ -70,7 +70,7 @@ public abstract class DataAdapter {
         return "[" + this.name + "] " + (this.username != null ? this.username + "@" : "") + this.endpointUrl;
     }
 
-    public abstract List<DataResult> query (String queryString);
+    public abstract List<DataResult> query (String queryString) throws Exception;
 
     //This data query must return two variable names:
     static public String VARURI = "uri";
@@ -78,7 +78,7 @@ public abstract class DataAdapter {
     public abstract List<DataResult> queryOptions (String varname, String constraintQuery) throws Exception;
 
     // file -> hash
-    public abstract Map<String, String> getFileHashes (List<String> dsurls);
+    public abstract Map<String, String> getFileHashes (List<String> dsurls) throws Exception;
 
     // Test connection with source
     public abstract boolean ping ();
