@@ -193,9 +193,9 @@ public class DiskRepository extends WriteKBRepository {
             Map<String, String> cur = ontologies.get(name);
             // Check minimal fields
             if (!(cur.containsKey(ConfigKeys.URL) && cur.containsKey(ConfigKeys.PREFIX)
-                    && cur.containsKey(ConfigKeys.NAMESPACE) && cur.containsKey(ConfigKeys.TITLE))) {
+                    && cur.containsKey(ConfigKeys.NAMESPACE) && cur.containsKey(ConfigKeys.DESCRIPTION))) {
                 String errorMessage = "Error reading configuration file. Vocabularies must have '"
-                        + ConfigKeys.URL + "', '" + ConfigKeys.TITLE + "', '" + ConfigKeys.PREFIX + "' and '"
+                        + ConfigKeys.URL + "', '" + ConfigKeys.DESCRIPTION + "', '" + ConfigKeys.PREFIX + "' and '"
                         + ConfigKeys.NAMESPACE + "'";
                 System.out.println(errorMessage);
                 throw new RuntimeException(errorMessage);
@@ -203,7 +203,7 @@ public class DiskRepository extends WriteKBRepository {
             String curUrl = cur.get(ConfigKeys.URL),
                     curPrefix = cur.get(ConfigKeys.PREFIX),
                     curNamespace = cur.get(ConfigKeys.NAMESPACE),
-                    curTitle = cur.get(ConfigKeys.TITLE);
+                    curTitle = cur.get(ConfigKeys.DESCRIPTION);
 
             KBAPI curKB = null;
             try {
