@@ -157,7 +157,29 @@ public class DiskResource implements DiskService {
   @Override
   public List<TriggeredLOI> queryHypothesis(
       @PathParam("id") String id) {
-    return this.repo.queryHypothesis(USERNAME, id);
+    try {
+      return this.repo.queryHypothesis(USERNAME, id);
+    } catch (Exception e) {
+      try {
+        // Create Json error response
+        Gson gson = new Gson();
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = gson.toJson(error);
+
+        // Prepare the response
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+
+        // Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+        e.printStackTrace();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
+    return null;
   }
 
   /**
@@ -338,7 +360,29 @@ public class DiskResource implements DiskService {
       @QueryParam("endpoint") String endpoint,
       @QueryParam("variables") String variables,
       @QueryParam("query") String query) {
-    return repo.queryExternalStore(endpoint, query, variables);
+    try {
+      // return WingsAdapter.get().getWorkflowList();
+      return repo.queryExternalStore(endpoint, query, variables);
+    } catch (Exception e) {
+      try {
+        // Create Json error response
+        Gson gson = new Gson();
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = gson.toJson(error);
+
+        // Prepare the response
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+
+        // Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
+    return null;
   }
 
   /*
@@ -356,7 +400,29 @@ public class DiskResource implements DiskService {
   @Override
   public List<List<String>> listOptions(
       @PathParam("id") String id) {
-    return this.repo.listVariableOptions(id);
+    try {
+      // return WingsAdapter.get().getWorkflowList();
+      return this.repo.listVariableOptions(id);
+    } catch (Exception e) {
+      try {
+        // Create Json error response
+        Gson gson = new Gson();
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = gson.toJson(error);
+
+        // Prepare the response
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+
+        // Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
+    return null;
   };
 
   /*
@@ -377,14 +443,56 @@ public class DiskResource implements DiskService {
   public List<TriggeredLOI> runHypothesisAndLOI(
       @PathParam("hid") String hid,
       @PathParam("lid") String lid) {
-    return this.repo.runHypothesisAndLOI(USERNAME, hid, lid);
+    try {
+      return this.repo.runHypothesisAndLOI(USERNAME, hid, lid);
+    } catch (Exception e) {
+      try {
+        // Create Json error response
+        Gson gson = new Gson();
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = gson.toJson(error);
+
+        // Prepare the response
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+
+        // Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
+    return null;
   }
 
   @GET
   @Path("runhypotheses")
   @Override
   public Boolean runHypotheses() {
-    return this.repo.runAllHypotheses(USERNAME);
+    try {
+      return this.repo.runAllHypotheses(USERNAME);
+    } catch (Exception e) {
+      try {
+        // Create Json error response
+        Gson gson = new Gson();
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = gson.toJson(error);
+
+        // Prepare the response
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+
+        // Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
+    return null;
   }
 
   @GET

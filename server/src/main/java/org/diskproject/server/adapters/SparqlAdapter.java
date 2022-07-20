@@ -88,7 +88,8 @@ public class SparqlAdapter extends DataAdapter {
     }
 
     @Override
-    public List<DataResult> queryOptions(String varname, String queryPart) {
+    // TODO: Handle exception
+    public List<DataResult> queryOptions(String varname, String queryPart) throws Exception {
         String name = varname.substring(1);
         String labelVar = varname + "Label";
         String query = "PREFIX xsd:  <" + KBConstants.XSDNS() + ">\n" +
@@ -100,30 +101,33 @@ public class SparqlAdapter extends DataAdapter {
         if (!queryPart.contains(labelVar))
             query += "\n  OPTIONAL { " + varname + " rdfs:label " + labelVar + " . }";
         query += "\n}";
+        try {
+            List<DataResult> solutions = this.query(query);
+            List<DataResult> fixedSolutions = new ArrayList<DataResult>();
 
-        List<DataResult> solutions = this.query(query);
-        List<DataResult> fixedSolutions = new ArrayList<DataResult>();
-
-        for (DataResult solution : solutions) {
-            DataResult cur = new DataResult();
-            String valUrl = solution.getValue(name);
-            String valName = solution.getName(name);
-            String label = solution.getValue(name + "Label");
-            if (label == null && valName != null) {
-                label = valName;
-            } else if (label == null) {
-                label = valUrl.replaceAll("^.*\\/", "");
-                // Try to remove mediawiki stuff
-                label = label.replaceAll("Property-3A", "");
-                label = label.replaceAll("-28E-29", "");
-                label = label.replaceAll("_", " ");
+            for (DataResult solution : solutions) {
+                DataResult cur = new DataResult();
+                String valUrl = solution.getValue(name);
+                String valName = solution.getName(name);
+                String label = solution.getValue(name + "Label");
+                if (label == null && valName != null) {
+                    label = valName;
+                } else if (label == null) {
+                    label = valUrl.replaceAll("^.*\\/", "");
+                    // Try to remove mediawiki stuff
+                    label = label.replaceAll("Property-3A", "");
+                    label = label.replaceAll("-28E-29", "");
+                    label = label.replaceAll("_", " ");
+                }
+                cur.addValue(VARURI, valUrl);
+                cur.addValue(VARLABEL, label);
+                fixedSolutions.add(cur);
             }
-            cur.addValue(VARURI, valUrl);
-            cur.addValue(VARLABEL, label);
-            fixedSolutions.add(cur);
-        }
 
-        return fixedSolutions;
+            return fixedSolutions;
+        } catch (Exception e) {
+            throw e;
+        }
     }
 
     @Override
@@ -140,6 +144,7 @@ public class SparqlAdapter extends DataAdapter {
                 + "}";
 
         Map<String, String> result = new HashMap<String, String>();
+        // TODO: Handle exception
         List<DataResult> solutions = this.query(query);
 
         for (DataResult solution : solutions) {
