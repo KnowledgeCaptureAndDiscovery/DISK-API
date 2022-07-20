@@ -629,8 +629,9 @@ public class WriteKBRepository extends KBRepository {
 
     // -- Triggered Lines of Inquiry
     protected boolean writeTLOI (String username, TriggeredLOI tloi) {
-        if (tloi.getId() == null || tloi.getId().equals(""))
-            return false;
+        Boolean newTLOI = tloi.getId() == null || tloi.getId().equals("");
+        if (newTLOI)
+            tloi.setId(GUID.randomId("TriggeredLOI"));
 
         String userDomain = this.TLOIURI(username);
         String tloiid = userDomain + "/" + tloi.getId();

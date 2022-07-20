@@ -74,6 +74,7 @@ public class KBRepository implements TransactionsAPI {
           if (adapter.getName().equals(source))
               return adapter;
       }
+      System.err.println("Error: Method adapter not found " + source);
       return null;
   }
 
