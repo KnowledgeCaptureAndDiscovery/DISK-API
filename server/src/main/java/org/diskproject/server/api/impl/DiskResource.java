@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -159,6 +160,24 @@ public class DiskResource implements DiskService {
       @PathParam("id") String id) {
     try {
       return this.repo.queryHypothesis(USERNAME, id);
+    } catch (NotFoundException e) {
+      try {
+        Gson gson = new Gson();
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = gson.toJson(error);
+
+        // Prepare the response
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(404);
+
+        // Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+        e.printStackTrace();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
     } catch (Exception e) {
       try {
         // Create Json error response

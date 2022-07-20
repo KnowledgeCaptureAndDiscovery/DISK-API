@@ -1200,7 +1200,7 @@ public class WingsAdapter extends MethodAdapter {
 	public String addData(String url, String name) throws Exception {
 		try {
 			return this.addRemoteDataToWings(url, name);
-		} catch (Exception e){
+		} catch (Exception e) {
 			throw e;
 		}
 	}
