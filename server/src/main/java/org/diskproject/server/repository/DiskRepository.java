@@ -109,7 +109,12 @@ public class DiskRepository extends WriteKBRepository {
         this.methodAdapters = new HashMap<String, MethodAdapter>();
         this.initializeDataAdapters();
         this.initializeMethodAdapters();
-        initializeKB();
+        try {
+            initializeKB();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
         // Threads
         monitor = Executors.newScheduledThreadPool(0);
         executor = Executors.newFixedThreadPool(2);
@@ -131,7 +136,7 @@ public class DiskRepository extends WriteKBRepository {
      * Initialization
      */
 
-    public void initializeKB() {
+    public void initializeKB() throws Exception {
         super.initializeKB(); // This initializes the DISK ontology
         if (fac == null)
             return;
@@ -152,11 +157,15 @@ public class DiskRepository extends WriteKBRepository {
         loadQuestionTemplates();
 
         // --
-        this.loadKBFromConfig();
-        this.initializeVocabularies();
+        try {
+            this.loadKBFromConfig();
+            this.initializeVocabularies();
+        } catch (Exception e) {
+            throw e;
+        }
     }
 
-    private void loadKBFromConfig() {
+    private void loadKBFromConfig() throws Exception {
         // this.externalOntologies = new HashMap<String, KBAPI>();
         // this.externalOntologiesNamespaces = new HashMap<String, String>();
         this.externalVocabularies = new HashMap<String, VocabularyConfiguration>();
@@ -185,10 +194,11 @@ public class DiskRepository extends WriteKBRepository {
             // Check minimal fields
             if (!(cur.containsKey(ConfigKeys.URL) && cur.containsKey(ConfigKeys.PREFIX)
                     && cur.containsKey(ConfigKeys.NAMESPACE) && cur.containsKey(ConfigKeys.TITLE))) {
-                System.err.println("Error reading configuration file. Vocabularies must have '"
+                String errorMessage = "Error reading configuration file. Vocabularies must have '"
                         + ConfigKeys.URL + "', '" + ConfigKeys.TITLE + "', '" + ConfigKeys.PREFIX + "' and '"
-                        + ConfigKeys.NAMESPACE + "'");
-                continue;
+                        + ConfigKeys.NAMESPACE + "'";
+                System.out.println(errorMessage);
+                throw new RuntimeException(errorMessage);
             }
             String curUrl = cur.get(ConfigKeys.URL),
                     curPrefix = cur.get(ConfigKeys.PREFIX),
@@ -218,7 +228,7 @@ public class DiskRepository extends WriteKBRepository {
         }
     }
 
-    public void reloadKBCaches() {
+    public void reloadKBCaches() throws Exception {
         KBAPI[] kbs = { this.ontKB, this.questionKB };
 
         try {

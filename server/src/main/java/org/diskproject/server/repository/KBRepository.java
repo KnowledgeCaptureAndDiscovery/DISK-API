@@ -41,7 +41,7 @@ public class KBRepository implements TransactionsAPI {
     }
   }
 
-  protected void initializeKB() {
+  protected void initializeKB() throws Exception {
     if (this.tdbdir == null)
       return;
 
