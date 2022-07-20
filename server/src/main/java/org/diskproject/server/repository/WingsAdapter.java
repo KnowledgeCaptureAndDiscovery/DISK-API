@@ -747,7 +747,7 @@ public class WingsAdapter extends MethodAdapter {
 		return this.post(opurl, keyvalues);
 	}
 
-	public String addRemoteDataToWings(String url, String name) {
+	public String addRemoteDataToWings(String url, String name) throws Exception {
 		/*
 		 * FIXME: Wings rename does not rename the file, only the id
 		 * thus we cannot upload two files with the same name and then rename them.
@@ -764,7 +764,7 @@ public class WingsAdapter extends MethodAdapter {
 				EntityUtils.consume(responseEntity);
 				httpResponse.close();
 			} catch (Exception e) {
-				// TODO: handle exception
+				throw e;
 			} finally {
 				httpResponse.close();
 			}
@@ -1197,8 +1197,12 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public String addData(String url, String name) {
-		return this.addRemoteDataToWings(url, name);
+	public String addData(String url, String name) throws Exception {
+		try {
+			return this.addRemoteDataToWings(url, name);
+		} catch (Exception e){
+			throw e;
+		}
 	}
 
 	@Override
