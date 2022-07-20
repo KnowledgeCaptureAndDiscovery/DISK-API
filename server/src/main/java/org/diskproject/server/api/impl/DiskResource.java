@@ -174,6 +174,7 @@ public class DiskResource implements DiskService {
         // Send the response
         response.getWriter().print(jsonData.toString());
         response.getWriter().flush();
+        e.printStackTrace();
       } catch (IOException e1) {
         e1.printStackTrace();
       }

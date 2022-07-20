@@ -1350,8 +1350,7 @@ public class DiskRepository extends WriteKBRepository {
                     }
 
                 } catch (Exception e) {
-                    System.out.println("Error querying: " + query);
-                    System.out.println(e.toString());
+                    throw e;
                 }
             }
         }
