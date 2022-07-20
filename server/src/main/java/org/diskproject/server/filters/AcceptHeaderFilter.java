@@ -18,7 +18,7 @@ public class AcceptHeaderFilter implements ContainerRequestFilter {
     List<String> accept_headers = headers.get("Accept");
     if (!accept_headers.contains("application/rdf+xml")
         && !accept_headers.contains("*/*")
-        && !accept_headers.contains("application/xml")) 
+        && !accept_headers.contains("application/xml"))
       accept_headers.add(0, "application/json");
   }
 

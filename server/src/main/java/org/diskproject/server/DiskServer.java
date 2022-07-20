@@ -15,8 +15,8 @@ import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 class DiskServer extends ResourceConfig {
 
   public DiskServer() {
-    Config.load();  
-    DiskRepository.get(); //To create the server first
+    Config.load();
+    DiskRepository.get(); // To create the server first
 
     register(AcceptHeaderFilter.class);
     register(CORSResponseFilter.class);

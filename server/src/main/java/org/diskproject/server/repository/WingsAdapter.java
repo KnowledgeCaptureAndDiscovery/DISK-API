@@ -66,13 +66,14 @@ public class WingsAdapter extends MethodAdapter {
 	private String internal_server;
 
 	private CookieStore cookieStore;
-	
+
 	public String wflowns = "http://www.wings-workflows.org/ontology/workflow.owl#";
 	public String execns = "http://www.wings-workflows.org/ontology/execution.owl#";
 	public String datans = "http://www.wings-workflows.org/ontology/data.owl#";
 
-	public WingsAdapter (String name, String url, String username, String password, String domain, String internalServer) {
-	    super(name, url, username, password);
+	public WingsAdapter(String name, String url, String username, String password, String domain,
+			String internalServer) {
+		super(name, url, username, password);
 		this.server = url;
 		this.internal_server = internalServer;
 		this.domain = domain;
@@ -97,8 +98,8 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	public String WFLOWID(String id) {
-		return this.internal_server + "/export/users/" + this.getUsername() + "/" + this.domain + 
-		    "/workflows/" + id + ".owl#" + id;
+		return this.internal_server + "/export/users/" + this.getUsername() + "/" + this.domain +
+				"/workflows/" + id + ".owl#" + id;
 	}
 
 	public String DATAID(String id) {
@@ -124,7 +125,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public String getDataUri (String id) {
+	public String getDataUri(String id) {
 		return this.DATAID(id);
 	}
 
@@ -152,7 +153,7 @@ public class WingsAdapter extends MethodAdapter {
 			return list;
 		} catch (Exception e) {
 			e.printStackTrace();
-			//throw exception
+			// throw exception
 			throw new RuntimeException(e);
 		}
 	}
@@ -266,18 +267,18 @@ public class WingsAdapter extends MethodAdapter {
 
 	private boolean login() {
 		CloseableHttpClient client = HttpClientBuilder.create()
-        .setDefaultCookieStore(this.cookieStore).build();
+				.setDefaultCookieStore(this.cookieStore).build();
 		HttpClientContext context = HttpClientContext.create();
 		try {
-		  // Get a default domains page
+			// Get a default domains page
 			HttpGet securedResource = new HttpGet(this.server + "/users/" + getUsername() + "/domains");
 			HttpResponse httpResponse = client
 					.execute(securedResource, context);
 			HttpEntity responseEntity = httpResponse.getEntity();
 			String strResponse = EntityUtils.toString(responseEntity);
 			// If it doesn't ask for a username/password form, then we are already logged in
-			if(!strResponse.contains("j_security_check")) {
-			  return true;
+			if (!strResponse.contains("j_security_check")) {
+				return true;
 			}
 
 			// Login with the username/password
@@ -318,18 +319,18 @@ public class WingsAdapter extends MethodAdapter {
 			String runjson = this.post(pageid, formdata);
 			if (runjson == null)
 				return null;
-			
+
 			WorkflowRun wflowstatus = new WorkflowRun();
 			wflowstatus.setId(execid);
 
 			JsonParser jsonParser = new JsonParser();
 			JsonObject runobj = jsonParser.parse(runjson).getAsJsonObject();
-			
+
 			// Try to get the execution information
 			String status = null,
-				   tsStart = null,
-				   tsEnd = null;
-			
+					tsStart = null,
+					tsEnd = null;
+
 			try {
 				JsonObject expobj = runobj.get("execution").getAsJsonObject();
 				JsonObject runInfo = expobj.get("runtimeInfo").getAsJsonObject();
@@ -346,26 +347,26 @@ public class WingsAdapter extends MethodAdapter {
 				JsonObject vars = runobj.get("variables").getAsJsonObject();
 				try {
 					JsonArray outs = vars.get("output").getAsJsonArray();
-					for (JsonElement resp: outs) {
+					for (JsonElement resp : outs) {
 						JsonObject outputObj = resp.getAsJsonObject();
 						JsonObject bindingObj = outputObj.get("binding").getAsJsonObject();
 						String outid = outputObj.get("derivedFrom").getAsString();
 						String binding = bindingObj.get("id").toString().replaceAll("\"", "");
 						String sp[] = outid.split("#");
-						outputs.put(sp[sp.length-1], binding);
+						outputs.put(sp[sp.length - 1], binding);
 					}
 				} catch (Exception e) {
 					System.out.println("Run ID " + runid + ": No output files");
 				}
 				try {
 					JsonArray inputs = vars.get("input").getAsJsonArray();
-					for (JsonElement input: inputs) {
+					for (JsonElement input : inputs) {
 						JsonObject binding = input.getAsJsonObject().get("binding").getAsJsonObject();
 						if (binding.get("type").toString().equals("\"uri\"")) {
 							String id = binding.get("id").toString().replaceAll("\"", "");
 							String[] sp = id.split("#");
 							if (sp.length > 0) {
-								String name = sp[sp.length-1];
+								String name = sp[sp.length - 1];
 								wflowstatus.addFile(name, id);
 							}
 						}
@@ -384,32 +385,32 @@ public class WingsAdapter extends MethodAdapter {
 			wflowstatus.setStatus(status);
 			wflowstatus.setLink(link);
 			wflowstatus.setOutputs(outputs);
-			
+
 			Format formatter = new SimpleDateFormat("HH:mm:ss yyyy-MM-dd");
-			
+
 			if (tsStart != null) {
-				Date dateStart = new Date( Long.parseLong(tsStart) * 1000);
-				wflowstatus.setStartDate( formatter.format(dateStart));
+				Date dateStart = new Date(Long.parseLong(tsStart) * 1000);
+				wflowstatus.setStartDate(formatter.format(dateStart));
 				System.out.println(" Start: " + tsStart + " " + dateStart.toString());
 			}
 
 			if (tsEnd != null) {
-				Date dateEnd = new Date( Long.parseLong(tsEnd) * 1000);
+				Date dateEnd = new Date(Long.parseLong(tsEnd) * 1000);
 				wflowstatus.setEndDate(formatter.format(dateEnd));
 				System.out.println(" End: " + tsEnd + " " + dateEnd.toString());
 			}
-			
+
 			if (status != null) {
 				System.out.println(" Status: " + status);
 			}
-			
+
 			if (link != null) {
 				System.out.println(" Link: " + link);
 			}
 
 			if (outputs.size() > 0) {
 				System.out.println(" Outputs:");
-				for (String id: outputs.keySet()) {
+				for (String id : outputs.keySet()) {
 					System.out.println(id + ": " + outputs.get(id));
 				}
 			}
@@ -473,18 +474,18 @@ public class WingsAdapter extends MethodAdapter {
 				keyvalues.put(varid, value);
 			}
 			String[] array = keyvalues.keySet().toArray(new String[keyvalues.keySet().size()]);
-				for (String key : array) {
-					if (isPartOfCollection(key)) {
-						String newKey = key.substring(0, key.lastIndexOf("_"));
-						if (keyvalues.get(newKey) == null)
-							keyvalues.put(newKey, keyvalues.get(key));
-						else {
-							keyvalues.put(newKey, keyvalues.get(newKey) + ","
-									+ keyvalues.get(key));
-						}
-						keyvalues.remove(key);
+			for (String key : array) {
+				if (isPartOfCollection(key)) {
+					String newKey = key.substring(0, key.lastIndexOf("_"));
+					if (keyvalues.get(newKey) == null)
+						keyvalues.put(newKey, keyvalues.get(key));
+					else {
+						keyvalues.put(newKey, keyvalues.get(newKey) + ","
+								+ keyvalues.get(key));
 					}
+					keyvalues.remove(key);
 				}
+			}
 			boolean match = true;
 			for (VariableBinding vbinding : vbindings) {
 				String value = keyvalues.get(vbinding.getVariable());
@@ -517,7 +518,7 @@ public class WingsAdapter extends MethodAdapter {
 
 		return null;
 	}
-	
+
 	private boolean isPartOfCollection(String key) {
 		if (key.lastIndexOf("_") != key.length() - 5)
 			return false;
@@ -533,65 +534,66 @@ public class WingsAdapter extends MethodAdapter {
 		try {
 			wflowname = WFLOWID(wflowname);
 			String toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
-			String getData = postWithSpecifiedMediaType("users/"+getUsername()+"/"+domain+"/plan/getData",
+			String getData = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/plan/getData",
 					toPost, "application/json", "application/json");
 
 			vbindings = addDataBindings(inputVariables, vbindings, getData, false);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
-			String getParams = postWithSpecifiedMediaType("users/"+getUsername()+"/"+domain+"/plan/getParameters",
-			        toPost, "application/json", "application/json");
+			String getParams = postWithSpecifiedMediaType(
+					"users/" + getUsername() + "/" + domain + "/plan/getParameters",
+					toPost, "application/json", "application/json");
 
 			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
 
-            // TODO: This should be called after getting expanded workflow.
-            // - Create mapping data from expanded workflow, and then check.
-            // - *NEEDED* to handle collections properly
+			// TODO: This should be called after getting expanded workflow.
+			// - Create mapping data from expanded workflow, and then check.
+			// - *NEEDED* to handle collections properly
 
 			String runid = getWorkflowRunWithSameBindings(wflowname, vbindings);
-            if (runid != null) {
-                System.out.println("Found existing run : " + runid);
-                return runid;
-            }
-            String s = postWithSpecifiedMediaType("users/"+getUsername()+"/"+domain+"/plan/getExpansions",
-                    toPost, "application/json", "application/json");
-            JsonParser jsonParser = new JsonParser();
+			if (runid != null) {
+				System.out.println("Found existing run : " + runid);
+				return runid;
+			}
+			String s = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/plan/getExpansions",
+					toPost, "application/json", "application/json");
+			JsonParser jsonParser = new JsonParser();
 
-            JsonObject expobj = null;
+			JsonObject expobj = null;
 			try {
 				expobj = (JsonObject) jsonParser.parse(s);
 			} catch (Exception e) {
 				System.out.println("Error parsing: \n" + s);
-				System.out.println(" + users/"+getUsername()+"/"+domain+"/plan/getExpansions");
+				System.out.println(" + users/" + getUsername() + "/" + domain + "/plan/getExpansions");
 				System.out.println(" + toPOST: " + toPost);
 				return null;
 			}
-			
-            JsonObject dataobj = expobj.get("data").getAsJsonObject();
 
-            JsonArray templatesobj = dataobj.get("templates").getAsJsonArray();
-            if (templatesobj.size() == 0)
-                return null;
-            JsonObject templateobj = templatesobj.get(0).getAsJsonObject();
-            JsonObject seedobj = dataobj.get("seed").getAsJsonObject();
+			JsonObject dataobj = expobj.get("data").getAsJsonObject();
 
-            // Run the first Expanded workflow
-            List<NameValuePair> formdata = new ArrayList<NameValuePair>();
-            formdata.add(new BasicNameValuePair("template_id", wflowname));
-            formdata.add(new BasicNameValuePair("json", templateobj.get("template")
-                    .toString()));
-            formdata.add(new BasicNameValuePair("constraints_json", templateobj
-                    .get("constraints").toString()));
-            formdata.add(new BasicNameValuePair("seed_json", seedobj
-                    .get("template").toString()));
-            formdata.add(new BasicNameValuePair("seed_constraints_json", seedobj
-                    .get("constraints").toString()));
-            String pageid = "users/" + getUsername() + "/" + domain
-                    + "/executions/runWorkflow";
-            runid = post(pageid, formdata);
-            return runid;
+			JsonArray templatesobj = dataobj.get("templates").getAsJsonArray();
+			if (templatesobj.size() == 0)
+				return null;
+			JsonObject templateobj = templatesobj.get(0).getAsJsonObject();
+			JsonObject seedobj = dataobj.get("seed").getAsJsonObject();
+
+			// Run the first Expanded workflow
+			List<NameValuePair> formdata = new ArrayList<NameValuePair>();
+			formdata.add(new BasicNameValuePair("template_id", wflowname));
+			formdata.add(new BasicNameValuePair("json", templateobj.get("template")
+					.toString()));
+			formdata.add(new BasicNameValuePair("constraints_json", templateobj
+					.get("constraints").toString()));
+			formdata.add(new BasicNameValuePair("seed_json", seedobj
+					.get("template").toString()));
+			formdata.add(new BasicNameValuePair("seed_constraints_json", seedobj
+					.get("constraints").toString()));
+			String pageid = "users/" + getUsername() + "/" + domain
+					+ "/executions/runWorkflow";
+			runid = post(pageid, formdata);
+			return runid;
 		} catch (Exception e) {
-		    e.printStackTrace();
+			e.printStackTrace();
 		}
 		return null;
 	}
@@ -606,8 +608,8 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	public String addOrUpdateData(String id, String type, String contents, boolean addServer) {
-		if(addServer)
-			type = this.server+type;
+		if (addServer)
+			type = this.server + type;
 		String postpage = "users/" + getUsername() + "/" + domain + "/data/addDataForType";
 		String uploadpage = "users/" + getUsername() + "/" + domain + "/upload";
 		String locationpage = "users/" + getUsername() + "/" + domain + "/data/setDataLocation";
@@ -633,12 +635,13 @@ public class WingsAdapter extends MethodAdapter {
 			response = post(postpage, data);
 			List<NameValuePair> location = new ArrayList<NameValuePair>();
 			location.add(new BasicNameValuePair("data_id", dataid));
-			location.add(new BasicNameValuePair("location", 
-			        "/scratch/data/wings/storage/default/users/"+getUsername()+"/"+domain+"/data/"+dataid.substring(dataid.indexOf('#')+1)));
+			location.add(new BasicNameValuePair("location",
+					"/scratch/data/wings/storage/default/users/" + getUsername() + "/" + domain + "/data/"
+							+ dataid.substring(dataid.indexOf('#') + 1)));
 			response = post(locationpage, location);
-			if(response.equals("OK"))
+			if (response.equals("OK"))
 				System.out.println("Upload successful.");
-			else 
+			else
 				System.out.println("Upload failed.");
 		} catch (Exception e) {
 			System.out.println("Upload failed.");
@@ -698,15 +701,16 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	public String addDataToWingsAsFile(String id, String contents) {
-	    String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
+		String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain
+				+ "/data/ontology.owl#File";
 		String postpage = "users/" + getUsername() + "/" + domain + "/data/addDataForType";
 		String uploadpage = "users/" + getUsername() + "/" + domain + "/upload";
 		String dataid = this.DATAID(id);
-		
+
 		String sha = DigestUtils.sha1Hex(contents.getBytes());
-		String correctName = "SHA" + sha.substring(0,6);
+		String correctName = "SHA" + sha.substring(0, 6);
 		if (!id.contains(correctName))
-		    System.out.println("File " + id + " does not have the same hash: " + sha);
+			System.out.println("File " + id + " does not have the same hash: " + sha);
 
 		// Create temporary file and upload
 		try {
@@ -734,123 +738,129 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	public String addRemoteDataToWings(String url) {
-	  String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
-	  String opurl = "users/" + getUsername() + "/" + domain + "/data/addRemoteDataForType";
-	  List<NameValuePair> keyvalues = new ArrayList<NameValuePair>();
-	  keyvalues.add(new BasicNameValuePair("data_url", url));
-	  keyvalues.add(new BasicNameValuePair("data_type", type));
-	  return this.post(opurl, keyvalues);
+		String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain
+				+ "/data/ontology.owl#File";
+		String opurl = "users/" + getUsername() + "/" + domain + "/data/addRemoteDataForType";
+		List<NameValuePair> keyvalues = new ArrayList<NameValuePair>();
+		keyvalues.add(new BasicNameValuePair("data_url", url));
+		keyvalues.add(new BasicNameValuePair("data_type", type));
+		return this.post(opurl, keyvalues);
 	}
 
 	public String addRemoteDataToWings(String url, String name) {
-	    /* FIXME: Wings rename does not rename the file, only the id 
-	     * thus we cannot upload two files with the same name and then rename them.
-	     */
-	    String fileContents = null;
-	    CloseableHttpClient client = HttpClientBuilder.create().build();
-	    try {
-	        HttpGet securedResource = new HttpGet(url);
-	        CloseableHttpResponse httpResponse = client.execute(securedResource);
+		/*
+		 * FIXME: Wings rename does not rename the file, only the id
+		 * thus we cannot upload two files with the same name and then rename them.
+		 */
+		String fileContents = null;
+		CloseableHttpClient client = HttpClientBuilder.create().build();
+		try {
+			HttpGet securedResource = new HttpGet(url);
+			CloseableHttpResponse httpResponse = client.execute(securedResource);
 
-	        try {
-	            HttpEntity responseEntity = httpResponse.getEntity();
-	            fileContents = EntityUtils.toString(responseEntity);
-	            EntityUtils.consume(responseEntity);
-	            httpResponse.close();
-	        } catch (Exception e) {
-			// TODO: handle exception
-	        } finally {
-	            httpResponse.close();
-	        }
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    } finally {
-	        try {
-	            client.close();
-	        } catch (IOException e) {
-	        }
-	    }
+			try {
+				HttpEntity responseEntity = httpResponse.getEntity();
+				fileContents = EntityUtils.toString(responseEntity);
+				EntityUtils.consume(responseEntity);
+				httpResponse.close();
+			} catch (Exception e) {
+				// TODO: handle exception
+			} finally {
+				httpResponse.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				client.close();
+			} catch (IOException e) {
+			}
+		}
 
 		System.out.println("Content downloaded [" + fileContents.length() + "]");
 		String dataid = addDataToWingsAsFile(name, fileContents);
 		System.out.println("Data ID generated: " + dataid);
 		return dataid;
 	}
-	
-	public List<String> isFileListOnWings (Set<String> filelist) {
+
+	public List<String> isFileListOnWings(Set<String> filelist) {
 		List<String> returnValue = new ArrayList<String>();
-		String filetype = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
-		String fileprefix = "<" + this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/library.owl#";
-		
-		
+		String filetype = this.internal_server + "/export/users/" + getUsername() + "/" + domain
+				+ "/data/ontology.owl#File";
+		String fileprefix = "<" + this.internal_server + "/export/users/" + getUsername() + "/" + domain
+				+ "/data/library.owl#";
+
 		// Only checking that the filename is already on WINGs
 		// This will fail if the query is too long, only ask 20 at one time.
 		String queryStart = "SELECT DISTINCT ?value WHERE {\n"
-					 + "  ?value a <" + filetype + "> .\n"
-					 + "  VALUES ?value {\n";
+				+ "  ?value a <" + filetype + "> .\n"
+				+ "  VALUES ?value {\n";
 		String queryEnd = "  }\n}";
 
 		List<Set<String>> grouped = new ArrayList<Set<String>>();
 		int size = filelist.size();
 		if (size <= 20) {
-		    grouped.add(filelist);
+			grouped.add(filelist);
 		} else {
-		    int i = 0;
-		    Set<String> cur = new HashSet<String>();
-		    for (String file: filelist) {
-		        cur.add(file);
-		        i++;
-		        if (i == 20) {
-		            grouped.add(cur);
-		            cur = new HashSet<String>();
-		            i = 0;
-		        }
-		    }
-		    if (i != 0) { // That means the last one wasnt added yet
-		        grouped.add(cur);
-		    }
+			int i = 0;
+			Set<String> cur = new HashSet<String>();
+			for (String file : filelist) {
+				cur.add(file);
+				i++;
+				if (i == 20) {
+					grouped.add(cur);
+					cur = new HashSet<String>();
+					i = 0;
+				}
+			}
+			if (i != 0) { // That means the last one wasnt added yet
+				grouped.add(cur);
+			}
 		}
-		
-		for (Set<String> group: grouped) {
-		    String query = queryStart;
-		    for (String file: group) query += fileprefix + file + ">\n";
-		    query += queryEnd;
 
-		    //Doing the query
-            String pageid = "sparql";
-            List<NameValuePair> formdata = new ArrayList<NameValuePair>();
-            formdata.add(new BasicNameValuePair("query", query));
-            formdata.add(new BasicNameValuePair("format", "json"));
-            String resultjson = get(pageid, formdata);
-            if (resultjson == null || resultjson.equals(""))
-                return returnValue;
-            
-            JsonParser jsonParser = new JsonParser();
-            JsonObject result = jsonParser.parse(resultjson).getAsJsonObject();
-            JsonArray qbindings = result.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
+		for (Set<String> group : grouped) {
+			String query = queryStart;
+			for (String file : group)
+				query += fileprefix + file + ">\n";
+			query += queryEnd;
 
-            for (JsonElement qbinding : qbindings) {
-                JsonObject qb = qbinding.getAsJsonObject();
-                if (qb.get("value") == null)
-                    continue;
-                String fileurl = qb.get("value").getAsJsonObject().get("value").getAsString();
-                String name = fileurl.replaceAll("^.*\\#", "");
-                returnValue.add(name);
-            }
+			// Doing the query
+			String pageid = "sparql";
+			List<NameValuePair> formdata = new ArrayList<NameValuePair>();
+			formdata.add(new BasicNameValuePair("query", query));
+			formdata.add(new BasicNameValuePair("format", "json"));
+			String resultjson = get(pageid, formdata);
+			if (resultjson == null || resultjson.equals(""))
+				return returnValue;
+
+			JsonParser jsonParser = new JsonParser();
+			JsonObject result = jsonParser.parse(resultjson).getAsJsonObject();
+			JsonArray qbindings = result.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
+
+			for (JsonElement qbinding : qbindings) {
+				JsonObject qb = qbinding.getAsJsonObject();
+				if (qb.get("value") == null)
+					continue;
+				String fileurl = qb.get("value").getAsJsonObject().get("value").getAsString();
+				String name = fileurl.replaceAll("^.*\\#", "");
+				returnValue.add(name);
+			}
 		}
 
 		return returnValue;
 
 	}
 
-	public boolean isFileOnWings (String url) {
+	public boolean isFileOnWings(String url) {
 		String id = url.replaceAll("^.*\\/", "");
-		String filetype = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
-		String wingsid = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/library.owl#" + id;
+		String filetype = this.internal_server + "/export/users/" + getUsername() + "/" + domain
+				+ "/data/ontology.owl#File";
+		String wingsid = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/library.owl#"
+				+ id;
 		// Only checking that the filename is already on WINGs
 		String query = "SELECT DISTINCT ?prop WHERE {\n"
-					 + "  <" + wingsid + "> ?prop <" + filetype + "> .\n"
-					 + "\n}";
+				+ "  <" + wingsid + "> ?prop <" + filetype + "> .\n"
+				+ "\n}";
 
 		String pageid = "sparql";
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
@@ -859,7 +869,7 @@ public class WingsAdapter extends MethodAdapter {
 		String resultjson = get(pageid, formdata);
 		if (resultjson == null || resultjson.equals(""))
 			return false;
-		
+
 		JsonParser jsonParser = new JsonParser();
 		JsonObject result = jsonParser.parse(resultjson).getAsJsonObject();
 		JsonArray qbindings = result.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
@@ -873,291 +883,293 @@ public class WingsAdapter extends MethodAdapter {
 		return false;
 	}
 
-private String get(String pageid, List<NameValuePair> data) {
-	this.login();
-	CloseableHttpClient client = HttpClientBuilder.create().setDefaultCookieStore(this.cookieStore).build();
-	try {
-		String url = this.server + "/" + pageid;
-		if (data != null && data.size() > 0) {
-			url += "?" + URLEncodedUtils.format(data, "UTF-8");
-		}
-		HttpGet securedResource = new HttpGet(url);
-		CloseableHttpResponse httpResponse = client
-				.execute(securedResource);
-
+	private String get(String pageid, List<NameValuePair> data) {
+		this.login();
+		CloseableHttpClient client = HttpClientBuilder.create().setDefaultCookieStore(this.cookieStore).build();
 		try {
-			HttpEntity responseEntity = httpResponse.getEntity();
-			String strResponse = EntityUtils.toString(responseEntity);
-			EntityUtils.consume(responseEntity);
-			httpResponse.close();
-			return strResponse;
+			String url = this.server + "/" + pageid;
+			if (data != null && data.size() > 0) {
+				url += "?" + URLEncodedUtils.format(data, "UTF-8");
+			}
+			HttpGet securedResource = new HttpGet(url);
+			CloseableHttpResponse httpResponse = client
+					.execute(securedResource);
+
+			try {
+				HttpEntity responseEntity = httpResponse.getEntity();
+				String strResponse = EntityUtils.toString(responseEntity);
+				EntityUtils.consume(responseEntity);
+				httpResponse.close();
+				return strResponse;
+			} catch (Exception e) {
+				// TODO: handle exception
+			} finally {
+				httpResponse.close();
+			}
 		} catch (Exception e) {
-			// TODO: handle exception
+			e.printStackTrace();
 		} finally {
-			httpResponse.close();
+			try {
+				client.close();
+			} catch (IOException e) {
+			}
 		}
-	} catch (Exception e) {
-		e.printStackTrace();
-	} finally {
+		return null;
+	}
+
+	private List<VariableBinding> addDataBindings(
+			Map<String, Variable> inputVariables, List<VariableBinding> vbl,
+			String data, boolean param) {
+
+		JsonParser jsonParser = new JsonParser();
+		JsonObject expobj = null;
 		try {
-			client.close();
-		} catch (IOException e) {
+			expobj = jsonParser.parse(data.trim()).getAsJsonObject();
+		} catch (Exception e) {
+			System.out.println("Error parsing: \n" + data);
+			return vbl;
 		}
-	}
-	return null;
-}
 
-private List<VariableBinding> addDataBindings(
-		Map<String, Variable> inputVariables, List<VariableBinding> vbl,
-		String data, boolean param) {
+		if (!expobj.get("success").getAsBoolean())
+			return vbl;
 
-	JsonParser jsonParser = new JsonParser();
-	JsonObject expobj = null;
-	try {
-		expobj = jsonParser.parse(data.trim()).getAsJsonObject(); 
-	} catch (Exception e) {
-		System.out.println("Error parsing: \n" + data);
-		return vbl;
-	}
+		JsonObject dataobj = expobj.get("data").getAsJsonObject();
+		JsonArray datalist = dataobj.get("bindings").getAsJsonArray();
+		if (datalist.size() == 0)
+			return vbl;
 
-	if (!expobj.get("success").getAsBoolean())
-		return vbl;
+		JsonObject bindingobj = new JsonObject();
+		for (Iterator<JsonElement> it = datalist.iterator(); it.hasNext();) {
+			JsonElement el = it.next();
 
-	JsonObject dataobj = expobj.get("data").getAsJsonObject();
-	JsonArray datalist = dataobj.get("bindings").getAsJsonArray();
-	if (datalist.size() == 0)
-		return vbl;
-
-	JsonObject bindingobj = new JsonObject();
-	for(Iterator<JsonElement> it = datalist.iterator(); it.hasNext(); ) {
-	  JsonElement el = it.next();
-
-	  JsonObject obj = null;
-	  if(param) {
-	    // If Parameter, the entries aren't arrays
-	    obj = el.getAsJsonObject();
-	  } else {
-	    JsonArray ellist = el.getAsJsonArray();
-	    if(ellist.size() > 0) {
-	      obj = ellist.get(0).getAsJsonObject();
-	    }
-	  }
-	  if (obj != null) for(Entry<String, JsonElement> entry : obj.entrySet()) {
-        bindingobj.add(entry.getKey(), entry.getValue());
-      }
-	}
-
-	for (String key : inputVariables.keySet()) {
-		Variable v = inputVariables.get(key);
-		boolean existing = false;
-		if (!v.isParam() && !param) {
-			for (int i = 0; i < vbl.size(); i++) {
-				if (vbl.get(i).getVariable().equals(key)) {
-					existing = true;
-					break;
+			JsonObject obj = null;
+			if (param) {
+				// If Parameter, the entries aren't arrays
+				obj = el.getAsJsonObject();
+			} else {
+				JsonArray ellist = el.getAsJsonArray();
+				if (ellist.size() > 0) {
+					obj = ellist.get(0).getAsJsonObject();
 				}
 			}
-			if (!existing) {
-				if (bindingobj.get(key).isJsonArray()) {// is a collection
-					JsonArray wingsData = bindingobj.get(key).getAsJsonArray();
-					String id = "";
-					String temp;
-					for (int i = 0; i < wingsData.size(); i++) {
-						temp = wingsData.get(i).getAsJsonObject().get("id").toString();
-						temp = temp.substring(temp.indexOf("#") + 1, temp.length() - 1);
-						id += temp + ",";
+			if (obj != null)
+				for (Entry<String, JsonElement> entry : obj.entrySet()) {
+					bindingobj.add(entry.getKey(), entry.getValue());
+				}
+		}
+
+		for (String key : inputVariables.keySet()) {
+			Variable v = inputVariables.get(key);
+			boolean existing = false;
+			if (!v.isParam() && !param) {
+				for (int i = 0; i < vbl.size(); i++) {
+					if (vbl.get(i).getVariable().equals(key)) {
+						existing = true;
+						break;
 					}
-					id = id.substring(0, id.length() - 1);
-					vbl.add(new VariableBinding(key, id));
-				} else {
-					JsonObject wingsData = bindingobj.get(key).getAsJsonObject();
-					String id = wingsData.get("id").toString();
-					id = id.substring(id.indexOf("#") + 1, id.length() - 1);
-					vbl.add(new VariableBinding(key, id));
 				}
-			}
-		} else if (v.isParam() && param) {
-			for (int i = 0; i < vbl.size(); i++) {
-				if (vbl.get(i).getVariable().equals(key)) {
-					existing = true;
-					break;
-				}
-			}
-			if (!existing) {
-				JsonObject wingsParam = bindingobj.get(key).getAsJsonObject();
-				String value = wingsParam.get("value").toString();
-				value = value.substring(1, value.length() - 1);
-				vbl.add(new VariableBinding(key,value));
-			}
-		}
-	}
-	return vbl;
-}
-
-private String toPlanAcceptableFormat(String wfname, List<VariableBinding> vbl, Map<String, Variable> ivm) {
-	String output = "";
-
-	// Set Template ID first
-	output += "{\"templateId\":\"" + wfname + "\",";
-	wfname = wfname.substring(0, wfname.lastIndexOf("#") + 1);
-
-	// Set Component Bindings
-	output += "\"componentBindings\": {},";
-
-	// Set Parameter Types
-	String paramTypes = "";
-	for(String key: ivm.keySet()){
-		if(ivm.get(key).isParam())
-		paramTypes += "\"" + wfname + key + "\":\"" + ivm.get(key).getType()+"\",";
-	}
-	if(paramTypes.length() > 0)
-		paramTypes = paramTypes.substring(0,paramTypes.length()-1);
-	output += "\"parameterTypes\": {" + paramTypes +"},";
-	
-	// Set Inputs (Parameters and Data)
-	String paramBindings = "\"parameterBindings\": {";
-	boolean paramAdded = false;
-	String dataBindings = "\"dataBindings\": {";
-	boolean dataAdded = false;
-	String dataID = this.internal_server + "/export/users/" + getUsername() + "/" + domain
-			+ "/data/library.owl#";
-	for (String key : ivm.keySet()) {
-		Variable v = ivm.get(key);
-		if (v.isParam()) {
-			for (int i = 0; i < vbl.size(); i++) {
-				VariableBinding vb = vbl.get(i);
-				if (vb.getVariable().equals(v.getName())) {
-					paramBindings += "\"" + wfname + v.getName() + "\":\""
-							+ vb.getBinding() + "\",";
-					paramAdded = true;
-				}
-			}
-		} else {
-			for (int i = 0; i < vbl.size(); i++) {
-				VariableBinding vb = vbl.get(i);
-				if (vb.getVariable().equals(v.getName())) {
-					dataBindings += "\"" + wfname + v.getName() + "\":[";
-					String[] dBs = vb.getBinding()
-					    .replaceFirst("^\\[",  "")
-					    .replaceFirst("\\]$", "").split("\\s*,\\s*");
-					for (int j = 0; j < dBs.length; j++) {
-						if (dBs[j].length() > 0)
-							dataBindings += "\"" + dataID + dBs[j] + "\",";
+				if (!existing) {
+					if (bindingobj.get(key).isJsonArray()) {// is a collection
+						JsonArray wingsData = bindingobj.get(key).getAsJsonArray();
+						String id = "";
+						String temp;
+						for (int i = 0; i < wingsData.size(); i++) {
+							temp = wingsData.get(i).getAsJsonObject().get("id").toString();
+							temp = temp.substring(temp.indexOf("#") + 1, temp.length() - 1);
+							id += temp + ",";
+						}
+						id = id.substring(0, id.length() - 1);
+						vbl.add(new VariableBinding(key, id));
+					} else {
+						JsonObject wingsData = bindingobj.get(key).getAsJsonObject();
+						String id = wingsData.get("id").toString();
+						id = id.substring(id.indexOf("#") + 1, id.length() - 1);
+						vbl.add(new VariableBinding(key, id));
 					}
-					dataBindings = dataBindings.substring(0,
-							dataBindings.length() - 1);
-					dataBindings += "],";
-					dataAdded = true;
+				}
+			} else if (v.isParam() && param) {
+				for (int i = 0; i < vbl.size(); i++) {
+					if (vbl.get(i).getVariable().equals(key)) {
+						existing = true;
+						break;
+					}
+				}
+				if (!existing) {
+					JsonObject wingsParam = bindingobj.get(key).getAsJsonObject();
+					String value = wingsParam.get("value").toString();
+					value = value.substring(1, value.length() - 1);
+					vbl.add(new VariableBinding(key, value));
 				}
 			}
 		}
-
+		return vbl;
 	}
-	if (paramAdded)
-		paramBindings = paramBindings.substring(0,
-				paramBindings.length() - 1);
-	if (dataAdded)
-		dataBindings = dataBindings.substring(0, dataBindings.length() - 1);
 
-	output += paramBindings + "}," + dataBindings + "}}";
+	private String toPlanAcceptableFormat(String wfname, List<VariableBinding> vbl, Map<String, Variable> ivm) {
+		String output = "";
 
-	return output;
-}
+		// Set Template ID first
+		output += "{\"templateId\":\"" + wfname + "\",";
+		wfname = wfname.substring(0, wfname.lastIndexOf("#") + 1);
 
-private String postWithSpecifiedMediaType(String pageid, String data, String type, String type2) {
-    this.login();
-	CloseableHttpClient client = HttpClientBuilder.create()
-	        .setDefaultCookieStore(this.cookieStore).build();
-	try {
-		HttpPost securedResource = new HttpPost(server + "/" + pageid);
-		securedResource.setEntity(new StringEntity(data));
-		securedResource.addHeader("Accept", type);
-		securedResource.addHeader("Content-type", type2);
-		CloseableHttpResponse httpResponse = client.execute(securedResource);
+		// Set Component Bindings
+		output += "\"componentBindings\": {},";
+
+		// Set Parameter Types
+		String paramTypes = "";
+		for (String key : ivm.keySet()) {
+			if (ivm.get(key).isParam())
+				paramTypes += "\"" + wfname + key + "\":\"" + ivm.get(key).getType() + "\",";
+		}
+		if (paramTypes.length() > 0)
+			paramTypes = paramTypes.substring(0, paramTypes.length() - 1);
+		output += "\"parameterTypes\": {" + paramTypes + "},";
+
+		// Set Inputs (Parameters and Data)
+		String paramBindings = "\"parameterBindings\": {";
+		boolean paramAdded = false;
+		String dataBindings = "\"dataBindings\": {";
+		boolean dataAdded = false;
+		String dataID = this.internal_server + "/export/users/" + getUsername() + "/" + domain
+				+ "/data/library.owl#";
+		for (String key : ivm.keySet()) {
+			Variable v = ivm.get(key);
+			if (v.isParam()) {
+				for (int i = 0; i < vbl.size(); i++) {
+					VariableBinding vb = vbl.get(i);
+					if (vb.getVariable().equals(v.getName())) {
+						paramBindings += "\"" + wfname + v.getName() + "\":\""
+								+ vb.getBinding() + "\",";
+						paramAdded = true;
+					}
+				}
+			} else {
+				for (int i = 0; i < vbl.size(); i++) {
+					VariableBinding vb = vbl.get(i);
+					if (vb.getVariable().equals(v.getName())) {
+						dataBindings += "\"" + wfname + v.getName() + "\":[";
+						String[] dBs = vb.getBinding()
+								.replaceFirst("^\\[", "")
+								.replaceFirst("\\]$", "").split("\\s*,\\s*");
+						for (int j = 0; j < dBs.length; j++) {
+							if (dBs[j].length() > 0)
+								dataBindings += "\"" + dataID + dBs[j] + "\",";
+						}
+						dataBindings = dataBindings.substring(0,
+								dataBindings.length() - 1);
+						dataBindings += "],";
+						dataAdded = true;
+					}
+				}
+			}
+
+		}
+		if (paramAdded)
+			paramBindings = paramBindings.substring(0,
+					paramBindings.length() - 1);
+		if (dataAdded)
+			dataBindings = dataBindings.substring(0, dataBindings.length() - 1);
+
+		output += paramBindings + "}," + dataBindings + "}}";
+
+		return output;
+	}
+
+	private String postWithSpecifiedMediaType(String pageid, String data, String type, String type2) {
+		this.login();
+		CloseableHttpClient client = HttpClientBuilder.create()
+				.setDefaultCookieStore(this.cookieStore).build();
 		try {
-		    HttpEntity responseEntity = httpResponse.getEntity();
-		    String strResponse = EntityUtils.toString(responseEntity);
-		    EntityUtils.consume(responseEntity);
-		    httpResponse.close();
+			HttpPost securedResource = new HttpPost(server + "/" + pageid);
+			securedResource.setEntity(new StringEntity(data));
+			securedResource.addHeader("Accept", type);
+			securedResource.addHeader("Content-type", type2);
+			CloseableHttpResponse httpResponse = client.execute(securedResource);
+			try {
+				HttpEntity responseEntity = httpResponse.getEntity();
+				String strResponse = EntityUtils.toString(responseEntity);
+				EntityUtils.consume(responseEntity);
+				httpResponse.close();
 
-		    return strResponse;
+				return strResponse;
+			} finally {
+				httpResponse.close();
+			}
+		} catch (Exception e) {
+			System.out.println("POST: " + pageid);
+			System.out.println("DATA: " + data);
+			e.printStackTrace();
 		} finally {
-		    httpResponse.close();
+			try {
+				client.close();
+			} catch (IOException e) {
+			}
 		}
-	} catch (Exception e) {
-		System.out.println("POST: " + pageid);
-		System.out.println("DATA: " + data);
-	    e.printStackTrace();
-	} finally {
-	    try {
-	        client.close();
-	    } catch (IOException e) {}
+		return null;
 	}
-	return null;
-}
 
-private String post(String pageid, List<NameValuePair> data) {
-  this.login();
-	CloseableHttpClient client = HttpClientBuilder.create()
-      .setDefaultCookieStore(this.cookieStore).build();
+	private String post(String pageid, List<NameValuePair> data) {
+		this.login();
+		CloseableHttpClient client = HttpClientBuilder.create()
+				.setDefaultCookieStore(this.cookieStore).build();
 
-	try {
-		HttpPost securedResource = new HttpPost(this.server + "/" + pageid);
-		securedResource.setEntity(new UrlEncodedFormEntity(data));
-		CloseableHttpResponse httpResponse = client
-				.execute(securedResource);
 		try {
-			HttpEntity responseEntity = httpResponse.getEntity();
-			String strResponse = EntityUtils.toString(responseEntity);
-			EntityUtils.consume(responseEntity);
-			return strResponse;
+			HttpPost securedResource = new HttpPost(this.server + "/" + pageid);
+			securedResource.setEntity(new UrlEncodedFormEntity(data));
+			CloseableHttpResponse httpResponse = client
+					.execute(securedResource);
+			try {
+				HttpEntity responseEntity = httpResponse.getEntity();
+				String strResponse = EntityUtils.toString(responseEntity);
+				EntityUtils.consume(responseEntity);
+				return strResponse;
+			} finally {
+				httpResponse.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		} finally {
-			httpResponse.close();
+			try {
+				client.close();
+			} catch (IOException e) {
+			}
 		}
-	} catch (Exception e) {
-		e.printStackTrace();
-	} finally {
-		try {
-			client.close();
-		} catch (IOException e) {
-		}
+		return null;
 	}
-	return null;
-}
 
-private String upload(String pageid, String type, File file) {
-  	this.login();
-	CloseableHttpClient client = HttpClientBuilder.create()
-      .setDefaultCookieStore(this.cookieStore).build();
-	try {
-		HttpPost post = new HttpPost(this.server + "/" + pageid);
-		MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-		builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
-		builder.addTextBody("name", file.getName());
-		builder.addTextBody("type", type);
-		builder.addBinaryBody("file", file);
-		//
-		HttpEntity entity = builder.build();
-		post.setEntity(entity);
-		CloseableHttpResponse response = client.execute(post);
+	private String upload(String pageid, String type, File file) {
+		this.login();
+		CloseableHttpClient client = HttpClientBuilder.create()
+				.setDefaultCookieStore(this.cookieStore).build();
 		try {
-			HttpEntity responseEntity = response.getEntity();
-			String strResponse = EntityUtils.toString(responseEntity);
-			EntityUtils.consume(responseEntity);
-			return strResponse;
+			HttpPost post = new HttpPost(this.server + "/" + pageid);
+			MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+			builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+			builder.addTextBody("name", file.getName());
+			builder.addTextBody("type", type);
+			builder.addBinaryBody("file", file);
+			//
+			HttpEntity entity = builder.build();
+			post.setEntity(entity);
+			CloseableHttpResponse response = client.execute(post);
+			try {
+				HttpEntity responseEntity = response.getEntity();
+				String strResponse = EntityUtils.toString(responseEntity);
+				EntityUtils.consume(responseEntity);
+				return strResponse;
+			} finally {
+				response.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		} finally {
-			response.close();
+			try {
+				client.close();
+			} catch (IOException e) {
+			}
 		}
-	} catch (Exception e) {
-		e.printStackTrace();
-	} finally {
-		try {
-			client.close();
-		} catch (IOException e) {
-		}
+		return null;
 	}
-	return null;
-}
 
 	@Override
 	public boolean ping() {
@@ -1180,27 +1192,27 @@ private String upload(String pageid, String type, File file) {
 	}
 
 	@Override
-	public List<String> areFilesAvailable (Set<String> filelist) {
+	public List<String> areFilesAvailable(Set<String> filelist) {
 		return this.isFileListOnWings(filelist);
 	}
 
 	@Override
-	public String addData (String url, String name) {
+	public String addData(String url, String name) {
 		return this.addRemoteDataToWings(url, name);
 	}
 
 	@Override
-	public String addData (String id, String type, String contents) {
+	public String addData(String id, String type, String contents) {
 		return this.addDataToWings(id, type, contents);
 	}
 
 	@Override
-	public WorkflowRun getRunStatus (String runId) {
+	public WorkflowRun getRunStatus(String runId) {
 		return this.getWorkflowRunStatus(runId);
 	}
 
 	@Override
-	public String fetchData (String dataId) {
+	public String fetchData(String dataId) {
 		return this.fetchDataFromWings(dataId);
 	}
 

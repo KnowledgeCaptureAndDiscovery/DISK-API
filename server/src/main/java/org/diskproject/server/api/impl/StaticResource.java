@@ -12,10 +12,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.diskproject.shared.api.StaticService;
- 
+
 @Path("public")
 public class StaticResource implements StaticService {
-	@Inject ServletContext context;
+	@Inject
+	ServletContext context;
 
 	@GET
 	@Path("{path:.*}")
@@ -25,7 +26,7 @@ public class StaticResource implements StaticService {
 
 		return Objects.isNull(resource)
 				? Response.status(404).build()
-						: Response.ok(resource, MediaType.APPLICATION_JSON).build();
-						//: Response.ok().entity(resource).build();
+				: Response.ok(resource, MediaType.APPLICATION_JSON).build();
+		// : Response.ok().entity(resource).build();
 	}
 }

@@ -26,30 +26,30 @@ import com.google.gson.JsonParser;
 
 @PreMatching
 public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
-  @Context 
+  @Context
   HttpServletRequest request;
-  
+
   @Override
   public void filter(ContainerRequestContext requestContext) throws IOException {
     String token = requestContext.getHeaderString("authorization");
     if (token != null) {
       KeycloakUser user = KeycloakSessions.getKeycloakUser(token);
       if (user != null && user.username != null) {
-          requestContext.setProperty("username", user.username);
-      }
-      else
-          requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity("Access denied").build());
+        requestContext.setProperty("username", user.username);
+      } else
+        requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity("Access denied").build());
     }
   }
-  
+
   public static class KeycloakUser {
     public String username, email;
+
     public KeycloakUser(String user, String email) {
       this.username = user;
       this.email = email;
     }
   }
-  
+
   public static class KeycloakSessions {
     // Token to User map
     private static Map<String, KeycloakUser> tokenCache = new HashMap<String, KeycloakUser>();
@@ -61,54 +61,55 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
     private static CloseableHttpClient httpClient;
     private static PoolingHttpClientConnectionManager connectionManager;
     private static String userInfoUrl;
-    
-    private static CloseableHttpClient getHttpClient () {
+
+    private static CloseableHttpClient getHttpClient() {
       if (KeycloakSessions.httpClient == null) {
         connectionManager = new PoolingHttpClientConnectionManager();
         KeycloakSessions.httpClient = HttpClients.custom()
             .setConnectionManager(connectionManager)
             .build();
-        
+
         PropertyListConfiguration props = Config.get().getProperties();
         String server = props.getString("keycloak.url");
         String realm = props.getString("keycloak.realm");
-        
-        //Create API urls
-	      KeycloakSessions.userInfoUrl = server + "/auth/realms/" + realm + "/protocol/openid-connect/userinfo";
-      } 
+
+        // Create API urls
+        KeycloakSessions.userInfoUrl = server + "/auth/realms/" + realm + "/protocol/openid-connect/userinfo";
+      }
       return KeycloakSessions.httpClient;
     }
-    
-    public static KeycloakUser getKeycloakUser (String token) {
+
+    public static KeycloakUser getKeycloakUser(String token) {
       if (KeycloakSessions.tokenCache.containsKey(token)) {
         return KeycloakSessions.tokenCache.get(token);
       } else if (KeycloakSessions.loadingToken.containsKey(token)) {
         try {
-          //This is a hack to not make the query multiple times if we get multiple request at the same time.
+          // This is a hack to not make the query multiple times if we get multiple
+          // request at the same time.
           System.err.println("WAITING TOKEN");
           Thread.sleep(500);
         } catch (InterruptedException e) {
           e.printStackTrace();
         }
-        //FIXME: This can be stack overflow
+        // FIXME: This can be stack overflow
         return KeycloakSessions.getKeycloakUser(token);
       } else {
         return KeycloakSessions.fetchKeycloakUser(token);
       }
     }
-    
-    private static void updateUserToken (KeycloakUser user, String token) {
+
+    private static void updateUserToken(KeycloakUser user, String token) {
       String username = user.username;
-	    if (KeycloakSessions.userTokens.containsKey(username)) {
-	      String usedToken = KeycloakSessions.userTokens.get(username);
-	      if (KeycloakSessions.tokenCache.containsKey(usedToken))
-	        KeycloakSessions.tokenCache.remove(usedToken);
-	    }
-	    KeycloakSessions.userTokens.put(username, token);
-	    KeycloakSessions.tokenCache.put(token, user);
+      if (KeycloakSessions.userTokens.containsKey(username)) {
+        String usedToken = KeycloakSessions.userTokens.get(username);
+        if (KeycloakSessions.tokenCache.containsKey(usedToken))
+          KeycloakSessions.tokenCache.remove(usedToken);
+      }
+      KeycloakSessions.userTokens.put(username, token);
+      KeycloakSessions.tokenCache.put(token, user);
     }
-    
-    private static KeycloakUser fetchKeycloakUser (String token) {
+
+    private static KeycloakUser fetchKeycloakUser(String token) {
       KeycloakSessions.loadingToken.put(token, true);
       CloseableHttpClient client = KeycloakSessions.getHttpClient();
       if (KeycloakSessions.userInfoUrl == null)
@@ -116,7 +117,7 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
       HttpGet userInfo = new HttpGet(KeycloakSessions.userInfoUrl);
       userInfo.addHeader("Authorization", token);
 
-	    try (CloseableHttpResponse httpResponse = client.execute(userInfo)) {
+      try (CloseableHttpResponse httpResponse = client.execute(userInfo)) {
         HttpEntity responseEntity = httpResponse.getEntity();
         String strResponse = EntityUtils.toString(responseEntity);
 
