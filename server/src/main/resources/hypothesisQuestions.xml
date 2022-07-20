@@ -1,14 +1,6 @@
 <?xml version="1.0"?>
-<rdf:RDF xmlns="http://disk-project.org/resources/question/"
-     xml:base="http://disk-project.org/resources/question/"
-     xmlns:ns0="http://disk-project.org/ontology/disk#"
-     xmlns:owl="http://www.w3.org/2002/07/owl#"
-     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-     xmlns:xml="http://www.w3.org/XML/1998/namespace"
-     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
-     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
-    <owl:Ontology rdf:about="http://disk-project.org/resources/question/"/>
-    
+<rdf:RDF xmlns="http://disk-project.org/resources/question/" xml:base="http://disk-project.org/resources/question/" xmlns:ns0="http://disk-project.org/ontology/disk#" xmlns:owl="http://www.w3.org/2002/07/owl#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:xml="http://www.w3.org/XML/1998/namespace" xmlns:xsd="http://www.w3.org/2001/XMLSchema#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+    <owl:Ontology rdf:about="http://disk-project.org/resources/question/" />
 
 
     <!-- 
@@ -19,49 +11,40 @@
     ///////////////////////////////////////////////////////////////////////////////////////
      -->
 
-    
-
 
     <!-- http://disk-project.org/ontology/disk#hasConstraints -->
 
-    <owl:AnnotationProperty rdf:about="http://disk-project.org/ontology/disk#hasConstraints"/>
-    
+    <owl:AnnotationProperty rdf:about="http://disk-project.org/ontology/disk#hasConstraints" />
 
 
     <!-- http://disk-project.org/ontology/disk#hasFixedOptions -->
 
-    <owl:AnnotationProperty rdf:about="http://disk-project.org/ontology/disk#hasFixedOptions"/>
-    
+    <owl:AnnotationProperty rdf:about="http://disk-project.org/ontology/disk#hasFixedOptions" />
 
 
     <!-- http://disk-project.org/ontology/disk#hasQuestionPattern -->
 
-    <owl:AnnotationProperty rdf:about="http://disk-project.org/ontology/disk#hasQuestionPattern"/>
-    
+    <owl:AnnotationProperty rdf:about="http://disk-project.org/ontology/disk#hasQuestionPattern" />
 
 
     <!-- http://disk-project.org/ontology/disk#hasQuestionTemplate -->
 
-    <owl:AnnotationProperty rdf:about="http://disk-project.org/ontology/disk#hasQuestionTemplate"/>
-    
+    <owl:AnnotationProperty rdf:about="http://disk-project.org/ontology/disk#hasQuestionTemplate" />
 
 
     <!-- http://disk-project.org/ontology/disk#hasQuestionVariable -->
 
-    <owl:AnnotationProperty rdf:about="http://disk-project.org/ontology/disk#hasQuestionVariable"/>
-    
+    <owl:AnnotationProperty rdf:about="http://disk-project.org/ontology/disk#hasQuestionVariable" />
 
 
     <!-- http://disk-project.org/ontology/disk#hasVariableName -->
 
-    <owl:AnnotationProperty rdf:about="http://disk-project.org/ontology/disk#hasVariableName"/>
-    
+    <owl:AnnotationProperty rdf:about="http://disk-project.org/ontology/disk#hasVariableName" />
 
 
     <!-- http://www.w3.org/1999/02/22-rdf-syntax-ns#label -->
 
-    <owl:AnnotationProperty rdf:about="http://www.w3.org/1999/02/22-rdf-syntax-ns#label"/>
-    
+    <owl:AnnotationProperty rdf:about="http://www.w3.org/1999/02/22-rdf-syntax-ns#label" />
 
 
     <!-- 
@@ -72,19 +55,15 @@
     ///////////////////////////////////////////////////////////////////////////////////////
      -->
 
-    
-
 
     <!-- http://disk-project.org/ontology/disk#Question -->
 
-    <owl:Class rdf:about="http://disk-project.org/ontology/disk#Question"/>
-    
+    <owl:Class rdf:about="http://disk-project.org/ontology/disk#Question" />
 
 
     <!-- http://disk-project.org/ontology/disk#QuestionVariable -->
 
-    <owl:Class rdf:about="http://disk-project.org/ontology/disk#QuestionVariable"/>
-    
+    <owl:Class rdf:about="http://disk-project.org/ontology/disk#QuestionVariable" />
 
 
     <!-- 
@@ -95,97 +74,88 @@
     ///////////////////////////////////////////////////////////////////////////////////////
      -->
 
-    
-
 
     <!-- http://disk-project.org/resources/question/HQ1 -->
 
     <owl:NamedIndividual rdf:about="http://disk-project.org/resources/question/HQ1">
-        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#Question"/>
+        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#Question" />
         <ns0:hasQuestionPattern>?EffectSize neuro:sourceGene ?Genotype
 ?EffectSize neuro:targetCharacteristic ?BrainImagingTrait
 ?EffectSize hyp:associatedWith ?DemographicAttribute</ns0:hasQuestionPattern>
         <ns0:hasQuestionTemplate>Is the effect size of ?Genotype on ?BrainImagingTrait associated with ?DemographicAttribute</ns0:hasQuestionTemplate>
-        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ1V1"/>
-        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ1V2"/>
-        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ1V3"/>
+        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ1V1" />
+        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ1V2" />
+        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ1V3" />
         <rdfs:label>Is the effect size of &lt;Genotype&gt; in &lt;Brain Imaging Trait&gt; associated with &lt;Demographic Attribute&gt;</rdfs:label>
     </owl:NamedIndividual>
-    
 
 
     <!-- http://disk-project.org/resources/question/HQ1V1 -->
 
     <owl:NamedIndividual rdf:about="http://disk-project.org/resources/question/HQ1V1">
-        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable"/>
+        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable" />
         <ns0:hasConstraints>[] ?geneticDatatypeProp ?Genotype .
 ?Genotype a ?type .
 ?type rdfs:label &quot;GeneticDataType (E)&quot; .
 ?geneticDatatypeProp rdfs:label &quot;HasGeneticDataType (E)&quot;.</ns0:hasConstraints>
         <ns0:hasVariableName>?Genotype</ns0:hasVariableName>
     </owl:NamedIndividual>
-    
 
 
     <!-- http://disk-project.org/resources/question/HQ1V2 -->
 
     <owl:NamedIndividual rdf:about="http://disk-project.org/resources/question/HQ1V2">
-        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable"/>
+        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable" />
         <ns0:hasFixedOptions>HippocampalVolume</ns0:hasFixedOptions>
         <ns0:hasVariableName>?BrainImagingTrait</ns0:hasVariableName>
     </owl:NamedIndividual>
-    
 
 
     <!-- http://disk-project.org/resources/question/HQ1V3 -->
 
     <owl:NamedIndividual rdf:about="http://disk-project.org/resources/question/HQ1V3">
-        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable"/>
+        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable" />
         <ns0:hasFixedOptions>Age</ns0:hasFixedOptions>
         <ns0:hasVariableName>?DemographicAttribute</ns0:hasVariableName>
     </owl:NamedIndividual>
-    
 
 
     <!-- http://disk-project.org/resources/question/HQ2 -->
 
     <owl:NamedIndividual rdf:about="http://disk-project.org/resources/question/HQ2">
-        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#Question"/>
+        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#Question" />
         <ns0:hasQuestionPattern>?NeurologicalDisorder hyp:associatedWith ?BrainCharacteristic</ns0:hasQuestionPattern>
         <ns0:hasQuestionTemplate>Is ?BrainCharacteristic associated with ?NeurologicalDisorder</ns0:hasQuestionTemplate>
-        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ2V1"/>
-        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ2V2"/>
+        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ2V1" />
+        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ2V2" />
         <rdfs:label>Is &lt;Brain Characteristic&gt; associated with &lt;Neurological Disorder&gt; in comparison to healthy controls</rdfs:label>
     </owl:NamedIndividual>
-    
 
 
     <!-- http://disk-project.org/resources/question/HQ2V1 -->
 
     <owl:NamedIndividual rdf:about="http://disk-project.org/resources/question/HQ2V1">
-        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable"/>
+        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable" />
         <ns0:hasConstraints>?corticaldataset ?brainCharProp ?BrainCharacteristic .
 ?brainCharProp rdfs:label &quot;HasBrainCharacteristic&quot; .</ns0:hasConstraints>
         <ns0:hasVariableName>?BrainCharacteristic</ns0:hasVariableName>
     </owl:NamedIndividual>
-    
 
 
     <!-- http://disk-project.org/resources/question/HQ2V2 -->
 
     <owl:NamedIndividual rdf:about="http://disk-project.org/resources/question/HQ2V2">
-        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable"/>
+        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable" />
         <ns0:hasConstraints>?cohort ?studiesDiseaseProp ?NeurologicalDisorder .
 ?studiesDiseaseProp rdfs:label &quot;StudiesDisorder (E)&quot; .</ns0:hasConstraints>
         <ns0:hasVariableName>?NeurologicalDisorder</ns0:hasVariableName>
     </owl:NamedIndividual>
-    
 
 
     <!-- http://disk-project.org/resources/question/HQ3 -->
 
     <owl:NamedIndividual rdf:about="http://disk-project.org/resources/question/HQ3">
-        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#Question"/>
+        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#Question" />
         <ns0:hasQuestionPattern>?EffectSize neuro:sourceGene ?Genotype
 ?EffectSize neuro:targetCharacteristic ?BrainImagingTrait
 ?EffectSize neuro:targetCharacteristic ?Region
@@ -193,54 +163,50 @@
 optional { ?DemographicAttribute hyp:lessThan ?maxDemographic }
 optional { ?DemographicAttribute hyp:moreThan ?minDemographic }</ns0:hasQuestionPattern>
         <ns0:hasQuestionTemplate>Is the EffectSize of ?Genotype on ?BrainImagingTrait of ?Region associated with ?DemographicAttribute</ns0:hasQuestionTemplate>
-        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ3V1"/>
-        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ3V2"/>
-        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ3V3"/>
-        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ3V4"/>
+        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ3V1" />
+        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ3V2" />
+        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ3V3" />
+        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ3V4" />
         <rdfs:label>Is the effect size of &lt;Genotype&gt; on &lt;Brain Imaging Trait&gt; of &lt;Region&gt; associated with &lt;Demographic Attribute&gt;</rdfs:label>
     </owl:NamedIndividual>
-    
 
 
     <!-- http://disk-project.org/resources/question/HQ3V1 -->
 
     <owl:NamedIndividual rdf:about="http://disk-project.org/resources/question/HQ3V1">
-        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable"/>
+        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable" />
         <ns0:hasConstraints>[] ?snpprop ?Genotype .
 ?snpprop rdfs:label &quot;SNP&quot; .</ns0:hasConstraints>
         <ns0:hasVariableName>?Genotype</ns0:hasVariableName>
     </owl:NamedIndividual>
-    
 
 
     <!-- http://disk-project.org/resources/question/HQ3V2 -->
 
     <owl:NamedIndividual rdf:about="http://disk-project.org/resources/question/HQ3V2">
-        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable"/>
+        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable" />
         <ns0:hasConstraints>[] ?traitprop ?BrainImagingTrait .
 ?traitprop rdfs:label &quot;Trait&quot; .
 BIND(REPLACE (REPLACE (?BrainImagingTrait, &quot;SA&quot;, &quot;Surface Area&quot;), &quot;TH&quot;, &quot;Thickness&quot;)
   AS ?BrainImagingTraitLabel)</ns0:hasConstraints>
         <ns0:hasVariableName>?BrainImagingTrait</ns0:hasVariableName>
     </owl:NamedIndividual>
-    
 
 
     <!-- http://disk-project.org/resources/question/HQ3V3 -->
 
     <owl:NamedIndividual rdf:about="http://disk-project.org/resources/question/HQ3V3">
-        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable"/>
+        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable" />
         <ns0:hasConstraints>[] ?regprop ?Region .
 ?regprop rdfs:label &quot;BrainRegion&quot; .</ns0:hasConstraints>
         <ns0:hasVariableName>?Region</ns0:hasVariableName>
     </owl:NamedIndividual>
-    
 
 
     <!-- http://disk-project.org/resources/question/HQ3V4 -->
 
     <owl:NamedIndividual rdf:about="http://disk-project.org/resources/question/HQ3V4">
-        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable"/>
+        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#QuestionVariable" />
         <ns0:hasConstraints>?hasCohortProj rdfs:label &quot;HasCohortProject (E)&quot; .
 [] ?hasCohortProj ?CohortProjects .
 ?CohortProjects ?DemographicAttribute [] .
@@ -253,24 +219,21 @@ FILTER (
 )</ns0:hasConstraints>
         <ns0:hasVariableName>?DemographicAttribute</ns0:hasVariableName>
     </owl:NamedIndividual>
-    
 
 
     <!-- http://disk-project.org/resources/question/HQ4 -->
 
     <owl:NamedIndividual rdf:about="http://disk-project.org/resources/question/HQ4">
-        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#Question"/>
+        <rdf:type rdf:resource="http://disk-project.org/ontology/disk#Question" />
         <ns0:hasQuestionPattern>?EffectSize neuro:sourceGene ?Genotype
 ?EffectSize neuro:targetCharacteristic ?BrainImagingTrait
 ?EffectSize neuro:targetCharacteristic ?Region</ns0:hasQuestionPattern>
         <ns0:hasQuestionTemplate>What is the Effect Size of ?Genotype on ?Region ?BrainImagingTrait</ns0:hasQuestionTemplate>
-        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ3V1"/>
-        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ3V2"/>
-        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ3V3"/>
+        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ3V1" />
+        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ3V2" />
+        <ns0:hasQuestionVariable rdf:resource="http://disk-project.org/resources/question/HQ3V3" />
         <rdfs:label>What is the effect size of &lt;Genotype&gt; on &lt;Region&gt; &lt;Brain Imaging Trait&gt;</rdfs:label>
     </owl:NamedIndividual>
 </rdf:RDF>
-
-
 
 <!-- Generated by the OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi -->

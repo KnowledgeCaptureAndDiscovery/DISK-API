@@ -69,13 +69,13 @@ public class KBRepository implements TransactionsAPI {
 
   }
 
-  public MethodAdapter getMethodAdapterByName (String source) {
-      for (MethodAdapter adapter: this.methodAdapters.values()) {
-          if (adapter.getName().equals(source))
-              return adapter;
-      }
-      System.err.println("Error: Method adapter not found " + source);
-      return null;
+  public MethodAdapter getMethodAdapterByName(String source) {
+    for (MethodAdapter adapter : this.methodAdapters.values()) {
+      if (adapter.getName().equals(source))
+        return adapter;
+    }
+    System.err.println("Error: Method adapter not found " + source);
+    return null;
   }
 
   // TransactionsAPI functions

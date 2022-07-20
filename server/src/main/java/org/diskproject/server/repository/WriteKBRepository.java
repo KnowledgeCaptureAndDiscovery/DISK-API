@@ -663,7 +663,7 @@ public class WriteKBRepository extends KBRepository {
     }
 
     // -- Triggered Lines of Inquiry
-    protected boolean writeTLOI (String username, TriggeredLOI tloi) {
+    protected boolean writeTLOI(String username, TriggeredLOI tloi) {
         Boolean newTLOI = tloi.getId() == null || tloi.getId().equals("");
         if (newTLOI)
             tloi.setId(GUID.randomId("TriggeredLOI"));
