@@ -58,7 +58,7 @@ public class SparqlAdapter extends DataAdapter {
                 solutions = plainKb.sparqlQueryRemote(queryString, this.getEndpointUrl());
             }
         } catch (Exception e) {
-            throw e;
+            throw new Exception("Error querying endpoint: " + queryString + "" + e.getMessage());
         }
         List<DataResult> results = new ArrayList<DataResult>();
 
