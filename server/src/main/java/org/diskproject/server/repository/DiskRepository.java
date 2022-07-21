@@ -611,7 +611,12 @@ public class DiskRepository extends WriteKBRepository {
         if (localDomain != null && !localDomain.equals("") && value.charAt(0) == ':') { // replace ":" for local domain
             value = localDomain + value.substring(1);
         } else {
-            for (String prefix : this.externalVocabularies.keySet()) {
+            //Resolve SQO and HYP first
+            if (value.startsWith("sqo:")) {
+                value = KBConstants.QUESTIONSNS() + value.substring(4);
+            } else if (value.startsWith("hyp:")) {
+                value = KBConstants.HYPNS() + value.substring(4);
+            } else for (String prefix : this.externalVocabularies.keySet()) {
                 if (value.startsWith(prefix + ":")) {
                     String namespace = this.externalVocabularies.get(prefix).getNamespace();
                     value = namespace + value.substring(prefix.length() + 1);
@@ -1154,8 +1159,7 @@ public class DiskRepository extends WriteKBRepository {
         return true;
     }
 
-    public Map<LineOfInquiry, List<Map<String, String>>> getLOIByHypothesisId(String username, String id)
-            throws Exception {
+    public Map<LineOfInquiry, List<Map<String, String>>> getLOIByHypothesisId(String username, String id) {
         String hypuri = this.HYPURI(username) + "/" + id;
         // LOIID -> [{ variable -> value }]
         Map<String, List<Map<String, String>>> allMatches = new HashMap<String, List<Map<String, String>>>();
@@ -1165,6 +1169,7 @@ public class DiskRepository extends WriteKBRepository {
         try {
             this.start_read();
             KBAPI hypKB = this.fac.getKB(hypuri, OntSpec.PLAIN, true);
+            System.out.println(hypKB.getAllTriples());
 
             for (LineOfInquiry loi : lois) {
                 String hq = loi.getHypothesisQuery();
@@ -1174,18 +1179,18 @@ public class DiskRepository extends WriteKBRepository {
                     ArrayList<ArrayList<SparqlQuerySolution>> allSolutions = null;
                     try {
                         allSolutions = hypKB.sparqlQuery(query);
-                        if (allSolutions.size() == 0) {
-                            String errorMesString = "No solutions found for the query: \n" + query;
-                            System.out.println("LOI match but with no bindings: " + loi.getId());
-                            throw new NotFoundException(errorMesString);
-                        }
                     } catch (Exception e) {
-                        System.out.println(e.toString());
                         System.out.println("Error querying:\n" + query);
-                        throw e;
+                        System.out.println(e);
+                        continue;
                     }
-                    if (allSolutions != null)
-                        for (List<SparqlQuerySolution> row : allSolutions) {
+                    if (allSolutions != null) {
+                        if (allSolutions.size() == 0) {
+                            System.out.println("No solutions for " + loi.getId());
+                            //String errorMesString = "No solutions found for the query: \n" + query;
+                            //System.out.println(errorMesString);
+                            //throw new NotFoundException(errorMesString);
+                        } else for (List<SparqlQuerySolution> row : allSolutions) {
                             // One match per cell, store variables on cur.
                             Map<String, String> cur = new HashMap<String, String>();
                             for (SparqlQuerySolution cell : row) {
@@ -1209,13 +1214,15 @@ public class DiskRepository extends WriteKBRepository {
                                 curList.add(cur);
                             }
                         }
+                    }
                 } else {
                     System.out.println("Error: No hypothesis query");
                 }
             }
-            this.end();
+            //this.end();
         } catch (Exception e) {
-            throw e;
+            //throw e;
+            e.printStackTrace();
         } finally {
             this.end();
         }
@@ -1244,6 +1251,10 @@ public class DiskRepository extends WriteKBRepository {
 
         System.out.println("Quering hypothesis: " + id);
         Map<LineOfInquiry, List<Map<String, String>>> matchingBindings = this.getLOIByHypothesisId(username, id);
+        if (matchingBindings.isEmpty()) {
+            throw new NotFoundException("No LOI match this Hypothesis.");
+        }
+
         for (LineOfInquiry loi : matchingBindings.keySet()) {
             // One hypothesis can match the same LOI in more than one way, the following
             // for-loop handles that

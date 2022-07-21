@@ -834,16 +834,24 @@ public class WingsAdapter extends MethodAdapter {
 				return returnValue;
 
 			JsonParser jsonParser = new JsonParser();
-			JsonObject result = jsonParser.parse(resultjson).getAsJsonObject();
-			JsonArray qbindings = result.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
+			JsonObject result = null;
+			try {
+				result = jsonParser.parse(resultjson).getAsJsonObject();
+			} catch (Exception e) {
+				System.out.println("ERROR: Return value is not a json object.");
+			}
 
-			for (JsonElement qbinding : qbindings) {
-				JsonObject qb = qbinding.getAsJsonObject();
-				if (qb.get("value") == null)
-					continue;
-				String fileurl = qb.get("value").getAsJsonObject().get("value").getAsString();
-				String name = fileurl.replaceAll("^.*\\#", "");
-				returnValue.add(name);
+			if (result != null) {
+				JsonArray qbindings = result.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
+
+				for (JsonElement qbinding : qbindings) {
+					JsonObject qb = qbinding.getAsJsonObject();
+					if (qb.get("value") == null)
+						continue;
+					String fileurl = qb.get("value").getAsJsonObject().get("value").getAsString();
+					String name = fileurl.replaceAll("^.*\\#", "");
+					returnValue.add(name);
+				}
 			}
 		}
 

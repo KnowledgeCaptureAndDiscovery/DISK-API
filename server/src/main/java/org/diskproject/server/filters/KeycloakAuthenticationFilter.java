@@ -110,13 +110,13 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
     }
 
     private static KeycloakUser fetchKeycloakUser(String token) {
-      KeycloakSessions.loadingToken.put(token, true);
       CloseableHttpClient client = KeycloakSessions.getHttpClient();
       if (KeycloakSessions.userInfoUrl == null)
         return null;
       HttpGet userInfo = new HttpGet(KeycloakSessions.userInfoUrl);
       userInfo.addHeader("Authorization", token);
 
+      KeycloakSessions.loadingToken.put(token, true);
       try (CloseableHttpResponse httpResponse = client.execute(userInfo)) {
         HttpEntity responseEntity = httpResponse.getEntity();
         String strResponse = EntityUtils.toString(responseEntity);
@@ -133,12 +133,13 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
         }
         if (user != null) {
           updateUserToken(user, token);
-          KeycloakSessions.loadingToken.remove(token);
           return user;
         }
       } catch (Exception e) {
         System.err.println("Could not verify Keycloak token");
         e.printStackTrace();
+      } finally {
+          KeycloakSessions.loadingToken.remove(token);
       }
       return null;
     }
