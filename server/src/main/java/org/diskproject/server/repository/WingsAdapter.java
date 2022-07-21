@@ -316,6 +316,7 @@ public class WingsAdapter extends MethodAdapter {
 			List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 			formdata.add(new BasicNameValuePair("run_id", execid));
 			String pageid = "users/" + getUsername() + "/" + this.domain + "/executions/getRunDetails";
+			//todo: maybe wings is not handling error properly
 			String runjson = this.post(pageid, formdata);
 			if (runjson == null)
 				return null;
@@ -331,7 +332,9 @@ public class WingsAdapter extends MethodAdapter {
 					tsStart = null,
 					tsEnd = null;
 
+			//todo: if we don't have execution information, do we have a error?
 			try {
+				System.out.println(runjson);
 				JsonObject expobj = runobj.get("execution").getAsJsonObject();
 				JsonObject runInfo = expobj.get("runtimeInfo").getAsJsonObject();
 				status = runInfo.get("status").getAsString();
