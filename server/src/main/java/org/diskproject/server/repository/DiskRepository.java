@@ -72,19 +72,16 @@ public class DiskRepository extends WriteKBRepository {
     Pattern varPattern = Pattern.compile("\\?(.+?)\\b");
     Pattern varCollPattern = Pattern.compile("\\[\\s*\\?(.+?)\\s*\\]");
 
-    protected KBAPI questionKB;
+    protected KBAPI questionKB, hypothesisVocabulary;
     protected KBCache SQOnt;
 
     Map<String, Vocabulary> vocabularies;
-    ScheduledExecutorService monitor;
-    ScheduledExecutorService monitorData;
+    ScheduledExecutorService monitor, monitorData;
     ExecutorService executor;
     static DataMonitor dataThread;
 
     private Map<String, List<List<String>>> optionsCache;
     private Map<String, VocabularyConfiguration> externalVocabularies;
-    // private Map<String, KBAPI> externalOntologies;
-    // private Map<String, String> externalOntologiesNamespaces;
 
     public static void main(String[] args) {
         get();
@@ -142,6 +139,7 @@ public class DiskRepository extends WriteKBRepository {
         if (fac == null) throw new Exception("Could not load DISK ontology");
 
         this.questionKB = fac.getKB(KBConstants.QUESTIONSURI(), OntSpec.PLAIN, false, true);
+        this.hypothesisVocabulary = fac.getKB(KBConstants.HYPURI(), OntSpec.PLAIN, false, true);
         // Load questions
         optionsCache = new WeakHashMap<String, List<List<String>>>();
         this.start_read();
@@ -216,7 +214,7 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     public void reloadKBCaches() throws Exception {
-        KBAPI[] kbs = { this.ontKB, this.questionKB };
+        KBAPI[] kbs = { this.ontKB, this.questionKB, this.hypothesisVocabulary };
 
         try {
             this.start_write();
@@ -447,6 +445,10 @@ public class DiskRepository extends WriteKBRepository {
             this.vocabularies.put(KBConstants.QUESTIONSURI(),
                     this.initializeVocabularyFromKB(this.questionKB, KBConstants.QUESTIONSNS(),
                             "sqo", "Scientific Question Ontology", "Ontology to define questions templates."));
+            this.vocabularies.put(KBConstants.HYPURI(),
+                    this.initializeVocabularyFromKB(this.hypothesisVocabulary, KBConstants.HYPNS(),
+                            "hyp", "DISK Hypothesis Ontology",
+                            "The DISK Hypothesis Ontology. Defines properties to be used on Hypothesis creation."));
 
             // Load vocabularies from config file
             for (VocabularyConfiguration vc : this.externalVocabularies.values()) {
