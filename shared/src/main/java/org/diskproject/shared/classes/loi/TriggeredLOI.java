@@ -12,36 +12,22 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
     QUEUED, RUNNING, FAILED, SUCCESSFUL
   };
   
-  String id;
-  String name;
-  String description;
+  String id, name, description, author;
+  String dataSource;
   Status status;
-
-  String loiId;
-  String parentHypothesisId;
-  List<String> resultingHypothesisIds;
-  List<WorkflowBindings> workflows;
-  List<WorkflowBindings> metaWorkflows;
+  String parentLoiId, parentHypothesisId;
+  List<WorkflowBindings> workflows, metaWorkflows;
 
   double confidenceValue;
-  List<String> inputFiles, outputFiles;
 
-  String author;
   String notes;
-  String dateCreated;
-  String dateModified;
-  String dataQuery;
-  String tableVariables;
-  String tableDescription;
-  String dataQueryExplanation;
-  String dataSource;
+  String dateCreated, dateModified;
+  String dataQuery, dataQueryExplanation;
+  String tableVariables, tableDescription;
 
   public TriggeredLOI() {
     workflows = new ArrayList<WorkflowBindings>();
     metaWorkflows = new ArrayList<WorkflowBindings>();
-    resultingHypothesisIds = new ArrayList<String>();
-    inputFiles = new ArrayList<String>();
-    outputFiles = new ArrayList<String>();
   }
 
   public TriggeredLOI(String id,
@@ -51,7 +37,6 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
 		  Status status,
 		  String loiId,
 		  String parentHypothesisId,
-		  List<String> resultingHypothesisIds,
 		  List<WorkflowBindings> workflows,
 		  List<WorkflowBindings> metaWorkflows) {
 	  this.id = id;
@@ -59,19 +44,15 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
 	  this.description = description;
 	  this.dataSource = dataSource;
 	  this.status = status;
-	  this.loiId = loiId;
+	  this.parentLoiId = loiId;
 	  this.parentHypothesisId = parentHypothesisId;
-	  this.resultingHypothesisIds = resultingHypothesisIds;
 	  this.workflows = workflows;
 	  this.metaWorkflows = metaWorkflows;
-
-	  inputFiles = new ArrayList<String>();
-	  outputFiles = new ArrayList<String>();
-	  }
+	}
 
   public TriggeredLOI(LineOfInquiry loi, String hypothesisId) {
     this.id = GUID.randomId("TriggeredLOI");
-    this.loiId = loi.getId();
+    this.parentLoiId = loi.getId();
     this.name = "Triggered: " + loi.getName();
     this.description = loi.getDescription();
     this.dataSource = loi.getDataSource();
@@ -84,9 +65,6 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
     if (dataQueryExplanation != null) this.dataQueryExplanation = dataQueryExplanation;
     workflows = new ArrayList<WorkflowBindings>();
     metaWorkflows = new ArrayList<WorkflowBindings>();
-    resultingHypothesisIds = new ArrayList<String>();
-    inputFiles = new ArrayList<String>();
-    outputFiles = new ArrayList<String>();
   }
 
   public void copyWorkflowBindings(List<WorkflowBindings> fromlist,
@@ -188,12 +166,12 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
     this.status = status;
   }
 
-  public String getLoiId() {
-    return loiId;
+  public String getParentLoiId() {
+    return parentLoiId;
   }
 
-  public void setLoiId(String loiId) {
-    this.loiId = loiId;
+  public void setParentLoiId(String loiId) {
+    this.parentLoiId = loiId;
   }
 
   public String getParentHypothesisId() {
@@ -202,18 +180,6 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
 
   public void setParentHypothesisId(String parentHypothesisId) {
     this.parentHypothesisId = parentHypothesisId;
-  }
-
-  public List<String> getResultingHypothesisIds() {
-    return resultingHypothesisIds;
-  }
-
-  public void setResultingHypothesisIds(List<String> resultingHypothesisIds) {
-    this.resultingHypothesisIds = resultingHypothesisIds;
-  }
-  
-  public void addResultingHypothesisId(String resultingHypothesisId) {
-    this.resultingHypothesisIds.add(resultingHypothesisId);
   }
 
   public List<WorkflowBindings> getWorkflows() {
@@ -235,7 +201,7 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
   public String toString() {
     Collections.sort(this.workflows);
     Collections.sort(this.metaWorkflows);
-    return this.getLoiId() + "-" 
+    return this.getParentLoiId() + "-" 
         + this.getParentHypothesisId() + "-" 
         + this.getWorkflows() + "-" 
         + this.getMetaWorkflows();
@@ -267,29 +233,5 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
  
   public String getDateModified () {
 	  return dateModified;
-  }
-
-  public void setInputFiles (List<String> inputs) {
-	  this.inputFiles = inputs;
-  }
-
-  public void setOutputFiles (List<String> outputs) {
-	  this.outputFiles = outputs;
-  }
-  
-  public List<String> getInputFiles () {
-	  return this.inputFiles;
-  }
-  
-  public List<String> getOutputFiles () {
-	  return this.outputFiles;
-  }
-
-  public void addInputFile (String input) {
-	  this.inputFiles.add(input);
-  }
-
-  public void addOutputFile (String output) {
-	  this.outputFiles.add(output);
   }
 }

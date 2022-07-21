@@ -714,34 +714,13 @@ public class WriteKBRepository extends KBRepository {
         if (tloi.getStatus() != null)
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_TLOI_STATUS),
                     userKB.createLiteral(tloi.getStatus().toString()));
-
-        List<String> inputList = tloi.getInputFiles();
-        if (inputList != null && inputList.size() > 0) {
-            for (String inputurl : inputList) {
-                userKB.addPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_INPUT_FILE),
-                        userKB.createLiteral(inputurl));
-            }
-        }
-
-        List<String> outputList = tloi.getOutputFiles();
-        if (outputList != null && outputList.size() > 0) {
-            for (String outputurl : outputList) {
-                userKB.addPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE),
-                        userKB.createLiteral(outputurl));
-            }
-        }
-
-        if (tloi.getLoiId() != null) {
-            KBObject lobj = userKB.getResource(loins + tloi.getLoiId());
+        if (tloi.getParentLoiId() != null) {
+            KBObject lobj = userKB.getResource(loins + tloi.getParentLoiId());
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_LOI), lobj);
         }
         if (tloi.getParentHypothesisId() != null) {
             KBObject hobj = userKB.getResource(hypns + tloi.getParentHypothesisId());
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS), hobj);
-        }
-        for (String hypid : tloi.getResultingHypothesisIds()) {
-            KBObject hobj = userKB.getResource(hypns + hypid);
-            userKB.addPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_RESULTING_HYPOTHESIS), hobj);
         }
 
         this.save(userKB);
@@ -770,7 +749,7 @@ public class WriteKBRepository extends KBRepository {
             tloi.setDescription(userKB.getComment(obj));
             KBObject hasLOI = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_LOI));
             if (hasLOI != null)
-                tloi.setLoiId(hasLOI.getName());
+                tloi.setParentLoiId(hasLOI.getName());
 
             KBObject pobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS));
             if (pobj != null)
@@ -816,25 +795,6 @@ public class WriteKBRepository extends KBRepository {
             if (confidenceObj != null)
                 tloi.setConfidenceValue(Double.valueOf(confidenceObj.getValueAsString()));
 
-            for (KBObject robj : userKB.getPropertyValues(obj, DISKOnt.getProperty(DISK.HAS_RESULTING_HYPOTHESIS))) {
-                String resHypId = robj.getName();
-                tloi.addResultingHypothesisId(resHypId);
-            }
-
-            ArrayList<KBObject> inputFilesObj = userKB.getPropertyValues(obj, DISKOnt.getProperty(DISK.HAS_INPUT_FILE));
-            if (inputFilesObj != null && inputFilesObj.size() > 0) {
-                for (KBObject inputf : inputFilesObj) {
-                    tloi.addInputFile(inputf.getValueAsString());
-                }
-            }
-
-            ArrayList<KBObject> outputFilesObj = userKB.getPropertyValues(obj,
-                    DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE));
-            if (outputFilesObj != null && outputFilesObj.size() > 0) {
-                for (KBObject outputf : outputFilesObj) {
-                    tloi.addOutputFile(outputf.getValueAsString());
-                }
-            }
             this.end();
 
             tloi.setWorkflows(loadWorkflowsBindings(userDomain, tloi.getId()));
@@ -858,25 +818,10 @@ public class WriteKBRepository extends KBRepository {
         if (userKB == null)
             return false;
 
-        // Remove resulting hypothesis if is not being used
+        // Remove this TLOI
         this.start_read();
         KBObject item = userKB.getIndividual(tloiId);
-        KBObject hypobj = userKB.getPropertyValue(item, DISKOnt.getProperty(DISK.HAS_RESULTING_HYPOTHESIS));
-
-        if (item != null && hypobj != null) {
-            List<KBTriple> alltlois = userKB.genericTripleQuery(null, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS),
-                    hypobj);
-            this.end();
-            if (alltlois != null && alltlois.size() == 1) {
-                this.deleteHypothesis(username, hypobj.getName());
-            } else {
-                System.out.println("Resulting hypothesis cannot be deleted as is being used for other tloi.");
-            }
-        } else {
-            this.end();
-        }
-
-        // Remove this TLOI
+        this.end();
         if (item != null) {
             this.start_write();
             userKB.deleteObject(item, true, true);
@@ -988,7 +933,7 @@ public class WriteKBRepository extends KBRepository {
                             KBObject fileBinding = userKB.createObjectOfClass(null,
                                     DISKOnt.getClass(DISK.VARIABLE_BINDING));
                             userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_VARIABLE),
-                                    userKB.getResource(workflowuri + "#FILE-" + name.replaceAll(" ", "_")));
+                                    userKB.getResource(workflowuri + "#" + name.replaceAll(" ", "_")));
                             userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE),
                                     userKB.createLiteral(url));
                             userKB.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_INPUT_FILE), fileBinding);
@@ -1002,7 +947,7 @@ public class WriteKBRepository extends KBRepository {
                             KBObject fileBinding = userKB.createObjectOfClass(null,
                                     DISKOnt.getClass(DISK.VARIABLE_BINDING));
                             userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_VARIABLE),
-                                    userKB.getResource(workflowuri + "#FILE-" + name.replaceAll(" ", "_")));
+                                    userKB.getResource(workflowuri + "#" + name.replaceAll(" ", "_")));
                             userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE),
                                     userKB.createLiteral(url));
                             userKB.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE), fileBinding);

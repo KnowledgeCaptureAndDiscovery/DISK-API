@@ -30,7 +30,7 @@ public class DISK {
 
     public static final String HAS_TLOI_STATUS = "hasTriggeredLineOfInquiryStatus";
     public static final String HAS_LOI = "hasLineOfInquiry";
-    public static final String HAS_RESULTING_HYPOTHESIS = "hasResultingHypothesis";
+    //public static final String HAS_RESULTING_HYPOTHESIS = "hasResultingHypothesis";
 
     public static final String HAS_WORKFLOW_BINDING = "hasWorkflowBinding";
     public static final String HAS_METAWORKFLOW_BINDING = "hasMetaWorkflowBinding";

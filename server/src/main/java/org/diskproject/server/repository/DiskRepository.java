@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashMap;
@@ -151,8 +150,6 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     private void loadKBFromConfig() throws Exception {
-        // this.externalOntologies = new HashMap<String, KBAPI>();
-        // this.externalOntologiesNamespaces = new HashMap<String, String>();
         this.externalVocabularies = new HashMap<String, VocabularyConfiguration>();
 
         PropertyListConfiguration cfg = this.getConfig();
@@ -203,8 +200,6 @@ public class DiskRepository extends WriteKBRepository {
                     vc.setDescription(cur.get(ConfigKeys.DESCRIPTION));
 
                 this.externalVocabularies.put(curPrefix, vc);
-                // this.externalOntologies.put(curPrefix, curKB);
-                // this.externalOntologiesNamespaces.put(curPrefix, curNamespace);
             }
         }
 
@@ -749,6 +744,12 @@ public class DiskRepository extends WriteKBRepository {
 
     public TriggeredLOI addTriggeredLOI(String username, TriggeredLOI tloi) {
         tloi.setStatus(Status.QUEUED);
+        String dateCreated = tloi.getDateCreated();
+        if (dateCreated == null || dateCreated.equals("")) {
+            tloi.setDateCreated(dateformatter.format(new Date()));
+        } else {
+            tloi.setDateModified(dateformatter.format(new Date()));
+        }
         writeTLOI(username, tloi);
 
         TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, false);
@@ -885,7 +886,6 @@ public class DiskRepository extends WriteKBRepository {
 
     private List<List<String>> loadVariableOptions(String sid) throws Exception {
         List<List<String>> options = new ArrayList<List<String>>();
-        // System.out.println("Loading options for " + sid);
         QuestionVariable variable = null;
         // FIXME: Find a better way to handle url prefix or change the request to
         // include the full URI
@@ -989,7 +989,9 @@ public class DiskRepository extends WriteKBRepository {
         String prefixes = "PREFIX xsd:  <" + KBConstants.XSDNS() + ">\n"
                 + "PREFIX rdfs: <" + KBConstants.RDFSNS() + ">\n"
                 + "PREFIX rdf:  <" + KBConstants.RDFNS() + ">\n"
-                + "PREFIX disk: <" + KBConstants.DISKNS() + ">\n";
+                + "PREFIX disk: <" + KBConstants.DISKNS() + ">\n"
+                + "PREFIX sqo: <" + KBConstants.QUESTIONSNS() + ">\n"
+                + "PREFIX hyp: <" + KBConstants.HYPNS() + ">\n";
         for (VocabularyConfiguration vc : this.externalVocabularies.values()) {
             prefixes += "PREFIX " + vc.getPrefix() + ": <" + vc.getNamespace() + ">\n";
         }
@@ -1067,9 +1069,7 @@ public class DiskRepository extends WriteKBRepository {
                     }
                 }
             }
-            pattern += line;
-            // if (!line.matches(".+\\.\\s*$")) pattern += " .";
-            pattern += "\n";
+            pattern += line + "\n";
         }
         return pattern;
     }
@@ -1124,8 +1124,7 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     private Boolean isValid(LineOfInquiry loi, Map<String, String> hypothesisBindings) {
-        // Check if the hypothesis bindings (the values the user set) are valid in this
-        // LOI
+        // Check if the hypothesis bindings (values from the user) are valid in this LOI
         if (!isValid(loi))
             return false;
 
@@ -1311,15 +1310,6 @@ public class DiskRepository extends WriteKBRepository {
                         }
                     }
 
-                    // Print data-var bindings:
-                    // System.out.println("VARIABLE BINDINGS:");
-                    // for (String key: dataVarBindings.keySet()) {
-                    // System.out.println(" " + key + ":");
-                    // for (String val: dataVarBindings.get(key)) {
-                    // System.out.println(" - " + val);
-                    // }
-                    // }
-
                     TriggeredLOI tloi = new TriggeredLOI(loi, id);
                     tloi.setWorkflows(
                             this.getTLOIBindings(username, loi.getWorkflows(), dataVarBindings, dataAdapter));
@@ -1336,18 +1326,18 @@ public class DiskRepository extends WriteKBRepository {
         return checkExistingTLOIs(username, tlois);
     }
 
-    // This replaces all triggered lines of inquiry already executed. tlois should
-    // be from the same hypothesis.
+    // This replaces all triggered lines of inquiry already executed.  
     private List<TriggeredLOI> checkExistingTLOIs(String username, List<TriggeredLOI> tlois) {
         List<TriggeredLOI> checked = new ArrayList<TriggeredLOI>();
         Map<String, List<TriggeredLOI>> cache = new HashMap<String, List<TriggeredLOI>>();
         for (TriggeredLOI tloi : tlois) {
-            System.out.println("Checking " + tloi.getId() + " (" + tloi.getLoiId() + ")");
-            if (!cache.containsKey(tloi.getLoiId())) {
-                cache.put(tloi.getLoiId(),
-                        getTLOIsForHypothesisAndLOI(username, tloi.getParentHypothesisId(), tloi.getLoiId()));
+            String parentLoiId = tloi.getParentLoiId();
+            System.out.println("Checking " + tloi.getId() + " (" + parentLoiId + ")");
+            if (!cache.containsKey(parentLoiId)) {
+                cache.put(parentLoiId,
+                        getTLOIsForHypothesisAndLOI(username, tloi.getParentHypothesisId(), parentLoiId));
             }
-            List<TriggeredLOI> candidates = cache.get(tloi.getLoiId());
+            List<TriggeredLOI> candidates = cache.get(parentLoiId);
             TriggeredLOI real = tloi;
             for (TriggeredLOI cand : candidates) {
                 if (cand.toString().equals(tloi.toString())) {
@@ -1471,20 +1461,12 @@ public class DiskRepository extends WriteKBRepository {
             }
         }
 
-        // System.out.println("#####################################");
-        // for (WorkflowBindings wb : tloiBindings) {
-        // for (VariableBinding vb: wb.getBindings()) {
-        // System.out.println("\t" + vb.getVariable() + ": " + vb.getBinding());
-        // }
-        // }
-
         return tloiBindings;
     }
 
     private Map<String, String> addData(List<String> dsurls, MethodAdapter methodAdapter, DataAdapter dataAdapter)
             throws Exception {
-        // To add files to wings and not replace anything, we need to get the hash from
-        // the wiki.
+        // To add files to wings and not replace anything, we need to get the hash from the wiki.
         // TODO: here connect with minio.
         Map<String, String> nameToUrl = new HashMap<String, String>();
         Map<String, String> urlToName = new HashMap<String, String>();
@@ -1567,7 +1549,7 @@ public class DiskRepository extends WriteKBRepository {
         TriggeredLOI tloi = this.getTriggeredLOI(username, tloid);
         if (tloi != null) {
             String hypId = tloi.getParentHypothesisId();
-            String loiId = tloi.getLoiId();
+            String loiId = tloi.getParentLoiId();
             Hypothesis hyp = this.getHypothesis(username, hypId);
             LineOfInquiry loi = this.getLOI(username, loiId);
 
@@ -1661,11 +1643,7 @@ public class DiskRepository extends WriteKBRepository {
                     + "</ol></div>The resulting p-value is " + pval + ".";
             narratives.put("execution", execution);
 
-            // System.out.println("EXECUTION NARRATIVE: " + execution);
-
             String dataQuery = "<b>Data Query Narrative:</b><br/>" + this.dataQueryNarrative(loi.getDataQuery());
-
-            // System.out.println("DATA Query NARRATIVE: " + dataQuery);
 
             narratives.put("dataquery", dataQuery);
         }
@@ -1673,8 +1651,8 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     private String dataQueryNarrative(String dataQuery) {
-        String dataQuery1 = dataQuery.replaceAll("^(//)n${1}", ""); // this is necessary to replace the new line
-                                                                    // characters in query
+        // this is necessary to replace the new line characters in query
+        String dataQuery1 = dataQuery.replaceAll("^(//)n${1}", ""); 
         String[] querylist = dataQuery1.split("\\.");
         String rdfs_label = "rdfs:label";
 
@@ -1749,7 +1727,7 @@ public class DiskRepository extends WriteKBRepository {
         List<TriggeredLOI> list = new ArrayList<TriggeredLOI>();
         for (TriggeredLOI tloi : listTLOIs(username)) {
             String parentHypId = tloi.getParentHypothesisId();
-            String parentLOIId = tloi.getLoiId();
+            String parentLOIId = tloi.getParentLoiId();
             if (parentHypId != null && parentHypId.equals(hypId) &&
                     parentLOIId != null && parentLOIId.equals(loiId)) {
                 list.add(tloi);
@@ -1762,7 +1740,7 @@ public class DiskRepository extends WriteKBRepository {
         List<TriggeredLOI> hyptlois = queryHypothesis(username, hypid);
         // TriggeredLOI match = null;
         for (TriggeredLOI tloi : hyptlois) {
-            if (tloi.getStatus() == null && tloi.getLoiId().equals(loiid)) {
+            if (tloi.getStatus() == null && tloi.getParentLoiId().equals(loiid)) {
                 // Set basic metadata
                 tloi.setAuthor("System");
                 Date date = new Date();
@@ -1780,51 +1758,6 @@ public class DiskRepository extends WriteKBRepository {
      * Threads helpers
      */
 
-    public void finishWorkflowRun(WorkflowBindings workflow, WorkflowRun run) {
-        // Add outputs
-        /*
-         * Map<String, String> outputs = run.getOutputs();
-         * if (outputs != null) {
-         * List<String> outputlist = new ArrayList<String>(outputs.values());
-         * tloi.setOutputFiles(outputlist);
-         * 
-         * for (String outname : outputs.keySet()) {
-         * if (outname.equals("p_value") || outname.equals("pval") ||
-         * outname.equals("p_val")) {
-         * String dataid = outputs.get(outname);
-         * // String wingsP = WingsAdapter.get().fetchDataFromWings(dataid);
-         * String wingsP = methodAdapter.fetchData(dataid);
-         * Double pval = 0.0;
-         * try {
-         * // pval = Double.parseDouble(wingsP);
-         * pval = Double.valueOf(wingsP);
-         * } catch (Exception e) {
-         * System.err.println(dataid + " is a non valid p-value");
-         * }
-         * if (pval > 0) {
-         * System.out.println("Detected p-value: " + pval);
-         * tloi.setConfidenceValue(pval);
-         * }
-         * }
-         * }
-         * }
-         */
-    }
-
-    /*
-     * private String getWorkflowExecutionRunIds(TriggeredLOI tloi, String workflow)
-     * {
-     * String runids = null;
-     * for (WorkflowBindings bindings : tloi.getWorkflows()) {
-     * if (bindings.getWorkflow().equals(workflow)) {
-     * runids = (runids == null) ? "" : runids + ", ";
-     * runids += bindings.getRun().getId();
-     * }
-     * }
-     * return runids;
-     * }
-     */
-
     public WorkflowRun getWorkflowRunStatus(String source, String id) {
         MethodAdapter methodAdapter = getMethodAdapterByName(source);
         if (methodAdapter == null)
@@ -1838,72 +1771,6 @@ public class DiskRepository extends WriteKBRepository {
             return null;
         return methodAdapter.fetchData(methodAdapter.getDataUri(id));
     }
-
-    /*
-     * Retrieves the revised_hypothesis from wings and stores it as a
-     * disk-hypothesis (quad) /
-     * private String fetchOutputHypothesis(String username, WorkflowBindings
-     * bindings, TriggeredLOI tloi) {
-     * String varname = bindings.getMeta().getRevisedHypothesis();
-     * MethodAdapter methodAdapter = getMethodAdapterByName(bindings.getSource());
-     * Map<String, String> varmap =
-     * methodAdapter.getRunVariableBindings(bindings.getRun().getId());
-     * if (varmap.containsKey(varname)) {
-     * String dataid = varmap.get(varname);
-     * String dataname = dataid.replaceAll(".*#", "");
-     * String content = methodAdapter.fetchData(dataid);
-     * 
-     * HashMap<String, Integer> workflows = new HashMap<String, Integer>();
-     * for (WorkflowBindings wb : tloi.getWorkflows()) {
-     * String wid = wb.getWorkflow();
-     * if (workflows.containsKey(wid))
-     * workflows.put(wid, workflows.get(wid) + 1);
-     * else
-     * workflows.put(wid, 1);
-     * }
-     * String wflows = "";
-     * for (String wid : workflows.keySet()) {
-     * if (!wflows.equals(""))
-     * wflows += ", ";
-     * int num = workflows.get(wid);
-     * wflows += (num > 1 ? num : "a") + " " + wid + " workflow" + (num > 1 ? "s" :
-     * "");
-     * }
-     * String meta = bindings.getWorkflow();
-     * 
-     * Hypothesis parentHypothesis = this.getHypothesis(username,
-     * tloi.getParentHypothesisId());
-     * Hypothesis newHypothesis = new Hypothesis();
-     * newHypothesis.setId(dataname);
-     * newHypothesis.setName("[Revision] " + parentHypothesis.getName());
-     * String description = "Followed the line of inquiry: \"" + tloi.getName() +
-     * "\" to run " + wflows
-     * + ", then run " + meta + " meta-workflow, to create a revised hypothesis.";
-     * newHypothesis.setDescription(description);
-     * newHypothesis.setParentId(parentHypothesis.getId());
-     * 
-     * List<Triple> triples = new ArrayList<Triple>();
-     * TripleUtil util = new TripleUtil();
-     * for (String line : content.split("\\n")) {
-     * String[] parts = line.split("\\s+", 4);
-     * TripleDetails details = new TripleDetails();
-     * if(parts.length > 3)
-     * details.setConfidenceValue(Double.parseDouble(parts[3]));
-     * details.setTriggeredLOI(tloi.getId());
-     * Triple t = util.fromString(parts[0] + " " + parts[1] + " " + parts[2]);
-     * t.setDetails(details);
-     * triples.add(t);
-     * }
-     * Graph newgraph = new Graph();
-     * newgraph.setTriples(triples);
-     * newHypothesis.setGraph(newgraph);
-     * 
-     * this.addHypothesis(username, newHypothesis);
-     * return newHypothesis.getId();
-     * }
-     * return null;
-     * }
-     */
 
     /*
      * Threads
@@ -1945,50 +1812,7 @@ public class DiskRepository extends WriteKBRepository {
 
                     // Special processing for Meta Workflows
                     if (this.metamode) {
-                        // TODO: replace this code for output to input binding login (wf -> metawf)
-                        // Replace workflow ids with workflow run ids in
-                        // Variable Bindings
-                        /*
-                         * for (VariableBinding vbinding : vbindings) {
-                         * String runids = getWorkflowExecutionRunIds(tloi, vbinding.getBinding());
-                         * if( runids != null && runids.length() > 0 )
-                         * vbinding.setBinding(runids);
-                         * }
-                         */
-                        // Upload hypothesis to Wings as a file, and add to
-                        // Variable Bindings
-                        /*
-                         * String hypVarId = bindings.getMeta().getHypothesis();
-                         * System.out.println("Hypothesis Variable ID: " + hypVarId);
-                         * if (hypVarId != null && inputs.containsKey(hypVarId)) {
-                         * Variable hypVar = inputs.get(hypVarId);
-                         * String hypId = tloi.getParentHypothesisId();
-                         * Hypothesis hypothesis = getHypothesis(username,
-                         * tloi.getParentHypothesisId());
-                         * String contents = "";
-                         * for (Triple t : hypothesis.getGraph().getTriples())
-                         * contents += t.toString() + "\n";
-                         * 
-                         * if (hypVar.getType() == null) {
-                         * System.err.println("Couldn't retrieve hypothesis type information");
-                         * continue;
-                         * }
-                         * String dataid = methodAdapter.addData(hypId, hypVar.getType(), contents);
-                         * if (dataid == null) {
-                         * System.err.println("Couldn't add hypothesis to wings");
-                         * continue;
-                         * }
-                         * VariableBinding hypBinding = new VariableBinding();
-                         * hypBinding.setVariable(hypVarId);
-                         * hypBinding.setBinding(dataid.replaceAll("^.*#", ""));
-                         * sendbindings.add(hypBinding);
-                         * } else {
-                         * System.err.println("Workflow doesn't have hypothesis information");
-                         * continue;
-                         * }
-                         */
-                        // Should link the outputs from all workflows to the input of the
-                        // meta-workflows.
+                        // TODO: Here we should map workflow outputs to metaworkflow inputs.
                     }
 
                     // Execute workflow
@@ -2059,11 +1883,6 @@ public class DiskRepository extends WriteKBRepository {
                     WorkflowRun wstatus = methodAdapter.getRunStatus(rname);
                     bindings.setRun(wstatus);
 
-                    // Add input files: FIXME: this could be removed
-                    Map<String, String> inputs = wstatus.getFiles();
-                    Collection<String> urls = inputs.values();
-                    tloi.setInputFiles(new ArrayList<String>(urls));
-
                     if (wstatus.getStatus().equals("FAILURE")) {
                         overallStatus = Status.FAILED;
                         numFinished++;
@@ -2078,20 +1897,15 @@ public class DiskRepository extends WriteKBRepository {
                         numFinished++;
                         numSuccessful++;
 
-                        // Add outputs
+                        // Search for p-value on the outputs
                         Map<String, String> outputs = wstatus.getOutputs();
                         if (outputs != null) {
-                            List<String> outputlist = new ArrayList<String>(outputs.values());
-                            tloi.setOutputFiles(outputlist);
-
                             for (String outname : outputs.keySet()) {
                                 if (outname.equals("p_value") || outname.equals("pval") || outname.equals("p_val")) {
                                     String dataid = outputs.get(outname);
-                                    // String wingsP = WingsAdapter.get().fetchDataFromWings(dataid);
                                     String wingsP = methodAdapter.fetchData(dataid);
                                     Double pval = 0.0;
                                     try {
-                                        // pval = Double.parseDouble(wingsP);
                                         pval = Double.valueOf(wingsP);
                                     } catch (Exception e) {
                                         System.err.println("[M] Error: " + dataid + " is a non valid p-value");
@@ -2103,22 +1917,13 @@ public class DiskRepository extends WriteKBRepository {
                                 }
                             }
                         }
-
-                        // if (metamode) {
-                        // // Fetch the output hypothesis file, and create a
-                        // // new hypothesis
-                        // String hypId = fetchOutputHypothesis(username, bindings, tloi);
-                        // // String hypId = createDummyHypothesis(username,
-                        // // domain, bindings, tloi);
-                        // if (hypId != null)
-                        // tloi.addResultingHypothesisId(hypId);
-                        // }
                     }
                 }
                 // If all the workflows are successfully finished
                 if (numSuccessful == wflowBindings.size()) {
                     if (metamode) {
                         overallStatus = Status.SUCCESSFUL;
+                        System.out.println("[M] " + this.tloi.getId() + " was successfully executed.");
                     } else {
                         overallStatus = Status.RUNNING;
                         System.out.println("[M] Starting metamode after " + numSuccessful + " workflows.");
