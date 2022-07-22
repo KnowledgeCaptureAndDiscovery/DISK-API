@@ -18,6 +18,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.validation.Path.ReturnValueNode;
+
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
@@ -67,9 +69,9 @@ public class WingsAdapter extends MethodAdapter {
 
 	private CookieStore cookieStore;
 
-	public String wflowns = "http://www.wings-workflows.org/ontology/workflow.owl#";
-	public String execns = "http://www.wings-workflows.org/ontology/execution.owl#";
-	public String datans = "http://www.wings-workflows.org/ontology/data.owl#";
+	public String workflowNS = "http://www.wings-workflows.org/ontology/workflow.owl#";
+	public String executionNS = "http://www.wings-workflows.org/ontology/execution.owl#";
+	public String dataNS = "http://www.wings-workflows.org/ontology/data.owl#";
 
 	public WingsAdapter(String name, String url, String username, String password, String domain,
 			String internalServer) {
@@ -141,7 +143,7 @@ public class WingsAdapter extends MethodAdapter {
 			OntFactory fac = new OntFactory(OntFactory.JENA);
 			KBAPI kb = fac.getKB(liburi, OntSpec.PLAIN);
 			KBObject typeprop = kb.getProperty(KBConstants.RDFNS() + "type");
-			KBObject templatecls = kb.getResource(this.wflowns + "WorkflowTemplate");
+			KBObject templatecls = kb.getResource(this.workflowNS + "WorkflowTemplate");
 			for (KBTriple triple : kb.genericTripleQuery(null, typeprop, templatecls)) {
 				KBObject tobj = triple.getSubject();
 				Workflow wflow = new Workflow();
@@ -166,12 +168,12 @@ public class WingsAdapter extends MethodAdapter {
 			OntFactory fac = new OntFactory(OntFactory.JENA);
 			KBAPI kb = fac.getKB(wflowuri, OntSpec.PLAIN);
 
-			KBObject linkprop = kb.getProperty(this.wflowns + "hasLink");
-			KBObject origprop = kb.getProperty(this.wflowns + "hasOriginNode");
-			KBObject destprop = kb.getProperty(this.wflowns
+			KBObject linkprop = kb.getProperty(this.workflowNS + "hasLink");
+			KBObject origprop = kb.getProperty(this.workflowNS + "hasOriginNode");
+			KBObject destprop = kb.getProperty(this.workflowNS
 					+ "hasDestinationNode");
-			KBObject varprop = kb.getProperty(this.wflowns + "hasVariable");
-			KBObject paramcls = kb.getConcept(this.wflowns
+			KBObject varprop = kb.getProperty(this.workflowNS + "hasVariable");
+			KBObject paramcls = kb.getConcept(this.workflowNS
 					+ "ParameterVariable");
 
 			for (KBTriple triple : kb.genericTripleQuery(null, linkprop, null)) {
@@ -213,13 +215,13 @@ public class WingsAdapter extends MethodAdapter {
 			OntFactory fac = new OntFactory(OntFactory.JENA);
 			KBAPI kb = fac.getKB(runuri, OntSpec.PLAIN);
 			KBObject execobj = kb.getIndividual(runid);
-			KBObject prop = kb.getProperty(execns + "hasExpandedTemplate");
+			KBObject prop = kb.getProperty(executionNS + "hasExpandedTemplate");
 			KBObject xtpl = kb.getPropertyValue(execobj, prop);
 			String xtpluri = xtpl.getID().replaceAll("#.*", "");
 
 			Map<String, String> varmap = new HashMap<String, String>();
 			KBAPI xkb = fac.getKB(xtpluri, OntSpec.PLAIN);
-			KBObject bindprop = xkb.getProperty(this.wflowns + "hasDataBinding");
+			KBObject bindprop = xkb.getProperty(this.workflowNS + "hasDataBinding");
 
 			for (KBTriple triple : xkb.genericTripleQuery(null, bindprop, null)) {
 				KBObject varobj = triple.getSubject();
@@ -266,8 +268,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	private boolean login() {
-		CloseableHttpClient client = HttpClientBuilder.create()
-				.setDefaultCookieStore(this.cookieStore).build();
+		CloseableHttpClient client = HttpClientBuilder.create().setDefaultCookieStore(this.cookieStore).build();
 		HttpClientContext context = HttpClientContext.create();
 		try {
 			// Get a default domains page
@@ -531,18 +532,57 @@ public class WingsAdapter extends MethodAdapter {
 
 	@Override
 	public String runWorkflow(String wflowname, List<VariableBinding> vbindings, Map<String, Variable> inputVariables) {
+		//try {
+		JsonParser jsonParser = new JsonParser();
+		wflowname = WFLOWID(wflowname);
+		String toPost = null, getData = null, getParams = null, getExpansions = null;
+		JsonObject response = null;
 		try {
-			wflowname = WFLOWID(wflowname);
-			String toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
-			String getData = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/plan/getData",
+			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			getData = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/plan/getData",
 					toPost, "application/json", "application/json");
 
+			response = (JsonObject) jsonParser.parse(getData);
+			boolean ok = response.get("success").getAsBoolean();
+			if (!ok) {
+				JsonObject dataObj = response.get("data").getAsJsonObject();
+				JsonArray explanations = dataObj.get("explanations").getAsJsonArray();
+				int l = explanations.size();
+				System.err.println("Error planning data for workflow run:");
+				for (int i = 0; i < l; i++)
+					System.err.println(explanations.get(i));
+				System.err.println("REQUEST: " + toPost);
+				return null;
+			}
+		} catch (Exception e) {
+			System.err.println("Error planning data for workflow run. " + e.getMessage());
+			System.err.println("REQUEST: " + toPost);
+			System.err.println("RESPONSE: " + getData);
+			return null;
+		}
+		
+		try {
 			vbindings = addDataBindings(inputVariables, vbindings, getData, false);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
-			String getParams = postWithSpecifiedMediaType(
+			getParams = postWithSpecifiedMediaType(
 					"users/" + getUsername() + "/" + domain + "/plan/getParameters",
 					toPost, "application/json", "application/json");
 
+			response = (JsonObject) jsonParser.parse(getParams);
+			boolean ok = response.get("success").getAsBoolean();
+			if (!ok) {
+				System.err.println("Error planning parameters for workflow run:");
+				System.err.println(response);
+				return null;
+			}
+		} catch (Exception e) {
+			System.err.println("Error planning parameters for workflow run. " + e.getMessage());
+			System.err.println("REQUEST: " + toPost);
+			System.err.println("RESPONSE: " + getParams);
+			return null;
+		}
+
+		try {
 			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
 
@@ -555,47 +595,61 @@ public class WingsAdapter extends MethodAdapter {
 				System.out.println("Found existing run : " + runid);
 				return runid;
 			}
-			String s = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/plan/getExpansions",
+			getExpansions = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/plan/getExpansions",
 					toPost, "application/json", "application/json");
-			JsonParser jsonParser = new JsonParser();
 
-			JsonObject expobj = null;
-			try {
-				expobj = (JsonObject) jsonParser.parse(s);
-			} catch (Exception e) {
-				System.out.println("Error parsing: \n" + s);
-				System.out.println(" + users/" + getUsername() + "/" + domain + "/plan/getExpansions");
-				System.out.println(" + toPOST: " + toPost);
+			response = (JsonObject) jsonParser.parse(getExpansions);
+			boolean ok = response.get("success").getAsBoolean();
+			if (ok) {
+			} else {
+				System.err.println("Error planning expansions for workflow run:");
+				System.err.println(response);
 				return null;
 			}
+		} catch (Exception e) {
+			System.err.println("Error planning expansions for workflow run. " + e.getMessage());
+			System.err.println("REQUEST: " + toPost);
+			System.err.println("RESPONSE: " + getExpansions);
+			return null;
+		}
 
-			JsonObject dataobj = expobj.get("data").getAsJsonObject();
+		// We can run the workflow now:
+		String jsonTemplate = null, jsonConstraints = null, jsonSeed = null, jsonSeedConstraints = null;
 
+		// Decode response
+		try {
+			JsonObject dataobj = response.get("data").getAsJsonObject();
 			JsonArray templatesobj = dataobj.get("templates").getAsJsonArray();
-			if (templatesobj.size() == 0)
+			if (templatesobj.size() == 0) {
+				System.err.println("No templates found");
 				return null;
+			}
 			JsonObject templateobj = templatesobj.get(0).getAsJsonObject();
+			jsonTemplate = templateobj.get("template") .toString();
+			jsonConstraints = templateobj.get("constraints").toString();
+
 			JsonObject seedobj = dataobj.get("seed").getAsJsonObject();
+			jsonSeed = seedobj.get("template").toString();
+			jsonSeedConstraints = seedobj.get("constraints").toString();
+		} catch (Exception e) {
+			System.err.println("Error decoding parameter for workflow run. " + e.getMessage());
+			System.err.println(response);
+			return null;
+		}
 
 			// Run the first Expanded workflow
-			List<NameValuePair> formdata = new ArrayList<NameValuePair>();
-			formdata.add(new BasicNameValuePair("template_id", wflowname));
-			formdata.add(new BasicNameValuePair("json", templateobj.get("template")
-					.toString()));
-			formdata.add(new BasicNameValuePair("constraints_json", templateobj
-					.get("constraints").toString()));
-			formdata.add(new BasicNameValuePair("seed_json", seedobj
-					.get("template").toString()));
-			formdata.add(new BasicNameValuePair("seed_constraints_json", seedobj
-					.get("constraints").toString()));
-			String pageid = "users/" + getUsername() + "/" + domain
-					+ "/executions/runWorkflow";
-			runid = post(pageid, formdata);
-			return runid;
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;
+		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
+		formdata.add(new BasicNameValuePair("template_id", wflowname));
+		formdata.add(new BasicNameValuePair("json", jsonTemplate));
+		formdata.add(new BasicNameValuePair("constraints_json", jsonConstraints));
+		formdata.add(new BasicNameValuePair("seed_json", jsonSeed));
+		formdata.add(new BasicNameValuePair("seed_constraints_json", jsonSeedConstraints));
+		String pageid = "users/" + getUsername() + "/" + domain + "/executions/runWorkflow";
+		return post(pageid, formdata);
+		//} catch (Exception e) {
+		//	e.printStackTrace();
+		//}
+		//return null;
 	}
 
 	public String fetchDataFromWings(String dataid) {
@@ -1038,16 +1092,15 @@ public class WingsAdapter extends MethodAdapter {
 		boolean paramAdded = false;
 		String dataBindings = "\"dataBindings\": {";
 		boolean dataAdded = false;
-		String dataID = this.internal_server + "/export/users/" + getUsername() + "/" + domain
-				+ "/data/library.owl#";
+		String dataID = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/library.owl#";
 		for (String key : ivm.keySet()) {
 			Variable v = ivm.get(key);
 			if (v.isParam()) {
 				for (int i = 0; i < vbl.size(); i++) {
 					VariableBinding vb = vbl.get(i);
 					if (vb.getVariable().equals(v.getName())) {
-						paramBindings += "\"" + wfname + v.getName() + "\":\""
-								+ vb.getBinding() + "\",";
+						paramBindings += "\"" + wfname + v.getName() + "\":[\""
+								+ vb.getBinding() + "\"],";
 						paramAdded = true;
 					}
 				}

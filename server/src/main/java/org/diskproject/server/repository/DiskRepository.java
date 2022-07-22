@@ -852,7 +852,7 @@ public class DiskRepository extends WriteKBRepository {
                                 QuestionVariable q = new QuestionVariable(var.getID(), vname.getValueAsString(),
                                         vconstraints == null ? null : vconstraints.getValueAsString());
                                 if (vfixedOptions != null) {
-                                    q.setFixedOptions(vfixedOptions.getValueAsString().split(","));
+                                    q.setFixedOptions(vfixedOptions.getValueAsString().split("\\s*,\\s*"));
                                 }
                                 vars.add(q);
                             }
@@ -1169,7 +1169,7 @@ public class DiskRepository extends WriteKBRepository {
         try {
             this.start_read();
             KBAPI hypKB = this.fac.getKB(hypuri, OntSpec.PLAIN, true);
-            System.out.println(hypKB.getAllTriples());
+            //System.out.println(hypKB.getAllTriples());
 
             for (LineOfInquiry loi : lois) {
                 String hq = loi.getHypothesisQuery();
@@ -1260,6 +1260,25 @@ public class DiskRepository extends WriteKBRepository {
             // for-loop handles that
             DataAdapter dataAdapter = this.dataAdapters.get(loi.getDataSource());
             for (Map<String, String> values : matchingBindings.get(loi)) {
+
+                // DO NO RUN WORKFLOWS WITH THE SAME VALUES
+                Set<String> usedValues = new HashSet<String>();
+                Boolean allDifferent = true;
+                for (String varName: values.keySet()) {
+                    String varValue = values.get(varName);
+                    if ( usedValues.contains(varValue) ) {
+                        allDifferent = false;
+                        break;
+                    }
+                    usedValues.add(varValue);
+                }
+                if (!allDifferent)
+                    continue;
+                //else {
+                //    for (String varName: values.keySet()) {
+                //        System.out.println(" + " + varName + ": " + values.get(varName));
+                //    }
+                //}
 
                 // Creating query
                 String dq = getQueryBindings(loi.getDataQuery(), varPattern, values);
