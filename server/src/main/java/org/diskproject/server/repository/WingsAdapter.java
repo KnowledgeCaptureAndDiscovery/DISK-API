@@ -316,7 +316,7 @@ public class WingsAdapter extends MethodAdapter {
 			List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 			formdata.add(new BasicNameValuePair("run_id", execid));
 			String pageid = "users/" + getUsername() + "/" + this.domain + "/executions/getRunDetails";
-			//todo: maybe wings is not handling error properly
+			// todo: maybe wings is not handling error properly
 			String runjson = this.post(pageid, formdata);
 			if (runjson == null)
 				return null;
@@ -332,7 +332,7 @@ public class WingsAdapter extends MethodAdapter {
 					tsStart = null,
 					tsEnd = null;
 
-			//todo: if we don't have execution information, do we have a error?
+			// todo: if we don't have execution information, do we have a error?
 			try {
 				System.out.println(runjson);
 				JsonObject expobj = runobj.get("execution").getAsJsonObject();
@@ -537,17 +537,27 @@ public class WingsAdapter extends MethodAdapter {
 		try {
 			wflowname = WFLOWID(wflowname);
 			String toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
-			String getData = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/plan/getData",
-					toPost, "application/json", "application/json");
+			try {
+				String getData = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/plan/getData",
+						toPost, "application/json", "application/json");
+				vbindings = addDataBindings(inputVariables, vbindings, getData, false);
+				toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			} catch (Exception e) {
+				System.out.println("Error in getting data from plan");
+				return null;
+			}
 
-			vbindings = addDataBindings(inputVariables, vbindings, getData, false);
-			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
-			String getParams = postWithSpecifiedMediaType(
-					"users/" + getUsername() + "/" + domain + "/plan/getParameters",
-					toPost, "application/json", "application/json");
+			try {
+				String getParams = postWithSpecifiedMediaType(
+						"users/" + getUsername() + "/" + domain + "/plan/getParameters",
+						toPost, "application/json", "application/json");
 
-			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
-			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+				vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
+				toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			} catch (Exception e) {
+				System.out.println("Error in getting parameters from plan");
+				return null;
+			}
 
 			// TODO: This should be called after getting expanded workflow.
 			// - Create mapping data from expanded workflow, and then check.
@@ -1086,7 +1096,7 @@ public class WingsAdapter extends MethodAdapter {
 		return output;
 	}
 
-	private String postWithSpecifiedMediaType(String pageid, String data, String type, String type2) {
+	private String postWithSpecifiedMediaType(String pageid, String data, String type, String type2) throws Exception {
 		this.login();
 		CloseableHttpClient client = HttpClientBuilder.create()
 				.setDefaultCookieStore(this.cookieStore).build();
@@ -1100,23 +1110,22 @@ public class WingsAdapter extends MethodAdapter {
 				HttpEntity responseEntity = httpResponse.getEntity();
 				String strResponse = EntityUtils.toString(responseEntity);
 				EntityUtils.consume(responseEntity);
-				httpResponse.close();
-
 				return strResponse;
+			} catch (Exception e) {
+				throw new Exception("Unable to get entity from response" + e.getMessage());
 			} finally {
 				httpResponse.close();
 			}
 		} catch (Exception e) {
 			System.out.println("POST: " + pageid);
 			System.out.println("DATA: " + data);
-			e.printStackTrace();
+			throw new Exception("Unable to post to " + pageid + ": " + e.getMessage());
 		} finally {
 			try {
 				client.close();
 			} catch (IOException e) {
 			}
 		}
-		return null;
 	}
 
 	private String post(String pageid, List<NameValuePair> data) {

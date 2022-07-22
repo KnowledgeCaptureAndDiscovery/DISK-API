@@ -1833,7 +1833,8 @@ public class DiskRepository extends WriteKBRepository {
                         System.out.println("[R] - " + v.getVariable() + ": "
                                 + (l == null ? v.getBinding() : l[0] + " (" + l.length + ")"));
                     }
-
+                    
+                    
                     String runid = methodAdapter.runWorkflow(bindings.getWorkflow(), sendbindings, inputs);
 
                     if (runid != null) {

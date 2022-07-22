@@ -19,7 +19,7 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
   List<WorkflowBindings> workflows, metaWorkflows;
 
   double confidenceValue;
-
+  String errorMessage;
   String notes;
   String dateCreated, dateModified;
   String dataQuery, dataQueryExplanation;
@@ -35,6 +35,7 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
 		  String description,
 		  String dataSource,
 		  Status status,
+      String errorMessage,
 		  String loiId,
 		  String parentHypothesisId,
 		  List<WorkflowBindings> workflows,
@@ -60,6 +61,7 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
     String tableVariables = loi.getTableVariables();
     String tableExplanation = loi.getTableDescription();
     String dataQueryExplanation = loi.getDataQueryExplanation();
+    String errorMessage = "";
     if (tableVariables != null) this.tableVariables = tableVariables;
     if (tableExplanation != null) this.tableDescription = tableExplanation;
     if (dataQueryExplanation != null) this.dataQueryExplanation = dataQueryExplanation;
@@ -76,6 +78,14 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
       to.setBindings(new ArrayList<VariableBinding>(from.getBindings()));
       tolist.add(to);
     }
+  }
+  
+  public void setErrorMessage(String errorMessage){
+    this.errorMessage = errorMessage;
+  }
+
+  public String getErrorMessage(){
+    return this.errorMessage;
   }
   
   public void setConfidenceValue (double cv) {
