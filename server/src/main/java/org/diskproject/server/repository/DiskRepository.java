@@ -1445,6 +1445,7 @@ public class DiskRepository extends WriteKBRepository {
                         String dsname = urlToName.containsKey(dsurl) ? urlToName.get(dsurl)
                                 : dsurl.replaceAll("^.*\\/", "");
                         dsnames.add(dsname);
+                        System.out.println("Input - Added value" + dsname + " for " + dsurl);
                     }
                 } else {
                     // If the binding is not a file, send the value with no quotes
@@ -1454,11 +1455,13 @@ public class DiskRepository extends WriteKBRepository {
                             value = value.substring(1, value.length() - 1);
                         }
                         dsnames.add(value);
+                        System.out.println("Parameter - Added value " + value + " for " + sparqlvar);
                     }
                 }
 
                 // If Collection, all datasets go to same workflow
                 if (isCollection) {
+                    System.out.println("Handling a collection");
                     // This variable expects a collection. Modify the existing tloiBinding values,
                     // collections of non-files are send as comma separated values:
                     tloiBinding.addBinding(new VariableBinding(vbinding.getVariable(), dsnames.toString()));
@@ -1518,10 +1521,17 @@ public class DiskRepository extends WriteKBRepository {
         List<String> availableFiles = methodAdapter.areFilesAvailable(names);
         names.removeAll(availableFiles);
 
+        System.out.println("Files to download: " + names.size());
         for (String newFilename : names) {
             String newFile = nameToUrl.get(newFilename);
             System.out.println("Uploading to " + methodAdapter.getName() + ": " + newFile + " as " + newFilename);
-            methodAdapter.addData(newFile, newFilename);
+            try {
+                methodAdapter.addData(newFile, newFilename);
+                System.out.println("Uploaded " + newFile + " as " + newFilename);
+            } catch (Exception e){
+                System.err.println("Error uploading file " + newFile + " as " + newFilename);
+                throw e;
+            }
         }
 
         return urlToName;
