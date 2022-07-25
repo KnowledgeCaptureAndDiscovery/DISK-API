@@ -755,6 +755,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	public String addDataToWingsAsFile(String id, String contents) {
+		//todo: this is hardcoded
 		String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain
 				+ "/data/ontology.owl#File";
 		String postpage = "users/" + getUsername() + "/" + domain + "/data/addDataForType";
@@ -893,6 +894,7 @@ public class WingsAdapter extends MethodAdapter {
 				result = jsonParser.parse(resultjson).getAsJsonObject();
 			} catch (Exception e) {
 				System.out.println("ERROR: Return value is not a json object.");
+				//TODO: this generates some errors
 			}
 
 			if (result != null) {
@@ -915,6 +917,7 @@ public class WingsAdapter extends MethodAdapter {
 
 	public boolean isFileOnWings(String url) {
 		String id = url.replaceAll("^.*\\/", "");
+		//todo: this is hardcoded
 		String filetype = this.internal_server + "/export/users/" + getUsername() + "/" + domain
 				+ "/data/ontology.owl#File";
 		String wingsid = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/library.owl#"

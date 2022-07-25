@@ -135,7 +135,8 @@ public class DiskRepository extends WriteKBRepository {
 
     public void initializeKB() throws Exception {
         super.initializeKB(); // This initializes the DISK ontology
-        if (fac == null) throw new Exception("Could not load DISK ontology");
+        if (fac == null)
+            throw new Exception("Could not load DISK ontology");
 
         this.questionKB = fac.getKB(KBConstants.QUESTIONSURI(), OntSpec.PLAIN, false, true);
         this.hypothesisVocabulary = fac.getKB(KBConstants.HYPURI(), OntSpec.PLAIN, false, true);
@@ -611,17 +612,18 @@ public class DiskRepository extends WriteKBRepository {
         if (localDomain != null && !localDomain.equals("") && value.charAt(0) == ':') { // replace ":" for local domain
             value = localDomain + value.substring(1);
         } else {
-            //Resolve SQO and HYP first
+            // Resolve SQO and HYP first
             if (value.startsWith("sqo:")) {
                 value = KBConstants.QUESTIONSNS() + value.substring(4);
             } else if (value.startsWith("hyp:")) {
                 value = KBConstants.HYPNS() + value.substring(4);
-            } else for (String prefix : this.externalVocabularies.keySet()) {
-                if (value.startsWith(prefix + ":")) {
-                    String namespace = this.externalVocabularies.get(prefix).getNamespace();
-                    value = namespace + value.substring(prefix.length() + 1);
+            } else
+                for (String prefix : this.externalVocabularies.keySet()) {
+                    if (value.startsWith(prefix + ":")) {
+                        String namespace = this.externalVocabularies.get(prefix).getNamespace();
+                        value = namespace + value.substring(prefix.length() + 1);
+                    }
                 }
-            }
         }
         return value;
     }
@@ -1169,7 +1171,7 @@ public class DiskRepository extends WriteKBRepository {
         try {
             this.start_read();
             KBAPI hypKB = this.fac.getKB(hypuri, OntSpec.PLAIN, true);
-            //System.out.println(hypKB.getAllTriples());
+            // System.out.println(hypKB.getAllTriples());
 
             for (LineOfInquiry loi : lois) {
                 String hq = loi.getHypothesisQuery();
@@ -1187,41 +1189,42 @@ public class DiskRepository extends WriteKBRepository {
                     if (allSolutions != null) {
                         if (allSolutions.size() == 0) {
                             System.out.println("No solutions for " + loi.getId());
-                            //String errorMesString = "No solutions found for the query: \n" + query;
-                            //System.out.println(errorMesString);
-                            //throw new NotFoundException(errorMesString);
-                        } else for (List<SparqlQuerySolution> row : allSolutions) {
-                            // One match per cell, store variables on cur.
-                            Map<String, String> cur = new HashMap<String, String>();
-                            for (SparqlQuerySolution cell : row) {
-                                String var = cell.getVariable(), val = null;
-                                KBObject obj = cell.getObject();
-                                if (obj != null) {
-                                    if (obj.isLiteral()) {
-                                        val = '"' + obj.getValueAsString() + '"';
-                                    } else {
-                                        val = "<" + obj.getID() + ">";
+                            // String errorMesString = "No solutions found for the query: \n" + query;
+                            // System.out.println(errorMesString);
+                            // throw new NotFoundException(errorMesString);
+                        } else
+                            for (List<SparqlQuerySolution> row : allSolutions) {
+                                // One match per cell, store variables on cur.
+                                Map<String, String> cur = new HashMap<String, String>();
+                                for (SparqlQuerySolution cell : row) {
+                                    String var = cell.getVariable(), val = null;
+                                    KBObject obj = cell.getObject();
+                                    if (obj != null) {
+                                        if (obj.isLiteral()) {
+                                            val = '"' + obj.getValueAsString() + '"';
+                                        } else {
+                                            val = "<" + obj.getID() + ">";
+                                        }
+                                        cur.put(var, val);
                                     }
-                                    cur.put(var, val);
+                                }
+                                // If there is at least one variable binded, add to match list.
+                                if (cur.size() > 0) {
+                                    String loiid = loi.getId().replaceAll("^.*\\/", "");
+                                    if (!allMatches.containsKey(loiid))
+                                        allMatches.put(loiid, new ArrayList<Map<String, String>>());
+                                    List<Map<String, String>> curList = allMatches.get(loiid);
+                                    curList.add(cur);
                                 }
                             }
-                            // If there is at least one variable binded, add to match list.
-                            if (cur.size() > 0) {
-                                String loiid = loi.getId().replaceAll("^.*\\/", "");
-                                if (!allMatches.containsKey(loiid))
-                                    allMatches.put(loiid, new ArrayList<Map<String, String>>());
-                                List<Map<String, String>> curList = allMatches.get(loiid);
-                                curList.add(cur);
-                            }
-                        }
                     }
                 } else {
                     System.out.println("Error: No hypothesis query");
                 }
             }
-            //this.end();
+            // this.end();
         } catch (Exception e) {
-            //throw e;
+            // throw e;
             e.printStackTrace();
         } finally {
             this.end();
@@ -1246,6 +1249,7 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     public List<TriggeredLOI> queryHypothesis(String username, String id) throws Exception {
+        // Create TLOIs that match with a hypothesis and username
         List<TriggeredLOI> tlois = new ArrayList<TriggeredLOI>();
         Map<String, List<DataResult>> queryCache = new HashMap<String, List<DataResult>>();
 
@@ -1264,9 +1268,9 @@ public class DiskRepository extends WriteKBRepository {
                 // DO NO RUN WORKFLOWS WITH THE SAME VALUES
                 Set<String> usedValues = new HashSet<String>();
                 Boolean allDifferent = true;
-                for (String varName: values.keySet()) {
+                for (String varName : values.keySet()) {
                     String varValue = values.get(varName);
-                    if ( usedValues.contains(varValue) ) {
+                    if (usedValues.contains(varValue)) {
                         allDifferent = false;
                         break;
                     }
@@ -1274,11 +1278,11 @@ public class DiskRepository extends WriteKBRepository {
                 }
                 if (!allDifferent)
                     continue;
-                //else {
-                //    for (String varName: values.keySet()) {
-                //        System.out.println(" + " + varName + ": " + values.get(varName));
-                //    }
-                //}
+                // else {
+                // for (String varName: values.keySet()) {
+                // System.out.println(" + " + varName + ": " + values.get(varName));
+                // }
+                // }
 
                 // Creating query
                 String dq = getQueryBindings(loi.getDataQuery(), varPattern, values);
@@ -1356,7 +1360,7 @@ public class DiskRepository extends WriteKBRepository {
         return checkExistingTLOIs(username, tlois);
     }
 
-    // This replaces all triggered lines of inquiry already executed.  
+    // This replaces all triggered lines of inquiry already executed.
     private List<TriggeredLOI> checkExistingTLOIs(String username, List<TriggeredLOI> tlois) {
         List<TriggeredLOI> checked = new ArrayList<TriggeredLOI>();
         Map<String, List<TriggeredLOI>> cache = new HashMap<String, List<TriggeredLOI>>();
@@ -1496,28 +1500,46 @@ public class DiskRepository extends WriteKBRepository {
 
     private Map<String, String> addData(List<String> dsurls, MethodAdapter methodAdapter, DataAdapter dataAdapter)
             throws Exception {
-        // To add files to wings and not replace anything, we need to get the hash from the wiki.
+        // To add files to wings and not replace anything, we need to get the hash from
+        // the wiki.
         // TODO: here connect with minio.
         Map<String, String> nameToUrl = new HashMap<String, String>();
         Map<String, String> urlToName = new HashMap<String, String>();
+        Map<String, String> hashesETag = dataAdapter.getFileHashesByETag(dsurls);
         Map<String, String> hashes = dataAdapter.getFileHashes(dsurls);
-        for (String file : hashes.keySet()) {
-            String hash = hashes.get(file);
+
+        for (String file : hashesETag.keySet()) {
+            String hash = hashesETag.get(file);
             String newName = "SHA" + hash.substring(0, 6) + "_" + file.replaceAll("^.*\\/", "");
             nameToUrl.put(newName, file);
             urlToName.put(file, newName);
         }
 
-        // Show files with no hash
-        for (String file : dsurls) {
-            if (!urlToName.containsKey(file))
-                System.out.println("Warning: file " + file + " does not contain hash on " + dataAdapter.getName());
+        // if we cannot fix the hashes using etag, let's try using sparql
+        // maybe we can delete
+        for (String file : hashes.keySet()) {
+            if (urlToName.get(file) == null) {
+                String hash = hashes.get(file);
+                String newName = "SHA" + hash.substring(0, 6) + "_" + file.replaceAll("^.*\\/", "");
+                nameToUrl.put(newName, file);
+                urlToName.put(file, newName);
+            }
         }
 
+        // Show files with no hash and throw a exception.
+        for (String file : dsurls) {
+            if (!urlToName.containsKey(file)) {
+                //TODO: hadnle exception
+                System.err.println("Warning: file " + file + " does not contain hash on " + dataAdapter.getName());
+            }
+        }
+
+        // avoid to duplicate files
         Set<String> names = nameToUrl.keySet();
         List<String> availableFiles = methodAdapter.areFilesAvailable(names);
         names.removeAll(availableFiles);
 
+        // upload the files
         for (String newFilename : names) {
             String newFile = nameToUrl.get(newFilename);
             System.out.println("Uploading to " + methodAdapter.getName() + ": " + newFile + " as " + newFilename);
@@ -1682,7 +1704,7 @@ public class DiskRepository extends WriteKBRepository {
 
     private String dataQueryNarrative(String dataQuery) {
         // this is necessary to replace the new line characters in query
-        String dataQuery1 = dataQuery.replaceAll("^(//)n${1}", ""); 
+        String dataQuery1 = dataQuery.replaceAll("^(//)n${1}", "");
         String[] querylist = dataQuery1.split("\\.");
         String rdfs_label = "rdfs:label";
 

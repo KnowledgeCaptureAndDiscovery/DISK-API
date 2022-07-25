@@ -7,32 +7,32 @@ public abstract class DataAdapter {
     private String endpointUrl, name, username, password, description;
     private String prefix, namespace, prefixResolution;
 
-    public DataAdapter (String URI, String name) {
+    public DataAdapter(String URI, String name) {
         this.endpointUrl = URI;
         this.name = name;
         this.username = null;
         this.password = null;
     }
 
-    public DataAdapter (String URI, String name, String username, String password) {
+    public DataAdapter(String URI, String name, String username, String password) {
         this.endpointUrl = URI;
         this.name = name;
         this.username = username;
         this.password = password;
     }
 
-    public String getDescription () {
+    public String getDescription() {
         return this.description;
     }
 
-    public void setDescription (String desc) {
+    public void setDescription(String desc) {
         this.description = desc;
     }
-    
-    public String getEndpointUrl () {
+
+    public String getEndpointUrl() {
         return this.endpointUrl;
     }
-    
+
     public String getName ( ) {
         return this.name;
     }
@@ -82,4 +82,6 @@ public abstract class DataAdapter {
 
     // Test connection with source
     public abstract boolean ping ();
+    
+    public abstract Map<String,String> getFileHashesByETag(List<String> dsurls) throws Exception;
 }
