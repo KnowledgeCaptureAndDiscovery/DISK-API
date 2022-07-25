@@ -1518,10 +1518,17 @@ public class DiskRepository extends WriteKBRepository {
         }
 
         Set<String> names = nameToUrl.keySet();
+        //print files to donwload
+        for (String name : names) {
+            System.out.println("Download " + name + " from " + nameToUrl.get(name));
+        }
         List<String> availableFiles = methodAdapter.areFilesAvailable(names);
+        //print available files
+        for (String file : availableFiles) {
+            System.out.println("File " + file + " is available");
+        } 
         names.removeAll(availableFiles);
 
-        System.out.println("Files to download: " + names.size());
         for (String newFilename : names) {
             String newFile = nameToUrl.get(newFilename);
             System.out.println("Uploading to " + methodAdapter.getName() + ": " + newFile + " as " + newFilename);
