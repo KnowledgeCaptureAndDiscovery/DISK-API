@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.apache.commons.lang.SerializationUtils;
+import org.apache.jena.query.QueryParseException;
 import org.diskproject.server.adapters.AirFlowAdapter;
 import org.diskproject.server.adapters.SparqlAdapter;
 import org.diskproject.server.util.Config;
@@ -1006,7 +1007,7 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     public Map<String, List<String>> queryExternalStore(String endpoint, String sparqlQuery, String variables)
-            throws Exception {
+            throws Exception, QueryParseException {
         // FIXME: change this to DataResults
         // Variable name -> [row0, row1, ...]
         Map<String, List<String>> dataVarBindings = new HashMap<String, List<String>>();
@@ -1248,7 +1249,7 @@ public class DiskRepository extends WriteKBRepository {
         return results;
     }
 
-    public List<TriggeredLOI> queryHypothesis(String username, String id) throws Exception {
+    public List<TriggeredLOI> queryHypothesis(String username, String id) throws Exception, QueryParseException {
         // Create TLOIs that match with a hypothesis and username
         List<TriggeredLOI> tlois = new ArrayList<TriggeredLOI>();
         Map<String, List<DataResult>> queryCache = new HashMap<String, List<DataResult>>();

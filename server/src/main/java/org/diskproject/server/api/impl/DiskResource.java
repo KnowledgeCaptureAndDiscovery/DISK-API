@@ -19,6 +19,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 
+import org.apache.http.HttpStatus;
+import org.apache.jena.query.QueryException;
 import org.diskproject.server.repository.DiskRepository;
 import org.diskproject.shared.api.DiskService;
 import org.diskproject.shared.classes.common.TreeItem;
@@ -158,20 +160,27 @@ public class DiskResource implements DiskService {
   @Override
   public List<TriggeredLOI> queryHypothesis(
       @PathParam("id") String id) {
+    Gson response_body = new Gson();
+    response.setContentType("application/json");
+    response.setCharacterEncoding("utf-8");
     try {
       return this.repo.queryHypothesis(USERNAME, id);
     } catch (NotFoundException e) {
       try {
-        Gson gson = new Gson();
         ErrorMessage error = new ErrorMessage(e.getMessage());
-        String jsonData = gson.toJson(error);
-
-        // Prepare the response
-        response.setContentType("application/json");
-        response.setCharacterEncoding("utf-8");
+        String jsonData = response_body.toJson(error);
         response.setStatus(404);
-
-        // Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+        System.err.println(e.getMessage());
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    } catch (QueryException e) {
+      try {
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = response_body.toJson(error);
+        response.setStatus(HttpStatus.SC_BAD_REQUEST);
         response.getWriter().print(jsonData.toString());
         response.getWriter().flush();
         System.err.println(e.getMessage());
@@ -180,17 +189,11 @@ public class DiskResource implements DiskService {
       }
     } catch (Exception e) {
       try {
-        // Create Json error response
-        Gson gson = new Gson();
         ErrorMessage error = new ErrorMessage(e.getMessage());
-        String jsonData = gson.toJson(error);
-
-        // Prepare the response
+        String jsonData = response_body.toJson(error);
         response.setContentType("application/json");
         response.setCharacterEncoding("utf-8");
         response.setStatus(500);
-
-        // Send the response
         response.getWriter().print(jsonData.toString());
         response.getWriter().flush();
         e.printStackTrace();

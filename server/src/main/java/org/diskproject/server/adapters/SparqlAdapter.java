@@ -17,6 +17,7 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.jena.query.QueryParseException;
 import org.diskproject.shared.classes.adapters.DataAdapter;
 import org.diskproject.shared.classes.adapters.DataResult;
 import org.diskproject.shared.classes.util.KBConstants;
@@ -62,7 +63,7 @@ public class SparqlAdapter extends DataAdapter {
     }
 
     @Override
-    public List<DataResult> query(String queryString) throws Exception {
+    public List<DataResult> query(String queryString) throws Exception, QueryParseException {
         ArrayList<ArrayList<SparqlQuerySolution>> solutions = null;
         try {
             String user = this.getUsername(), pass = this.getPassword();
@@ -73,7 +74,8 @@ public class SparqlAdapter extends DataAdapter {
                 solutions = plainKb.sparqlQueryRemote(queryString, this.getEndpointUrl());
             }
         } catch (Exception e) {
-            throw new Exception("Error querying endpoint: " + queryString + "" + e.getMessage());
+            System.err.println("Error querying SPARQL endpoint: " + e.getMessage());
+            throw e;
         }
         List<DataResult> results = new ArrayList<DataResult>();
 
@@ -102,7 +104,7 @@ public class SparqlAdapter extends DataAdapter {
     }
 
     @Override
-    public List<DataResult> queryOptions(String varname, String queryPart) throws Exception {
+    public List<DataResult> queryOptions(String varname, String queryPart) throws Exception, QueryParseException {
         String name = varname.substring(1);
         String labelVar = varname + "Label";
         String query = "PREFIX xsd:  <" + KBConstants.XSDNS() + ">\n" +
@@ -141,7 +143,7 @@ public class SparqlAdapter extends DataAdapter {
     }
 
     @Override
-    public Map<String, String> getFileHashes(List<String> files) throws Exception {
+    public Map<String, String> getFileHashes(List<String> files) throws Exception, QueryParseException {
         String query = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
                 + "SELECT DISTINCT ?file ?sha WHERE {\n"
                 + "  ?page ?contentUrl ?file .\n"
