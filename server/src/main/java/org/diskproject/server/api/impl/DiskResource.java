@@ -332,15 +332,14 @@ public class DiskResource implements DiskService {
   @Override
   @Path("workflows")
   public List<Workflow> listWorkflows() {
+    Gson response_error = new Gson();
     try {
-      // return WingsAdapter.get().getWorkflowList();
       return this.repo.getWorkflowList();
     } catch (Exception e) {
       try {
         // Create Json error response
-        Gson gson = new Gson();
         ErrorMessage error = new ErrorMessage(e.getMessage());
-        String jsonData = gson.toJson(error);
+        String jsonData = response_error.toJson(error);
 
         // Prepare the response
         response.setContentType("application/json");

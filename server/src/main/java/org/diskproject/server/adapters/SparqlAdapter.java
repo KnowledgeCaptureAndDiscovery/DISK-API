@@ -18,6 +18,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.jena.query.QueryParseException;
+import org.apache.jena.sparql.engine.http.QueryExceptionHTTP;
 import org.diskproject.shared.classes.adapters.DataAdapter;
 import org.diskproject.shared.classes.adapters.DataResult;
 import org.diskproject.shared.classes.util.KBConstants;
@@ -63,7 +64,7 @@ public class SparqlAdapter extends DataAdapter {
     }
 
     @Override
-    public List<DataResult> query(String queryString) throws Exception, QueryParseException {
+    public List<DataResult> query(String queryString) throws Exception, QueryParseException, QueryExceptionHTTP {
         ArrayList<ArrayList<SparqlQuerySolution>> solutions = null;
         try {
             String user = this.getUsername(), pass = this.getPassword();
@@ -99,7 +100,7 @@ public class SparqlAdapter extends DataAdapter {
                 }
                 results.add(curResult);
             }
-        }
+            }
         return results;
     }
 
