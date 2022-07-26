@@ -10,14 +10,11 @@ public class WorkflowRun {
 
   Map<String, String> outputs;
   Map<String, String> files;
-  String startDate;
-  String endDate;
+  String startDate, endDate;
 
   public WorkflowRun(){}
   
-  public WorkflowRun(String id,
-  String link,
-  String status){
+  public WorkflowRun (String id, String link, String status) {
 	  this.id = id;
 	  this.link = link;
 	  this.status = status;
