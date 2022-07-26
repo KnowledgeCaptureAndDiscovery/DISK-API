@@ -1,5 +1,6 @@
 package org.diskproject.server.adapters;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,6 +10,13 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.http.Header;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.diskproject.shared.classes.adapters.DataAdapter;
 import org.diskproject.shared.classes.adapters.DataResult;
 import org.diskproject.shared.classes.util.KBConstants;
@@ -22,9 +30,16 @@ import edu.isi.kcap.ontapi.jena.KBAPIJena;
 public class SparqlAdapter extends DataAdapter {
     private final KBAPI plainKb = new KBAPIJena(OntSpec.PLAIN);
     private final static Pattern varPattern = Pattern.compile("\\?(.+?)\\b");
+    private CloseableHttpClient httpClient;
+    private PoolingHttpClientConnectionManager connectionManager;
 
     public SparqlAdapter(String endpoint, String name, String username, String password) {
         super(endpoint, name, username, password);
+        
+        connectionManager = new PoolingHttpClientConnectionManager();
+        httpClient = HttpClients.custom()
+                .setConnectionManager(connectionManager)
+                .build();
     }
 
     public static Set<String> interceptVariables(final String queryA, final String queryB) {
@@ -153,6 +168,32 @@ public class SparqlAdapter extends DataAdapter {
 
     }
 
+    public Map<String, String> getFileHashesByETag(List<String> files) {
+        Map<String, String> result = new HashMap<String, String>();
+        for (String file : files) {
+            String eTag = getFileETag(file);
+            if (eTag != null)
+                result.put(file, eTag);
+        }
+        return result;
+    }
+
+    public String getFileETag(String url){
+        Header header;
+        try {
+            HttpHead request = new HttpHead(url); 
+            HttpResponse response = httpClient.execute(request);
+            if (response.containsHeader(HttpHeaders.ETAG)) {
+                header = response.getHeaders(HttpHeaders.ETAG)[0];
+                //TODO: it is returning "W/"865986cc57463a65c96902a5d9dac831270c49051c8067aa995dd7317c6e0093""
+                return header.getValue().substring(3, 20);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     @Override
     public boolean ping() {
         try {
@@ -162,4 +203,5 @@ public class SparqlAdapter extends DataAdapter {
             return false;
         }
     }
+
 }
