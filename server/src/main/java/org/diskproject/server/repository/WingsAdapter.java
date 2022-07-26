@@ -18,8 +18,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.validation.Path.ReturnValueNode;
-
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
@@ -42,7 +40,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
-import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
@@ -63,6 +60,7 @@ import edu.isi.kcap.ontapi.OntSpec;
 
 public class WingsAdapter extends MethodAdapter {
 	private Gson json;
+	private JsonParser jsonParser;
 	private String server;
 	private String domain;
 	private String internal_server;
@@ -81,6 +79,7 @@ public class WingsAdapter extends MethodAdapter {
 		this.domain = domain;
 		this.cookieStore = new BasicCookieStore();
 		this.json = new Gson();
+		this.jsonParser = new JsonParser();
 	}
 
 	public String DOMURI() {
@@ -137,18 +136,39 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	public List<Workflow> getWorkflowList() {
-		String liburi = this.WFLOWURI() + "/library.owl";
+		//https://wings.disk.isi.edu/wings-portal/users/admin/test/workflows/getTemplatesListJSON
+		String getTemplatesUrl = "users/" + this.getUsername() + "/" + this.domain +"/workflows/getTemplatesListJSON"; 
+		String resp = this.get(getTemplatesUrl, null);
+		List<Workflow> wList = new ArrayList<Workflow>();
+
+		try {
+			JsonArray arr = (JsonArray) jsonParser.parse(resp);
+			int len = arr.size();
+			for (int i  = 0; i < len; i++) {
+				String fullId = arr.get(i).getAsString();
+				String localId = fullId.replaceAll("^.*#", "");
+				wList.add(new Workflow(fullId, localId, getWorkflowLink(localId), this.getName()));
+			}
+		} catch (Exception e) {
+			System.err.println("Error decoding " + resp);
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+		return wList;
+
+		/*String libUri = this.WFLOWURI() + "/library.owl";
 		try {
 			List<Workflow> list = new ArrayList<Workflow>();
 			OntFactory fac = new OntFactory(OntFactory.JENA);
-			KBAPI kb = fac.getKB(liburi, OntSpec.PLAIN);
-			KBObject typeprop = kb.getProperty(KBConstants.RDFNS() + "type");
-			KBObject templatecls = kb.getResource(this.workflowNS + "WorkflowTemplate");
-			for (KBTriple triple : kb.genericTripleQuery(null, typeprop, templatecls)) {
-				KBObject tobj = triple.getSubject();
+			KBAPI kb = fac.getKB(libUri, OntSpec.PLAIN);
+			KBObject typeProp = kb.getProperty(KBConstants.RDFNS() + "type");
+			KBObject templateCls = kb.getResource(this.workflowNS + "WorkflowTemplate");
+			for (KBTriple triple : kb.genericTripleQuery(null, typeProp, templateCls)) {
+				//Modify this.
+				KBObject wfObj = triple.getSubject();
 				Workflow wflow = new Workflow();
-				wflow.setName(tobj.getName());
-				wflow.setLink(this.getWorkflowLink(wflow.getName()));
+				wflow.setId(wfObj.getName());
+				wflow.setLink(this.getWorkflowLink(wflow.getId()));
 				wflow.setSource(this.getName());
 				list.add(wflow);
 			}
@@ -157,11 +177,40 @@ public class WingsAdapter extends MethodAdapter {
 			e.printStackTrace();
 			// throw exception
 			throw new RuntimeException(e);
-		}
+		}*/
 	}
 
 	public List<Variable> getWorkflowVariables(String id) {
-		String wflowuri = this.WFLOWURI(id);
+		List<Variable> vList = new ArrayList<Variable>();
+		String fullId = this.DOMURI() + "/workflows/" + id + ".owl#" + id;
+		String getVariablesUrl = "users/" + this.getUsername() + "/" + this.domain +"/workflows/getViewerJSON"; 
+		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
+		formdata.add(new BasicNameValuePair("template_id", fullId));
+		String resp = this.get(getVariablesUrl, formdata);
+		try {
+			JsonObject obj = (JsonObject) jsonParser.parse(resp);
+			JsonArray variables = obj.get("inputs").getAsJsonArray();
+			int len = variables.size();
+			for (int i = 0; i < len; i++) {
+				JsonObject varObj = variables.get(i).getAsJsonObject();
+				String name = varObj.get("name").getAsString();
+				String dType = varObj.get("dtype").getAsString();
+				//String varId = varObj.get("id").getAsString();
+				String type = varObj.get("type").getAsString();
+				JsonElement dObj = varObj.get("dim");
+				int dim = dObj != null ? dObj.getAsInt() : 0;
+
+				vList.add(new Variable(name, dType, dim, type.equals("param"), true));
+			}
+
+		} catch (Exception e) {
+			System.err.println("Error decoding " + resp);
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+		return vList;
+
+		/*String wflowuri = this.WFLOWURI(id);
 		try {
 			List<Variable> list = new ArrayList<Variable>();
 			Map<String, Boolean> varmap = new HashMap<String, Boolean>();
@@ -170,11 +219,9 @@ public class WingsAdapter extends MethodAdapter {
 
 			KBObject linkprop = kb.getProperty(this.workflowNS + "hasLink");
 			KBObject origprop = kb.getProperty(this.workflowNS + "hasOriginNode");
-			KBObject destprop = kb.getProperty(this.workflowNS
-					+ "hasDestinationNode");
-			KBObject varprop = kb.getProperty(this.workflowNS + "hasVariable");
-			KBObject paramcls = kb.getConcept(this.workflowNS
-					+ "ParameterVariable");
+			KBObject destprop = kb.getProperty(this.workflowNS + "hasDestinationNode");
+			KBObject varprop  = kb.getProperty(this.workflowNS + "hasVariable");
+			KBObject paramcls = kb.getConcept(this.workflowNS + "ParameterVariable");
 
 			for (KBTriple triple : kb.genericTripleQuery(null, linkprop, null)) {
 				KBObject linkobj = triple.getObject();
@@ -205,7 +252,7 @@ public class WingsAdapter extends MethodAdapter {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return null;
+		return null;*/
 	}
 
 	@Override
@@ -301,8 +348,10 @@ public class WingsAdapter extends MethodAdapter {
 
 			// Check for Session ID to make sure we've logged in
 			for (Cookie cookie : context.getCookieStore().getCookies()) {
-				if (cookie.getName().equalsIgnoreCase("JSESSIONID"))
+				if (cookie.getName().equalsIgnoreCase("JSESSIONID")) {
+					System.out.println("SESSION ID: " + cookie.getValue());
 					return true;
+				}
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -324,7 +373,6 @@ public class WingsAdapter extends MethodAdapter {
 			WorkflowRun wflowstatus = new WorkflowRun();
 			wflowstatus.setId(execid);
 
-			JsonParser jsonParser = new JsonParser();
 			JsonObject runobj = jsonParser.parse(runjson).getAsJsonObject();
 
 			// Try to get the execution information
@@ -454,7 +502,6 @@ public class WingsAdapter extends MethodAdapter {
 
 		// Check the variable bindings to see if this matches the values that we
 		// have
-		JsonParser jsonParser = new JsonParser();
 		JsonObject result = jsonParser.parse(resultjson).getAsJsonObject();
 		JsonArray qbindings = result.get("results").getAsJsonObject()
 				.get("bindings").getAsJsonArray();
@@ -533,7 +580,6 @@ public class WingsAdapter extends MethodAdapter {
 	@Override
 	public String runWorkflow(String wflowname, List<VariableBinding> vbindings, Map<String, Variable> inputVariables) {
 		//try {
-		JsonParser jsonParser = new JsonParser();
 		wflowname = WFLOWID(wflowname);
 		String toPost = null, getData = null, getParams = null, getExpansions = null;
 		JsonObject response = null;
@@ -754,10 +800,9 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
-	public String addDataToWingsAsFile(String id, String contents) {
-		//todo: this is hardcoded
-		String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain
-				+ "/data/ontology.owl#File";
+
+	public String addDataToWingsAsFile(String id, String contents, String type) {
+		//String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
 		String postpage = "users/" + getUsername() + "/" + domain + "/data/addDataForType";
 		String uploadpage = "users/" + getUsername() + "/" + domain + "/upload";
 		String dataid = this.DATAID(id);
@@ -792,21 +837,10 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
-	public String addRemoteDataToWings(String url) {
-		String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain
-				+ "/data/ontology.owl#File";
-		String opurl = "users/" + getUsername() + "/" + domain + "/data/addRemoteDataForType";
-		List<NameValuePair> keyvalues = new ArrayList<NameValuePair>();
-		keyvalues.add(new BasicNameValuePair("data_url", url));
-		keyvalues.add(new BasicNameValuePair("data_type", type));
-		return this.post(opurl, keyvalues);
-	}
-
-	public String addRemoteDataToWings(String url, String name) throws Exception {
-		/*
-		 * FIXME: Wings rename does not rename the file, only the id
-		 * thus we cannot upload two files with the same name and then rename them.
-		 */
+	public String addRemoteDataToWings(String url, String name, String dType) throws Exception {
+		/* FIXME: Wings rename does not rename the file, only the id
+		 * thus we cannot upload two files with the same name and then rename them. */
+		// Get the file.
 		String fileContents = null;
 		CloseableHttpClient client = HttpClientBuilder.create().build();
 		try {
@@ -833,7 +867,7 @@ public class WingsAdapter extends MethodAdapter {
 		}
 
 		System.out.println("Content downloaded [" + fileContents.length() + "]");
-		String dataid = addDataToWingsAsFile(name, fileContents);
+		String dataid = addDataToWingsAsFile(name, fileContents, dType);
 		System.out.println("Data ID generated: " + dataid);
 		return dataid;
 	}
@@ -888,7 +922,6 @@ public class WingsAdapter extends MethodAdapter {
 			if (resultjson == null || resultjson.equals(""))
 				return returnValue;
 
-			JsonParser jsonParser = new JsonParser();
 			JsonObject result = null;
 			try {
 				result = jsonParser.parse(resultjson).getAsJsonObject();
@@ -935,7 +968,6 @@ public class WingsAdapter extends MethodAdapter {
 		if (resultjson == null || resultjson.equals(""))
 			return false;
 
-		JsonParser jsonParser = new JsonParser();
 		JsonObject result = jsonParser.parse(resultjson).getAsJsonObject();
 		JsonArray qbindings = result.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
 
@@ -986,7 +1018,6 @@ public class WingsAdapter extends MethodAdapter {
 			Map<String, Variable> inputVariables, List<VariableBinding> vbl,
 			String data, boolean param) {
 
-		JsonParser jsonParser = new JsonParser();
 		JsonObject expobj = null;
 		try {
 			expobj = jsonParser.parse(data.trim()).getAsJsonObject();
@@ -1261,17 +1292,12 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public String addData(String url, String name) throws Exception {
+	public String addData(String url, String name, String dType) throws Exception {
 		try {
-			return this.addRemoteDataToWings(url, name);
+			return this.addRemoteDataToWings(url, name, dType);
 		} catch (Exception e) {
 			throw e;
 		}
-	}
-
-	@Override
-	public String addData(String id, String type, String contents) {
-		return this.addDataToWings(id, type, contents);
 	}
 
 	@Override
