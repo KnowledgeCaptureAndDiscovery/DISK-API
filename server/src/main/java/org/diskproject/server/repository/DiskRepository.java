@@ -1401,6 +1401,8 @@ public class DiskRepository extends WriteKBRepository {
             tloiBindings.add(tloiBinding);
             MethodAdapter methodAdapter = getMethodAdapterByName(bindings.getSource());
 
+            List<Variable> allVars = methodAdapter.getWorkflowVariables(bindings.getWorkflow());
+
             for (VariableBinding vbinding : bindings.getBindings()) { // Normal variable bindings.
                 // For each Variable binding, check :
                 // - If this variable expects a collection or single values
@@ -1438,9 +1440,15 @@ public class DiskRepository extends WriteKBRepository {
                 List<String> dsnames = new ArrayList<String>();
 
                 if (bindingsAreFiles) {
+                    String varName = vbinding.getVariable();
+                    String dType = null;
+                    for (Variable v: allVars) {
+                        if (varName.equals(v.getName()))
+                            dType = v.getType();
+                    }
                     // TODO: this should be async
                     // Check hashes, create local name and upload data:
-                    Map<String, String> urlToName = addData(dsurls, methodAdapter, dataAdapter);
+                    Map<String, String> urlToName = addData(dsurls, methodAdapter, dataAdapter, dType);
                     for (String dsurl : dsurls) {
                         String dsname = urlToName.containsKey(dsurl) ? urlToName.get(dsurl)
                                 : dsurl.replaceAll("^.*\\/", "");
@@ -1494,7 +1502,7 @@ public class DiskRepository extends WriteKBRepository {
         return tloiBindings;
     }
 
-    private Map<String, String> addData(List<String> dsurls, MethodAdapter methodAdapter, DataAdapter dataAdapter)
+    private Map<String, String> addData(List<String> dsurls, MethodAdapter methodAdapter, DataAdapter dataAdapter, String dType)
             throws Exception {
         // To add files to wings and not replace anything, we need to get the hash from the wiki.
         // TODO: here connect with minio.
@@ -1521,7 +1529,7 @@ public class DiskRepository extends WriteKBRepository {
         for (String newFilename : names) {
             String newFile = nameToUrl.get(newFilename);
             System.out.println("Uploading to " + methodAdapter.getName() + ": " + newFile + " as " + newFilename);
-            methodAdapter.addData(newFile, newFilename);
+            methodAdapter.addData(newFile, newFilename, dType); // Should send the filetype. TODO
         }
 
         return urlToName;

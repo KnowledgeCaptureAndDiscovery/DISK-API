@@ -93,7 +93,7 @@ public class AirFlowAdapter extends MethodAdapter {
     }
 
     @Override
-    public String addData(String url, String name) {
+    public String addData(String url, String name, String type) {
         // Auto-generated method stub
         return null;
     }
@@ -106,12 +106,6 @@ public class AirFlowAdapter extends MethodAdapter {
 
     @Override
     public String runWorkflow(String wfId, List<VariableBinding> vBindings, Map<String, Variable> inputVariables) {
-        // Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public String addData(String id, String type, String contents) {
         // Auto-generated method stub
         return null;
     }

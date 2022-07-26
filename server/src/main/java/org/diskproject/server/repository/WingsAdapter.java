@@ -197,7 +197,8 @@ public class WingsAdapter extends MethodAdapter {
 				String dType = varObj.get("dtype").getAsString();
 				//String varId = varObj.get("id").getAsString();
 				String type = varObj.get("type").getAsString();
-				int dim = varObj.get("dim").getAsInt();
+				JsonElement dObj = varObj.get("dim");
+				int dim = dObj != null ? dObj.getAsInt() : 0;
 
 				vList.add(new Variable(name, dType, dim, type.equals("param"), true));
 			}
@@ -799,8 +800,8 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
-	public String addDataToWingsAsFile(String id, String contents) {
-		String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
+	public String addDataToWingsAsFile(String id, String contents, String type) {
+		//String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
 		String postpage = "users/" + getUsername() + "/" + domain + "/data/addDataForType";
 		String uploadpage = "users/" + getUsername() + "/" + domain + "/upload";
 		String dataid = this.DATAID(id);
@@ -835,21 +836,9 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
-	public String addRemoteDataToWings(String url) {
-		String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain
-				+ "/data/ontology.owl#File";
-		String opurl = "users/" + getUsername() + "/" + domain + "/data/addRemoteDataForType";
-		List<NameValuePair> keyvalues = new ArrayList<NameValuePair>();
-		keyvalues.add(new BasicNameValuePair("data_url", url));
-		keyvalues.add(new BasicNameValuePair("data_type", type));
-		return this.post(opurl, keyvalues);
-	}
-
-	public String addRemoteDataToWings(String url, String name) throws Exception {
-		/*
-		 * FIXME: Wings rename does not rename the file, only the id
-		 * thus we cannot upload two files with the same name and then rename them.
-		 */
+	public String addRemoteDataToWings(String url, String name, String dType) throws Exception {
+		/* FIXME: Wings rename does not rename the file, only the id
+		 * thus we cannot upload two files with the same name and then rename them. */
 		// Get the file.
 		String fileContents = null;
 		CloseableHttpClient client = HttpClientBuilder.create().build();
@@ -877,7 +866,7 @@ public class WingsAdapter extends MethodAdapter {
 		}
 
 		System.out.println("Content downloaded [" + fileContents.length() + "]");
-		String dataid = addDataToWingsAsFile(name, fileContents);
+		String dataid = addDataToWingsAsFile(name, fileContents, dType);
 		System.out.println("Data ID generated: " + dataid);
 		return dataid;
 	}
@@ -1300,17 +1289,12 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public String addData(String url, String name) throws Exception {
+	public String addData(String url, String name, String dType) throws Exception {
 		try {
-			return this.addRemoteDataToWings(url, name);
+			return this.addRemoteDataToWings(url, name, dType);
 		} catch (Exception e) {
 			throw e;
 		}
-	}
-
-	@Override
-	public String addData(String id, String type, String contents) {
-		return this.addDataToWings(id, type, contents);
 	}
 
 	@Override
