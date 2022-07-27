@@ -1261,9 +1261,37 @@ public class DiskRepository extends WriteKBRepository {
         }
 
         for (LineOfInquiry loi : matchingBindings.keySet()) {
+            // Check that the adapters are configured.
+            DataAdapter dataAdapter = this.dataAdapters.get(loi.getDataSource());
+            if (dataAdapter == null) {
+                System.out.println("Warning: " + loi.getId() + " uses an unknown data adapter: " + loi.getDataSource());
+                continue;
+            } else {
+                boolean allOk = true;
+                for (WorkflowBindings wb: loi.getWorkflows()) {
+                    String source =  wb.getSource();
+                    if (source == null || getMethodAdapterByName(source) == null) {
+                        allOk = false;
+                        System.out.println("Warning: " + loi.getId() + " uses an unknown method adapter: " + source);
+                        break;
+                    }
+                }
+                if (allOk)
+                    for (WorkflowBindings wb: loi.getMetaWorkflows()) {
+                        String source =  wb.getSource();
+                        if (source == null || getMethodAdapterByName(source) == null) {
+                            allOk = false;
+                            System.out.println("Warning: " + loi.getId() + " uses an unknown method adapter: " + source);
+                            break;
+                        }
+                    }
+                if (!allOk) {
+                    continue;
+                }
+            }
+
             // One hypothesis can match the same LOI in more than one way, the following
             // for-loop handles that
-            DataAdapter dataAdapter = this.dataAdapters.get(loi.getDataSource());
             for (Map<String, String> values : matchingBindings.get(loi)) {
 
                 // DO NO RUN WORKFLOWS WITH THE SAME VALUES
