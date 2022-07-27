@@ -68,7 +68,7 @@ public abstract class MethodAdapter {
 
 	public abstract String getDataUri (String id);
 
-	public abstract List<String> areFilesAvailable (Set<String> fileList);
+	public abstract List<String> areFilesAvailable (Set<String> fileList, String dType);
 
 	public abstract String addData (String url, String name, String dType) throws Exception;
 

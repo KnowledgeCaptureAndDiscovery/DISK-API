@@ -136,7 +136,6 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	public List<Workflow> getWorkflowList() {
-		//https://wings.disk.isi.edu/wings-portal/users/admin/test/workflows/getTemplatesListJSON
 		String getTemplatesUrl = "users/" + this.getUsername() + "/" + this.domain +"/workflows/getTemplatesListJSON"; 
 		String resp = this.get(getTemplatesUrl, null);
 		List<Workflow> wList = new ArrayList<Workflow>();
@@ -155,29 +154,6 @@ public class WingsAdapter extends MethodAdapter {
 			throw new RuntimeException(e);
 		}
 		return wList;
-
-		/*String libUri = this.WFLOWURI() + "/library.owl";
-		try {
-			List<Workflow> list = new ArrayList<Workflow>();
-			OntFactory fac = new OntFactory(OntFactory.JENA);
-			KBAPI kb = fac.getKB(libUri, OntSpec.PLAIN);
-			KBObject typeProp = kb.getProperty(KBConstants.RDFNS() + "type");
-			KBObject templateCls = kb.getResource(this.workflowNS + "WorkflowTemplate");
-			for (KBTriple triple : kb.genericTripleQuery(null, typeProp, templateCls)) {
-				//Modify this.
-				KBObject wfObj = triple.getSubject();
-				Workflow wflow = new Workflow();
-				wflow.setId(wfObj.getName());
-				wflow.setLink(this.getWorkflowLink(wflow.getId()));
-				wflow.setSource(this.getName());
-				list.add(wflow);
-			}
-			return list;
-		} catch (Exception e) {
-			e.printStackTrace();
-			// throw exception
-			throw new RuntimeException(e);
-		}*/
 	}
 
 	public List<Variable> getWorkflowVariables(String id) {
@@ -209,50 +185,6 @@ public class WingsAdapter extends MethodAdapter {
 			throw new RuntimeException(e);
 		}
 		return vList;
-
-		/*String wflowuri = this.WFLOWURI(id);
-		try {
-			List<Variable> list = new ArrayList<Variable>();
-			Map<String, Boolean> varmap = new HashMap<String, Boolean>();
-			OntFactory fac = new OntFactory(OntFactory.JENA);
-			KBAPI kb = fac.getKB(wflowuri, OntSpec.PLAIN);
-
-			KBObject linkprop = kb.getProperty(this.workflowNS + "hasLink");
-			KBObject origprop = kb.getProperty(this.workflowNS + "hasOriginNode");
-			KBObject destprop = kb.getProperty(this.workflowNS + "hasDestinationNode");
-			KBObject varprop  = kb.getProperty(this.workflowNS + "hasVariable");
-			KBObject paramcls = kb.getConcept(this.workflowNS + "ParameterVariable");
-
-			for (KBTriple triple : kb.genericTripleQuery(null, linkprop, null)) {
-				KBObject linkobj = triple.getObject();
-				KBObject orignode = kb.getPropertyValue(linkobj, origprop);
-				KBObject destnode = kb.getPropertyValue(linkobj, destprop);
-
-				// Only return Input and Output variables
-				if (orignode != null && destnode != null)
-					continue;
-
-				KBObject varobj = kb.getPropertyValue(linkobj, varprop);
-
-				if (varmap.containsKey(varobj.getID()))
-					continue;
-				varmap.put(varobj.getID(), true);
-
-				Variable var = new Variable();
-				var.setName(varobj.getName());
-				if (orignode == null)
-					var.setInput(true);
-
-				if (kb.isA(varobj, paramcls))
-					var.setParam(true);
-
-				list.add(var);
-			}
-			return list;
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null;*/
 	}
 
 	@Override
@@ -473,7 +405,6 @@ public class WingsAdapter extends MethodAdapter {
 
 	// TODO: Hackish function. Fix it !!!! *IMPORTANT*
 	private String getWorkflowRunWithSameBindings(String templateid, List<VariableBinding> vbindings) {
-
 		// Get all successful runs for the template (and their variable
 		// bindings)
 		String query = "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n"
@@ -802,17 +733,15 @@ public class WingsAdapter extends MethodAdapter {
 
 
 	public String addDataToWingsAsFile(String id, String contents, String type) {
-		//String type = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
-		String postpage = "users/" + getUsername() + "/" + domain + "/data/addDataForType";
-		String uploadpage = "users/" + getUsername() + "/" + domain + "/upload";
-		String dataid = this.DATAID(id);
-
+		// Compute the hash of the contents and check it agains filename.
 		String sha = DigestUtils.sha1Hex(contents.getBytes());
 		String correctName = "SHA" + sha.substring(0, 6);
 		if (!id.contains(correctName))
 			System.out.println("File " + id + " does not have the same hash: " + sha);
 
-		// Create temporary file and upload
+		// Create temporary file and upload to WINGS
+		String uploadPage = "users/" + getUsername() + "/" + domain + "/upload";
+		String location = null;
 		try {
 			File dir = File.createTempFile("tmp", "");
 			if (!dir.delete() || !dir.mkdirs()) {
@@ -821,20 +750,48 @@ public class WingsAdapter extends MethodAdapter {
 			}
 			File f = new File(dir.getAbsolutePath() + "/" + id);
 			FileUtils.write(f, contents);
-			String uploadResponse = this.upload(uploadpage, "data", f);
-			System.out.println(uploadResponse);
-			f.delete();
+			String uploadResponse = this.upload(uploadPage, "data", f);
 
-			List<NameValuePair> data = new ArrayList<NameValuePair>();
-			data.add(new BasicNameValuePair("data_id", dataid));
-			data.add(new BasicNameValuePair("data_type", type));
-			String response = this.post(postpage, data);
-			if (response != null && response.equals("OK"))
-				return dataid;
+			// Decode response
+			JsonObject uploadR = (JsonObject) jsonParser.parse(uploadResponse);
+			boolean success =  uploadR.get("success").getAsBoolean();
+			if (success)
+				location = uploadR.get("location").getAsString();
+			f.delete();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return null;
+
+		if (location == null) return null;
+
+		// Add registry on WINGS
+		String dataid = this.DATAID(id);
+		String postAddData = "users/" + getUsername() + "/" + domain + "/data/addDataForType";
+		try {
+			List<NameValuePair> data = new ArrayList<NameValuePair>();
+			data.add(new BasicNameValuePair("data_id", dataid));
+			data.add(new BasicNameValuePair("data_type", type));
+			String response = this.post(postAddData, data);
+			if (response == null || !response.equals("OK"))
+				return null;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		// Set location of the file
+		String postDataLocation = "users/" + getUsername() + "/" + domain + "/data/setDataLocation";
+		try {
+			List<NameValuePair> data = new ArrayList<NameValuePair>();
+			data.add(new BasicNameValuePair("data_id", dataid));
+			data.add(new BasicNameValuePair("location", location));
+			String response = this.post(postDataLocation, data);
+			System.out.println("RESP: " + response);
+			if (response == null || !response.equals("OK"))
+				return null;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return dataid;
 	}
 
 	public String addRemoteDataToWings(String url, String name, String dType) throws Exception {
@@ -866,16 +823,15 @@ public class WingsAdapter extends MethodAdapter {
 			}
 		}
 
-		System.out.println("Content downloaded [" + fileContents.length() + "]");
+		System.out.println("Content downloaded [" + fileContents.length() + "] " + fileContents.substring(0, fileContents.length() > 10 ? 10 : fileContents.length()-1) + "...");
 		String dataid = addDataToWingsAsFile(name, fileContents, dType);
 		System.out.println("Data ID generated: " + dataid);
 		return dataid;
 	}
 
-	public List<String> isFileListOnWings(Set<String> filelist) {
+	public List<String> isFileListOnWings(Set<String> filelist, String filetype) {
 		List<String> returnValue = new ArrayList<String>();
-		String filetype = this.internal_server + "/export/users/" + getUsername() + "/" + domain
-				+ "/data/ontology.owl#File";
+		//String filetype = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
 		String fileprefix = "<" + this.internal_server + "/export/users/" + getUsername() + "/" + domain
 				+ "/data/library.owl#";
 
@@ -1287,8 +1243,8 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public List<String> areFilesAvailable(Set<String> filelist) {
-		return this.isFileListOnWings(filelist);
+	public List<String> areFilesAvailable(Set<String> filelist, String dType) {
+		return this.isFileListOnWings(filelist, dType);
 	}
 
 	@Override

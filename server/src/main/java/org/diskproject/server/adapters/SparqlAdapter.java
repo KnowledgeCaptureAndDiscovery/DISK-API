@@ -182,14 +182,15 @@ public class SparqlAdapter extends DataAdapter {
     }
 
     public String getFileETag(String url){
-        Header header;
         try {
             HttpHead request = new HttpHead(url); 
             HttpResponse response = httpClient.execute(request);
             if (response.containsHeader(HttpHeaders.ETAG)) {
-                header = response.getHeaders(HttpHeaders.ETAG)[0];
-                //TODO: it is returning "W/"865986cc57463a65c96902a5d9dac831270c49051c8067aa995dd7317c6e0093""
-                return header.getValue().substring(3, 20);
+                Header[] eHeaders = response.getHeaders(HttpHeaders.ETAG);
+                if (eHeaders.length > 0) {
+                    String eTag = eHeaders[0].getValue();
+                    return eTag.replaceAll("\"", "").replaceAll("/", "").replaceAll("_", "").replaceAll("-", "");
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();

@@ -1507,31 +1507,42 @@ public class DiskRepository extends WriteKBRepository {
         return tloiBindings;
     }
 
+    //This adds dsUrls to the data-repository, returns filename -> URL
     private Map<String, String> addData(List<String> dsurls, MethodAdapter methodAdapter, DataAdapter dataAdapter, String dType)
             throws Exception {
-        // To add files to wings and not replace anything, we need to get the hash from
-        // the wiki.
+        // To add files to wings and not replace anything, we need to get the hash from the wiki.
         // TODO: here connect with minio.
         Map<String, String> nameToUrl = new HashMap<String, String>();
         Map<String, String> urlToName = new HashMap<String, String>();
-        Map<String, String> hashesETag = dataAdapter.getFileHashesByETag(dsurls);
-        Map<String, String> hashes = dataAdapter.getFileHashes(dsurls);
+        Map<String, String> filesETag = dataAdapter.getFileHashesByETag(dsurls);  // File -> ETag
+        boolean allOk = true; // All is OK if we have all file ETags.
 
-        for (String file : hashesETag.keySet()) {
-            String hash = hashesETag.get(file);
-            String newName = "SHA" + hash.substring(0, 6) + "_" + file.replaceAll("^.*\\/", "");
-            nameToUrl.put(newName, file);
-            urlToName.put(file, newName);
+        for (String fileUrl: dsurls) {
+            if (filesETag.containsKey(fileUrl)) {
+                String eTag = filesETag.get(fileUrl);
+                // This name should be different now, this is not the SHA
+                String uniqueName = "SHA" + eTag.substring(0, 6) + "_" + fileUrl.replaceAll("^.*\\/", "");
+                nameToUrl.put(uniqueName, fileUrl);
+                urlToName.put(fileUrl, uniqueName);
+            } else {
+                System.err.println("ETag not found: " + fileUrl);
+                allOk = false;
+            }
         }
 
-        // if we cannot fix the hashes using etag, let's try using sparql
-        // maybe we can delete
-        for (String file : hashes.keySet()) {
-            if (urlToName.get(file) == null) {
-                String hash = hashes.get(file);
-                String newName = "SHA" + hash.substring(0, 6) + "_" + file.replaceAll("^.*\\/", "");
-                nameToUrl.put(newName, file);
-                urlToName.put(file, newName);
+        if (!allOk) { // Get hashes from the data-adapter (SPARQL)
+            Map<String, String> hashes = dataAdapter.getFileHashes(dsurls); // File -> SHA1
+            for (String fileUrl : dsurls) {
+                if (hashes.containsKey(fileUrl)) {
+                    if (!urlToName.containsKey(fileUrl)) {
+                        String hash = hashes.get(fileUrl);
+                        String uniqueName = "SHA" + hash.substring(0, 6) + "_" + fileUrl.replaceAll("^.*\\/", "");
+                        nameToUrl.put(uniqueName, fileUrl);
+                        urlToName.put(fileUrl, uniqueName);
+                    }
+                } else {
+                    System.err.println("HASH not found: " + fileUrl);
+                }
             }
         }
 
@@ -1539,20 +1550,20 @@ public class DiskRepository extends WriteKBRepository {
         for (String file : dsurls) {
             if (!urlToName.containsKey(file)) {
                 //TODO: hadnle exception
-                System.err.println("Warning: file " + file + " does not contain hash on " + dataAdapter.getName());
+                System.err.println("Warning: file " + file + " does not contain any hash on " + dataAdapter.getName());
             }
         }
 
         // avoid to duplicate files
         Set<String> names = nameToUrl.keySet();
-        List<String> availableFiles = methodAdapter.areFilesAvailable(names);
+        List<String> availableFiles = methodAdapter.areFilesAvailable(names, dType);
         names.removeAll(availableFiles);
 
         // upload the files
         for (String newFilename : names) {
             String newFile = nameToUrl.get(newFilename);
             System.out.println("Uploading to " + methodAdapter.getName() + ": " + newFile + " as " + newFilename);
-            methodAdapter.addData(newFile, newFilename, dType); // Should send the filetype. TODO
+            methodAdapter.addData(newFile, newFilename, dType);
         }
 
         return urlToName;

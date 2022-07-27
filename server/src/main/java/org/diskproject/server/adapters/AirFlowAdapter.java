@@ -87,7 +87,7 @@ public class AirFlowAdapter extends MethodAdapter {
     }
 
     @Override
-    public List<String> areFilesAvailable(Set<String> filelist) {
+    public List<String> areFilesAvailable(Set<String> filelist, String dType) {
         // Auto-generated method stub
         return null;
     }
