@@ -18,9 +18,9 @@
 
 	<properties>
 		<javax.rs-api.version>2.0.1</javax.rs-api.version>
-		<restygwt.version>2.1.1</restygwt.version>
+		<restygwt.version>2.2.7</restygwt.version>
 		<servlet-api.version>3.1.0</servlet-api.version>
-		<jackson.version>2.4.6</jackson.version>
+		<jackson.version>2.9.6</jackson.version>
 		
 		<webappDirectory>${project.build.directory}/${project.build.finalName}</webappDirectory>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
