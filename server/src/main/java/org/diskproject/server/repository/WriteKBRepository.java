@@ -684,6 +684,9 @@ public class WriteKBRepository extends KBRepository {
             userKB.setLabel(tloiItem, tloi.getName());
         if (tloi.getDescription() != null)
             userKB.setComment(tloiItem, tloi.getDescription());
+        if (tloi.getNotes() != null)
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES),
+                    userKB.createLiteral(tloi.getNotes()));
         if (tloi.getDataSource() != null)
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE),
                     userKB.createLiteral(tloi.getDataSource()));
@@ -758,6 +761,10 @@ public class WriteKBRepository extends KBRepository {
             KBObject stobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_TLOI_STATUS));
             if (stobj != null)
                 tloi.setStatus(Status.valueOf(stobj.getValue().toString()));
+
+            KBObject notesObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES));
+            if (notesObj != null)
+                tloi.setNotes(notesObj.getValueAsString());
 
             KBObject dateobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.DATE_CREATED));
             if (dateobj != null)
@@ -892,6 +899,7 @@ public class WriteKBRepository extends KBRepository {
 
             for (WorkflowBindings bindings : bindingsList) {
                 String source = bindings.getSource();
+                String description = bindings.getDescription();
                 MethodAdapter methodAdapter = this.getMethodAdapterByName(source);
                 if (methodAdapter == null) {
                     System.out.println("Method adapter not found " + source);
@@ -905,6 +913,8 @@ public class WriteKBRepository extends KBRepository {
                 userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_WORKFLOW),
                         userKB.getResource(workflowId));
                 userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_SOURCE), userKB.createLiteral(source));
+                if (description != null)
+                    userKB.setComment(bindingobj, description);
 
                 // Get Run details
                 WorkflowRun run = bindings.getRun();
@@ -1009,6 +1019,10 @@ public class WriteKBRepository extends KBRepository {
                     bindings.setSource(source);
                     methodAdapter = this.getMethodAdapterByName(source);
                 }
+
+                String description = kb.getComment(wbObj);
+                if (description != null)
+                    bindings.setDescription(description);
 
                 // Workflow Run details
                 WorkflowRun run = new WorkflowRun();

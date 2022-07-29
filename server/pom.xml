@@ -18,7 +18,7 @@
 	<properties>
 		<jersey.version>2.22.2</jersey.version>
 		<javax.rs-api.version>2.0.1</javax.rs-api.version>
-		<jackson.version>2.10.0</jackson.version>
+ 		<jackson.version>2.5.3</jackson.version>
 		<gson.version>2.6.2</gson.version>
 		<commons-configuration.version>1.10</commons-configuration.version>
 		<ontapi.version>1.2.4</ontapi.version>
@@ -190,7 +190,7 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-core</artifactId>
-			<version>2.9.6</version>
+			<version>${jackson.version}</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/javax.jdo/jdo2-api -->
 		<dependency>

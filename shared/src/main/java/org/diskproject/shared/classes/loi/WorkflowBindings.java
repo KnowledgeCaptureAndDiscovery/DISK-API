@@ -11,6 +11,7 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
   String source;          // This is the ID of the method source
   String workflow;
   String workflowLink;
+  String description;
   List<VariableBinding> bindings;
   WorkflowRun run;
   MetaWorkflowDetails meta;
@@ -43,6 +44,14 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
 
   public void setSource (String source) {
     this.source = source;
+  }
+
+  public String getDescription () {
+    return this.description;
+  }
+
+  public void setDescription (String description) {
+    this.description = description;
   }
 
   public String getWorkflow() {

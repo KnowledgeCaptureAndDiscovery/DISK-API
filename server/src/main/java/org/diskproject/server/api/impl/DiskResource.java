@@ -302,6 +302,19 @@ public class DiskResource implements DiskService {
     return this.repo.addTriggeredLOI(USERNAME, tloi);
   }
 
+  @PUT
+  @Path("tlois/{id}")
+  @Override
+  public TriggeredLOI updateTLOI(
+      @PathParam("id") String id,
+      @JsonProperty("tloi") TriggeredLOI tloi) {
+    String username = (String) request.getAttribute("username");
+    if (username != null) {
+      tloi.setAuthor(username);
+    }
+    return this.repo.updateTLOINotes(USERNAME, id, tloi);
+  }
+
   @GET
   @Path("tlois")
   @Override

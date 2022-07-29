@@ -127,6 +127,14 @@ public interface DiskService extends DirectRestService {
   @Path("tlois")
   public TriggeredLOI addTriggeredLOI(
       @JsonProperty("tloi") TriggeredLOI tloi);
+
+  @PUT
+  @Produces("application/json")
+  @Consumes("application/json")
+  @Path("tlois/{id}")
+  public TriggeredLOI updateTLOI(
+      @PathParam("id") String id,
+      @JsonProperty("tloi") TriggeredLOI tloi);
   
   @GET
   @Path("tlois")

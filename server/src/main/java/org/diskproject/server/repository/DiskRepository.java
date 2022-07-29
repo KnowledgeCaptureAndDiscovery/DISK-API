@@ -779,6 +779,18 @@ public class DiskRepository extends WriteKBRepository {
         return null;
     }
 
+    public TriggeredLOI updateTLOINotes(String username, String id, TriggeredLOI tloi) {
+        TriggeredLOI updatedTLOI = getTriggeredLOI(username, id);
+        if (updatedTLOI != null && tloi != null) {
+            updatedTLOI.setNotes(tloi.getNotes());
+            System.out.println("notes: " + tloi.getNotes());
+            if (this.deleteTLOI(username, id) && this.writeTLOI(username, updatedTLOI))
+                return tloi;
+        }
+        //TODO: We return the request as default, check what when wrong and send apropiate error.
+        return tloi;
+    }
+
     public List<TriggeredLOI> listTriggeredLOIs(String username) {
         return listTLOIs(username);
     }
