@@ -1395,6 +1395,9 @@ public class DiskRepository extends WriteKBRepository {
                     tloi.setDateCreated(dateformatter.format(new Date()));
                     tlois.add(tloi);
                 }
+                else {
+                    System.out.println("LOI " + loi.getId() + " got no results");
+                }
             }
         }
 
