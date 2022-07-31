@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<!-- POM file generated with GWT webAppCreator -->
 	<modelVersion>4.0.0</modelVersion>
@@ -12,8 +11,8 @@
 	<parent>
 		<groupId>org.disk-project</groupId>
 		<artifactId>disk-project</artifactId>
-        <version>3.0.0</version>
-        <relativePath>../pom.xml</relativePath>
+		<version>3.0.0</version>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<properties>
@@ -21,7 +20,7 @@
 		<restygwt.version>2.1.1</restygwt.version>
 		<servlet-api.version>3.1.0</servlet-api.version>
 		<jackson.version>2.4.6</jackson.version>
-		
+
 		<webappDirectory>${project.build.directory}/${project.build.finalName}</webappDirectory>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
@@ -33,14 +32,19 @@
 			<artifactId>javax.ws.rs-api</artifactId>
 			<version>${javax.rs-api.version}</version>
 		</dependency>
-		
+		<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-annotations -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>2.5.3</version>
+		</dependency>
+
 		<!-- RESTY GWT -->
 		<dependency>
 			<groupId>org.fusesource.restygwt</groupId>
 			<artifactId>restygwt</artifactId>
 			<version>${restygwt.version}</version>
 		</dependency>
-		
 	</dependencies>
 
 	<build>
