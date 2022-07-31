@@ -51,7 +51,10 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
       }
       final JwtValidator validator = new JwtValidator();
       try {
-        DecodedJWT jwtToken = validator.validate(token);
+        if (token.contains("Bearer")) {
+          token = token.substring(7);
+        }
+        DecodedJWT jwtToken = validator.validate(token.replaceAll("Bearer ", ""));
         String email = jwtToken.getClaim("email").asString();
         requestContext.setProperty("username", email);
       } catch (InvalidParameterException e) {
@@ -64,7 +67,7 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
   public class JwtValidator {
 
     private final List<String> allowedIsses = Collections
-        .singletonList("https://keycloak.quadmeup.com/auth/realms/Realm");
+        .singletonList("https://auth.mint.isi.edu/auth/realms/production");
 
     private String getKeycloakCertificateUrl(DecodedJWT token) {
       return token.getIssuer() + "/protocol/openid-connect/certs";
