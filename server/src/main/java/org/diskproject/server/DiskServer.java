@@ -19,7 +19,7 @@ class DiskServer extends ResourceConfig {
     DiskRepository.get(); // To create the server first
 
     register(AcceptHeaderFilter.class);
-    //register(CORSResponseFilter.class);
+    register(CORSResponseFilter.class);
     register(RolesAllowedDynamicFeature.class);
     register(KeycloakAuthenticationFilter.class);
     register(DiskResource.class);
