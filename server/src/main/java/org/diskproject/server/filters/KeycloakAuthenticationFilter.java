@@ -1,6 +1,14 @@
 package org.diskproject.server.filters;
 
 import java.io.IOException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,19 +18,20 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-
-import org.apache.commons.configuration.plist.PropertyListConfiguration;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.util.EntityUtils;
-import org.diskproject.server.util.Config;
-
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.security.InvalidParameterException;
+import java.security.interfaces.RSAPublicKey;
+import java.util.Collections;
+import java.util.List;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.auth0.jwt.interfaces.JWTVerifier;
+import com.gargoylesoftware.htmlunit.javascript.host.fetch.Request;
+import com.auth0.jwk.JwkException;
+import com.auth0.jwk.JwkProvider;
+import com.auth0.jwk.UrlJwkProvider;
 
 @PreMatching
 public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
@@ -30,118 +39,75 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
   HttpServletRequest request;
 
   @Override
+
   public void filter(ContainerRequestContext requestContext) throws IOException {
-    String token = requestContext.getHeaderString("authorization");
-    if (token != null) {
-      KeycloakUser user = KeycloakSessions.getKeycloakUser(token);
-      if (user != null && user.username != null) {
-        requestContext.setProperty("username", user.username);
-      } else
+    // header which contains jwt can be changed
+    if (requestContext.getMethod().equals("GET") || requestContext.getMethod().equals("FETCH")) {
+      System.out.println("Method: " + requestContext.getMethod());
+    } else {
+      String token = requestContext.getHeaderString("Authorization");
+      if (token == null || "".equals(token)) {
         requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity("Access denied").build());
+      }
+      final JwtValidator validator = new JwtValidator();
+      try {
+        if (token.contains("Bearer")) {
+          token = token.substring(7);
+        }
+        DecodedJWT jwtToken = validator.validate(token.replaceAll("Bearer ", ""));
+        String email = jwtToken.getClaim("email").asString();
+        requestContext.setProperty("username", email);
+      } catch (InvalidParameterException e) {
+        requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).entity("Access denied").build());
+        e.printStackTrace();
+      }
     }
   }
 
-  public static class KeycloakUser {
-    public String username, email;
+  public class JwtValidator {
 
-    public KeycloakUser(String user, String email) {
-      this.username = user;
-      this.email = email;
+    private final List<String> allowedIsses = Collections
+        .singletonList("https://auth.mint.isi.edu/auth/realms/production");
+
+    private String getKeycloakCertificateUrl(DecodedJWT token) {
+      return token.getIssuer() + "/protocol/openid-connect/certs";
     }
-  }
 
-  public static class KeycloakSessions {
-    // Token to User map
-    private static Map<String, KeycloakUser> tokenCache = new HashMap<String, KeycloakUser>();
-    // Username to Token map
-    private static Map<String, String> userTokens = new HashMap<String, String>();
-    // Token loading
-    private static Map<String, Boolean> loadingToken = new HashMap<String, Boolean>();
+    private RSAPublicKey loadPublicKey(DecodedJWT token) throws JwkException, MalformedURLException {
 
-    private static CloseableHttpClient httpClient;
-    private static PoolingHttpClientConnectionManager connectionManager;
-    private static String userInfoUrl;
+      final String url = getKeycloakCertificateUrl(token);
+      JwkProvider provider = new UrlJwkProvider(new URL(url));
 
-    private static CloseableHttpClient getHttpClient() {
-      if (KeycloakSessions.httpClient == null) {
-        connectionManager = new PoolingHttpClientConnectionManager();
-        KeycloakSessions.httpClient = HttpClients.custom()
-            .setConnectionManager(connectionManager)
+      return (RSAPublicKey) provider.get(token.getKeyId()).getPublicKey();
+    }
+
+    /**
+     * Validate a JWT token
+     * 
+     * @param token
+     * @return decoded token
+     */
+    public DecodedJWT validate(String token) {
+      try {
+        final DecodedJWT jwt = JWT.decode(token);
+
+        if (!allowedIsses.contains(jwt.getIssuer())) {
+          throw new InvalidParameterException(String.format("Unknown Issuer %s", jwt.getIssuer()));
+        }
+
+        RSAPublicKey publicKey = loadPublicKey(jwt);
+
+        Algorithm algorithm = Algorithm.RSA256(publicKey, null);
+        JWTVerifier verifier = JWT.require(algorithm)
+            .withIssuer(jwt.getIssuer())
             .build();
 
-        PropertyListConfiguration props = Config.get().getProperties();
-        String server = props.getString("keycloak.url");
-        String realm = props.getString("keycloak.realm");
+        verifier.verify(token);
+        return jwt;
 
-        // Create API urls
-        KeycloakSessions.userInfoUrl = server + "/auth/realms/" + realm + "/protocol/openid-connect/userinfo";
-      }
-      return KeycloakSessions.httpClient;
-    }
-
-    public static KeycloakUser getKeycloakUser(String token) {
-      if (KeycloakSessions.tokenCache.containsKey(token)) {
-        return KeycloakSessions.tokenCache.get(token);
-      } else if (KeycloakSessions.loadingToken.containsKey(token)) {
-        try {
-          // This is a hack to not make the query multiple times if we get multiple
-          // request at the same time.
-          System.err.println("WAITING TOKEN");
-          Thread.sleep(500);
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        }
-        // FIXME: This can be stack overflow
-        return KeycloakSessions.getKeycloakUser(token);
-      } else {
-        return KeycloakSessions.fetchKeycloakUser(token);
-      }
-    }
-
-    private static void updateUserToken(KeycloakUser user, String token) {
-      String username = user.username;
-      if (KeycloakSessions.userTokens.containsKey(username)) {
-        String usedToken = KeycloakSessions.userTokens.get(username);
-        if (KeycloakSessions.tokenCache.containsKey(usedToken))
-          KeycloakSessions.tokenCache.remove(usedToken);
-      }
-      KeycloakSessions.userTokens.put(username, token);
-      KeycloakSessions.tokenCache.put(token, user);
-    }
-
-    private static KeycloakUser fetchKeycloakUser(String token) {
-      CloseableHttpClient client = KeycloakSessions.getHttpClient();
-      if (KeycloakSessions.userInfoUrl == null)
-        return null;
-      HttpGet userInfo = new HttpGet(KeycloakSessions.userInfoUrl);
-      userInfo.addHeader("Authorization", token);
-
-      KeycloakSessions.loadingToken.put(token, true);
-      try (CloseableHttpResponse httpResponse = client.execute(userInfo)) {
-        HttpEntity responseEntity = httpResponse.getEntity();
-        String strResponse = EntityUtils.toString(responseEntity);
-
-        JsonParser jsonParser = new JsonParser();
-        JsonObject jsonObj = jsonParser.parse(strResponse.trim()).getAsJsonObject();
-        KeycloakUser user = null;
-        try {
-          String username = jsonObj.get("preferred_username").getAsString();
-          String email = jsonObj.get("email").getAsString();
-          user = new KeycloakUser(username, email);
-        } catch (Exception e) {
-          System.out.println("Malformed JSON string: " + strResponse);
-        }
-        if (user != null) {
-          updateUserToken(user, token);
-          return user;
-        }
       } catch (Exception e) {
-        System.err.println("Could not verify Keycloak token");
-        e.printStackTrace();
-      } finally {
-          KeycloakSessions.loadingToken.remove(token);
+        throw new InvalidParameterException("JWT validation failed: " + e.getMessage());
       }
-      return null;
     }
   }
 }

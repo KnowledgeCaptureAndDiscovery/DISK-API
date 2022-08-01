@@ -24,14 +24,12 @@ import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
-import org.fusesource.restygwt.client.DirectRestService;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Path("")
 @Produces("application/json")
 @Consumes("application/json")
-public interface DiskService extends DirectRestService {
+public interface DiskService {
   @GET
   @Path("server/endpoints")
   public List<DataAdapterResponse> getEndpoints();
