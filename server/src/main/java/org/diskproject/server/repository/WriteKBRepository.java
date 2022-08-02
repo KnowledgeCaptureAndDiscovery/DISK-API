@@ -58,7 +58,7 @@ public class WriteKBRepository extends KBRepository {
         try {
             kb = this.fac.getKB(url, OntSpec.PLAIN, true);
         } catch (Exception e) {
-            System.err.print("Could not open KB: " + url);
+            System.err.print("Could not open or create KB: " + url);
         }
         return kb;
     }

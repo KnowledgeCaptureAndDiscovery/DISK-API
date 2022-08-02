@@ -15,6 +15,7 @@ public abstract class MethodAdapter {
     private String username;
     private String password;
     private String description;
+    private Float version; 
 
     public MethodAdapter (String adapterName, String url) {
         this.name = adapterName;
@@ -26,6 +27,14 @@ public abstract class MethodAdapter {
         this.endpointUrl = url;
         this.username = username;
         this.password = password;
+    }
+
+    public Float getVersion () {
+        return this.version;
+    }
+
+    public void setVersion (Float v) {
+        this.version = v;
     }
 
     public String getDescription () {

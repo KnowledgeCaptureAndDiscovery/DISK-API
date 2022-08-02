@@ -20,6 +20,7 @@ public class ConfigKeys {
 
     public static final String ENDPOINT = "endpoint";
     public static final String TYPE = "type";
+    public static final String VERSION = "version";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
 

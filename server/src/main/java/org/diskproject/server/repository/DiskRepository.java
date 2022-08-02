@@ -370,6 +370,7 @@ public class DiskRepository extends WriteKBRepository {
             }
             String curURI = cur.get(ConfigKeys.ENDPOINT), curType = cur.get(ConfigKeys.TYPE);
             String curUser = null, curPass = null, curDomain = null, curInternalServer = null;
+            Float curVersion = null;
             if (cur.containsKey(ConfigKeys.USERNAME))
                 curUser = cur.get(ConfigKeys.USERNAME);
             if (cur.containsKey(ConfigKeys.PASSWORD))
@@ -378,6 +379,8 @@ public class DiskRepository extends WriteKBRepository {
                 curDomain = cur.get(ConfigKeys.DOMAIN);
             if (cur.containsKey(ConfigKeys.INTERNAL_SERVER))
                 curInternalServer = cur.get(ConfigKeys.INTERNAL_SERVER);
+            if (cur.containsKey(ConfigKeys.VERSION))
+                curVersion = Float.parseFloat(cur.get(ConfigKeys.VERSION));
 
             MethodAdapter curAdapter = null;
             switch (curType) {
@@ -390,8 +393,11 @@ public class DiskRepository extends WriteKBRepository {
                 default:
                     break;
             }
-            if (curAdapter != null)
+            if (curAdapter != null) {
+                if (curVersion != null)
+                    curAdapter.setVersion(curVersion);
                 this.methodAdapters.put(curURI, curAdapter);
+            }
         }
 
         // Check method adapters:

@@ -510,7 +510,6 @@ public class WingsAdapter extends MethodAdapter {
 
 	@Override
 	public String runWorkflow(String wflowname, List<VariableBinding> vbindings, Map<String, Variable> inputVariables) {
-		//try {
 		wflowname = WFLOWID(wflowname);
 		String toPost = null, getData = null, getParams = null, getExpansions = null;
 		JsonObject response = null;
@@ -1089,8 +1088,14 @@ public class WingsAdapter extends MethodAdapter {
 				for (int i = 0; i < vbl.size(); i++) {
 					VariableBinding vb = vbl.get(i);
 					if (vb.getVariable().equals(v.getName())) {
-						paramBindings += "\"" + wfname + v.getName() + "\":[\""
-								+ vb.getBinding() + "\"],";
+						paramBindings += "\"" + wfname + v.getName() + "\":" ;
+						// If theres no version, or the version if 5 or later, add as array
+						if (this.getVersion() == null || this.getVersion() > 5)
+							paramBindings += "[";
+						paramBindings += "\"" + vb.getBinding() + "\"";
+						if (this.getVersion() == null || this.getVersion() > 5)
+							paramBindings += "]";
+						paramBindings += ",";
 						paramAdded = true;
 					}
 				}
