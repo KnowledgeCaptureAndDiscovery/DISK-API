@@ -18,6 +18,7 @@ env:
   MANIFEST_REPOSITORY_PATH: disk-server/disk/prod
   NEURO_MANIFEST_REPOSITORY_PATH: disk-server/disk/neuro
   CLIMATE_MANIFEST_REPOSITORY_PATH: disk-server/disk/climate
+  DEV_MANIFEST_REPOSITORY_PATH: disk-server/disk/dev
   #security level
   VULNERABILITY_SCAN_LEVEL: "CRITICAL"
 
@@ -164,6 +165,12 @@ jobs:
           kustomize edit set image ${{ env.KUSTOMIZE_IMAGE_NAME }}=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.docker_tag }}
           cat kustomization.yaml
 
+      - name: Update Kubernetes resources dev 
+        if: github.event_name != 'pull_request'
+        run: |
+          cd ${{ env.DEV_MANIFEST_REPOSITORY_PATH }}
+          kustomize edit set image ${{ env.KUSTOMIZE_IMAGE_NAME }}=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.docker_tag }}
+          cat kustomization.yaml
       - name: Commit files
         if: github.event_name != 'pull_request'
         run: |
