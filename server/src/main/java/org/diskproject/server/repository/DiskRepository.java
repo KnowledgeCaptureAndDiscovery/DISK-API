@@ -1190,13 +1190,14 @@ public class DiskRepository extends WriteKBRepository {
         try {
             this.start_read();
             KBAPI hypKB = this.fac.getKB(hypuri, OntSpec.PLAIN, true);
-            // System.out.println(hypKB.getAllTriples());
+            System.out.println(hypKB.getAllTriples());
 
             for (LineOfInquiry loi : lois) {
                 String hq = loi.getHypothesisQuery();
                 if (hq != null) {
                     String query = this.getAllPrefixes() + "SELECT DISTINCT * WHERE { \n"
                             + loi.getHypothesisQuery().replaceAll("\n", ".\n") + " }";
+                    System.out.println(query);
                     ArrayList<ArrayList<SparqlQuerySolution>> allSolutions = null;
                     try {
                         allSolutions = hypKB.sparqlQuery(query);
