@@ -747,6 +747,8 @@ public class DiskRepository extends WriteKBRepository {
                     null, l.getDateCreated(), l.getAuthor());
             if (l.getDateModified() != null)
                 item.setDateModified(l.getDateModified());
+            if (l.getQuestion() != null)
+                item.setQuestion(l.getQuestion());
             list.add(item);
         }
         return list;
@@ -789,7 +791,6 @@ public class DiskRepository extends WriteKBRepository {
         TriggeredLOI updatedTLOI = getTriggeredLOI(username, id);
         if (updatedTLOI != null && tloi != null) {
             updatedTLOI.setNotes(tloi.getNotes());
-            System.out.println("notes: " + tloi.getNotes());
             if (this.deleteTLOI(username, id) && this.writeTLOI(username, updatedTLOI))
                 return tloi;
         }
@@ -1190,7 +1191,7 @@ public class DiskRepository extends WriteKBRepository {
         try {
             this.start_read();
             KBAPI hypKB = this.fac.getKB(hypuri, OntSpec.PLAIN, true);
-            // System.out.println(hypKB.getAllTriples());
+            //System.out.println(hypKB.getAllTriples());
 
             for (LineOfInquiry loi : lois) {
                 String hq = loi.getHypothesisQuery();

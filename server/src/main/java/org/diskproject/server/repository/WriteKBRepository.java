@@ -642,6 +642,9 @@ public class WriteKBRepository extends KBRepository {
                 KBObject authorobj = userKB.getPropertyValue(loiobj, DISKOnt.getProperty(DISK.HAS_AUTHOR));
                 String author = (authorobj != null) ? authorobj.getValueAsString() : null;
 
+                KBObject questionobj = userKB.getPropertyValue(loiobj, DISKOnt.getProperty(DISK.HAS_QUESTION));
+                String questionId =  (questionobj != null) ? questionobj.getValueAsString() : null;
+
                 KBObject hqueryobj = userKB.getPropertyValue(loiobj, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_QUERY));
                 String hypothesisQuery = (hqueryobj != null) ? hqueryobj.getValueAsString() : null;
 
@@ -654,6 +657,8 @@ public class WriteKBRepository extends KBRepository {
                     item.setAuthor(author);
                 if (hypothesisQuery != null)
                     item.setHypothesisQuery(hypothesisQuery);
+                if (questionId != null)
+                    item.setQuestion(questionId);
 
                 list.add(item);
             }

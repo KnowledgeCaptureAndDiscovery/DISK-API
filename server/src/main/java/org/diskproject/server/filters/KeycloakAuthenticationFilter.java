@@ -32,7 +32,6 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
   public void filter(ContainerRequestContext requestContext) throws IOException {
     if (requestContext.getMethod().equals("GET") || requestContext.getMethod().equals("FETCH") ||
         requestContext.getMethod().equals("OPTIONS")) {
-      System.out.println("Method: " + requestContext.getMethod());
     } else {
       String token = requestContext.getHeaderString("Authorization");
       if (token == null || "".equals(token)) {
