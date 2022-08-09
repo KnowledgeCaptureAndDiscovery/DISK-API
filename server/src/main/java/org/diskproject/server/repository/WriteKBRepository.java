@@ -676,6 +676,7 @@ public class WriteKBRepository extends KBRepository {
 
     // -- Triggered Lines of Inquiry
     protected boolean writeTLOI(String username, TriggeredLOI tloi) {
+
         Boolean newTLOI = tloi.getId() == null || tloi.getId().equals("");
         if (newTLOI)
             tloi.setId(GUID.randomId("TriggeredLOI"));
@@ -726,7 +727,7 @@ public class WriteKBRepository extends KBRepository {
         if (tloi.getConfidenceValue() > 0)
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE),
                     userKB.createLiteral(Double.toString(tloi.getConfidenceValue())));
-        if (tloi.getConfidenceType () != null)
+        if (tloi.getConfidenceType() != null)
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE),
                     userKB.createLiteral(tloi.getConfidenceType()));
         if (tloi.getStatus() != null)
