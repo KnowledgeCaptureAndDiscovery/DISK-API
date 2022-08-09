@@ -1745,7 +1745,8 @@ public class DiskRepository extends WriteKBRepository {
             DecimalFormat df = new DecimalFormat(confidence != 0 && confidence < 0.001 ? "0.#E0"
                     : "0.###");
 
-            String pval = df.format(confidence);
+            String confidenceValueString = df.format(confidence);
+            String confidenceType = tloi.getConfidenceType();
             // Execution narratives
             // String executionTemplate = "The Hypothesis with title: <b>${HYP.NAME}</b> was
             // runned <span class=\"${TLOI.STATUS}\">${TLOI.STATUS}</span>"
@@ -1762,7 +1763,7 @@ public class DiskRepository extends WriteKBRepository {
                     + "</b>. The LOI triggered the <a target=\"_blank\" href=\"" + wf.getWorkflowLink()
                     + "\">workflow on WINGS</a>"
                     + " where it was tested with the following datasets:<div class=\"data-list\"><ol>" + dataset
-                    + "</ol></div>The resulting p-value is " + pval + ".";
+                    + "</ol></div>The resulting " + confidenceType + " is " + confidenceValueString + ".";
             narratives.put("execution", execution);
 
             String dataQuery = "<b>Data Query Narrative:</b><br/>" + this.dataQueryNarrative(loi.getDataQuery());
@@ -2035,6 +2036,7 @@ public class DiskRepository extends WriteKBRepository {
                                     if (pval > 0) {
                                         System.out.println("[M] Detected p-value: " + pval);
                                         tloi.setConfidenceValue(pval);
+                                        tloi.setConfidenceType("P-VALUE");
                                     }
                                 }
                             }

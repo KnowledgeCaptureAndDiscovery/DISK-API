@@ -19,6 +19,7 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
   List<WorkflowBindings> workflows, metaWorkflows;
 
   double confidenceValue;
+  String confidenceType;
 
   String notes;
   String dateCreated, dateModified;
@@ -233,5 +234,13 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
  
   public String getDateModified () {
 	  return dateModified;
+  }
+
+  public void setConfidenceType(String type) {
+    this.confidenceType = type;
+  }
+
+  public String getConfidenceType() {
+    return confidenceType;
   }
 }
