@@ -1313,25 +1313,6 @@ public class DiskRepository extends WriteKBRepository {
             // for-loop handles that
             for (Map<String, String> values : matchingBindings.get(loi)) {
 
-                // DO NO RUN WORKFLOWS WITH THE SAME VALUES
-                Set<String> usedValues = new HashSet<String>();
-                Boolean allDifferent = true;
-                for (String varName : values.keySet()) {
-                    String varValue = values.get(varName);
-                    if (usedValues.contains(varValue)) {
-                        allDifferent = false;
-                        break;
-                    }
-                    usedValues.add(varValue);
-                }
-                if (!allDifferent)
-                    continue;
-                // else {
-                // for (String varName: values.keySet()) {
-                // System.out.println(" + " + varName + ": " + values.get(varName));
-                // }
-                // }
-
                 // Creating query
                 String dq = getQueryBindings(loi.getDataQuery(), varPattern, values);
                 String query = this.getAllPrefixes() + "SELECT DISTINCT ";
