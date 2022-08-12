@@ -9,6 +9,7 @@ public class DISK {
     public static final String WORKFLOW_BINDING = "WorkflowBinding";
     //Properties
     public static final String HAS_CONFIDENCE_VALUE = "hasConfidenceValue";
+    public static final String HAS_CONFIDENCE_TYPE = "hasConfidenceType";
     public static final String HAS_TLOI = "hasTriggeredLineOfInquiry";
     public static final String HAS_AUTHOR = "hasAuthor";
     public static final String DATE_CREATED = "dateCreated";

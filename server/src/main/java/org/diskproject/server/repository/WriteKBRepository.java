@@ -106,6 +106,9 @@ public class WriteKBRepository extends KBRepository {
             if (details.getConfidenceValue() > 0)
                 provKB.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE),
                         provKB.createLiteral(triple.getDetails().getConfidenceValue()));
+            if (details.getConfidenceType() != null)
+                provKB.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE),
+                        provKB.createLiteral(triple.getDetails().getConfidenceType()));
             if (details.getTriggeredLOI() != null)
                 provKB.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_TLOI),
                         provKB.getResource(triple.getDetails().getTriggeredLOI()));
@@ -138,11 +141,15 @@ public class WriteKBRepository extends KBRepository {
                 Triple t = tripleMap.get(triplestr);
 
                 KBObject conf = provKB.getPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE));
+                KBObject confidenceType = provKB.getPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE));
                 KBObject tloi = provKB.getPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_TLOI));
 
                 TripleDetails details = new TripleDetails();
                 if (conf != null && conf.getValue() != null)
                     details.setConfidenceValue((Double) conf.getValue());
+                if (confidenceType != null && confidenceType.getValue() != null){
+                    details.setConfidenceType((String) confidenceType.getValue());
+                }
                 if (tloi != null)
                     details.setTriggeredLOI(tloi.getID());
 
@@ -669,6 +676,7 @@ public class WriteKBRepository extends KBRepository {
 
     // -- Triggered Lines of Inquiry
     protected boolean writeTLOI(String username, TriggeredLOI tloi) {
+
         Boolean newTLOI = tloi.getId() == null || tloi.getId().equals("");
         if (newTLOI)
             tloi.setId(GUID.randomId("TriggeredLOI"));
@@ -719,6 +727,9 @@ public class WriteKBRepository extends KBRepository {
         if (tloi.getConfidenceValue() > 0)
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE),
                     userKB.createLiteral(Double.toString(tloi.getConfidenceValue())));
+        if (tloi.getConfidenceType() != null)
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE),
+                    userKB.createLiteral(tloi.getConfidenceType()));
         if (tloi.getStatus() != null)
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_TLOI_STATUS),
                     userKB.createLiteral(tloi.getStatus().toString()));
@@ -802,6 +813,10 @@ public class WriteKBRepository extends KBRepository {
             KBObject explobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION));
             if (explobj != null)
                 tloi.setDataQueryExplanation(explobj.getValueAsString());
+
+            KBObject confidenceType = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE));
+            if (confidenceType != null)
+                tloi.setConfidenceType(confidenceType.getValueAsString());
 
             KBObject confidenceObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE));
             if (confidenceObj != null)
