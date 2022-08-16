@@ -23,16 +23,21 @@ import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
+
 public class ReanaAdapter extends MethodAdapter {
     private PoolingHttpClientConnectionManager connectionManager;
     private CloseableHttpClient httpClient;
 
+	private JsonParser jsonParser;
     public ReanaAdapter(String adapterName, String url, String username, String password, String inventory) {
         super(adapterName, url, username, password, inventory);
         CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         credentialsProvider.setCredentials(AuthScope.ANY,
                 new UsernamePasswordCredentials(username, "X};83^adj4cC`Z&>"));
 
+		this.jsonParser = new JsonParser();
         connectionManager = new PoolingHttpClientConnectionManager();
         httpClient = HttpClients.custom()
                 .setConnectionManager(connectionManager)
@@ -49,16 +54,26 @@ public class ReanaAdapter extends MethodAdapter {
     public List<Workflow> getWorkflowList() {
         HttpGet userInfo = new HttpGet(this.getInventoryUrl());
         userInfo.addHeader(HttpHeaders.ACCEPT, "application/json");
-
+        List<Workflow> wList = new ArrayList<Workflow>();
         try (CloseableHttpResponse httpResponse = httpClient.execute(userInfo)) {
             HttpEntity responseEntity = httpResponse.getEntity();
             String strResponse = EntityUtils.toString(responseEntity);
-            System.out.println(strResponse);
+            try {
+                JsonArray arr = (JsonArray) jsonParser.parse(strResponse);
+                int len = arr.size();
+                for (int i = 0; i < len; i++) {
+                    String url = arr.get(i).getAsJsonObject().get("url").getAsString();
+                    String name = arr.get(i).getAsJsonObject().get("name").getAsString();
+                    wList.add(new Workflow(url, name, url, url));
+                }
+            } catch (Exception e) {
+                System.err.println("Error decoding " + strResponse);
+                e.printStackTrace();
+            }
         } catch (Exception e) {
             System.err.println("Could not list methods");
         }
-        List<Workflow> list = new ArrayList<Workflow>();
-        return list;
+        return wList;
     }
 
     public List<Variable> getWorkflowVariables(String id) {
@@ -82,7 +97,6 @@ public class ReanaAdapter extends MethodAdapter {
         // Auto-generated method stub
         return null;
     }
-
 
     @Override
     public Map<String, Variable> getWorkflowInputs(String id) {
