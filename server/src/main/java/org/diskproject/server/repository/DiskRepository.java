@@ -870,11 +870,28 @@ public class DiskRepository extends WriteKBRepository {
                             KBObject vconstraints = kb.getPropertyValue(var,
                                     SQOnt.getProperty(SQO.HAS_CONSTRAINT_QUERY));
                             KBObject vfixedOptions = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_FIXED_OPTIONS));
+                            KBObject variableMinCardinality = kb.getPropertyValue(var, SQOnt.getProperty(SQO.MIN_CARDINALITY));
+                            KBObject variableMaxCardinality = kb.getPropertyValue(var, SQOnt.getProperty(SQO.MAX_CARDINALITY));
                             if (vname != null) {
                                 QuestionVariable q = new QuestionVariable(var.getID(), vname.getValueAsString(),
                                         vconstraints == null ? null : vconstraints.getValueAsString());
                                 if (vfixedOptions != null) {
                                     q.setFixedOptions(vfixedOptions.getValueAsString().split("\\s*,\\s*"));
+                                }
+                                if (variableMinCardinality != null)
+                                    try{
+                                        q.setMinCardinality(Integer.parseInt(variableMinCardinality.getValueAsString()));
+                                    }
+                                    catch (Exception e) {
+                                        System.out.println("Error parsing min cardinality for variable " + vname);
+                                    }
+                                if (variableMaxCardinality != null) {
+                                    try {
+                                        q.setMaxCardinality(Integer.parseInt(variableMaxCardinality.getValueAsString()));
+                                    }
+                                    catch (Exception e) {
+                                        System.out.println("Error parsing max cardinality for variable " + vname);
+                                    }
                                 }
                                 vars.add(q);
                             }
@@ -927,6 +944,8 @@ public class DiskRepository extends WriteKBRepository {
             String varname = variable.getVarName();
             String constraintQuery = variable.getConstraints();
             String[] fixedoptions = variable.getFixedOptions();
+            Integer minCardinality = variable.getMinCardinality();
+            Integer maxCardinality = variable.getMaxCardinality();
 
             // If there are fixed options, return these
             if (fixedoptions != null) {

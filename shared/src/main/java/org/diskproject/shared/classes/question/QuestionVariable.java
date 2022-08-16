@@ -5,6 +5,8 @@ public class QuestionVariable {
   String varname;
   String constraints;
   String[] fixedOptions;
+  Integer minCardinality;
+  Integer maxCardinality;
 
   public QuestionVariable () {
   }
@@ -13,6 +15,8 @@ public class QuestionVariable {
 	  this.id = id;
 	  this.varname = varname;
 	  this.constraints = constraints;
+    this.maxCardinality = 1;
+    this.minCardinality = 1;
   }
 
   public String toString () {
@@ -51,5 +55,21 @@ public class QuestionVariable {
 
   public void setFixedOptions(String[] options) {
     this.fixedOptions = options;
+  }
+
+  public Integer getMinCardinality() {
+    return minCardinality;
+  }
+
+  public void setMinCardinality(Integer minCardinality) {
+    this.minCardinality = minCardinality;
+  }
+
+  public Integer getMaxCardinality() {
+    return maxCardinality;
+  }
+
+  public void setMaxCardinality(Integer maxCardinality) {
+    this.maxCardinality = maxCardinality;
   }
 }
