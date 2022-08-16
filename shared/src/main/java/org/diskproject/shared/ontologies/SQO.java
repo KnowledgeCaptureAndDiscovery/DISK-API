@@ -11,4 +11,6 @@ public class SQO {
     public static final String HAS_VARIABLE_NAME = "hasVariableName";
     public static final String HAS_CONSTRAINT_QUERY = "hasConstraints";
     public static final String HAS_FIXED_OPTIONS = "hasFixedOptions";
+    public static final String MIN_CARDINALITY = "minCardinality";
+    public static final String MAX_CARDINALITY = "maxCardinality";
 }
