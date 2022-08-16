@@ -25,6 +25,7 @@ import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.jena.query.QueryParseException;
 import org.diskproject.server.adapters.AirFlowAdapter;
+import org.diskproject.server.adapters.GraphDBAdapter;
 import org.diskproject.server.adapters.SparqlAdapter;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.ConfigKeys;
@@ -295,22 +296,32 @@ public class DiskRepository extends WriteKBRepository {
             if (cur.containsKey(ConfigKeys.PREFIX_RESOLUTION))
                 curPrefixRes = cur.get(ConfigKeys.PREFIX_RESOLUTION);
 
+            DataAdapter curAdapter = null;
             switch (curType) {
                 case ConfigKeys.DATA_TYPE_SPARQL:
-                    DataAdapter curAdapter = new SparqlAdapter(curURI, name, curUser, curPass);
-                    if (curNamespace != null && curPrefix != null) {
-                        curAdapter.setPrefix(curPrefix, curNamespace);
-                    }
-                    if (curPrefixRes != null) {
-                        curAdapter.setPrefixResolution(curPrefixRes);
-                    }
-                    if (curDesc != null) {
-                        curAdapter.setDescription(curDesc);
-                    }
-                    this.dataAdapters.put(curURI, curAdapter);
+                    curAdapter = new SparqlAdapter(curURI, name, curUser, curPass);
+                    break;
+                case ConfigKeys.DATA_TYPE_GRAPH_DB:
+                    //curAdapter = new GraphDBAdapter(curURI, name, curUser, curPass);
+                    GraphDBAdapter ga = new GraphDBAdapter(curURI, name, curUser, curPass);
+                    if (cur.containsKey(ConfigKeys.REPOSITORY))
+                        ga.setRepository(cur.get(ConfigKeys.REPOSITORY));
+                    curAdapter = ga;
                     break;
                 default:
                     break;
+            }
+            if (curType != null) {
+                if (curNamespace != null && curPrefix != null) {
+                    curAdapter.setPrefix(curPrefix, curNamespace);
+                }
+                if (curPrefixRes != null) {
+                    curAdapter.setPrefixResolution(curPrefixRes);
+                }
+                if (curDesc != null) {
+                    curAdapter.setDescription(curDesc);
+                }
+                this.dataAdapters.put(curURI, curAdapter);
             }
         }
 
@@ -1197,7 +1208,7 @@ public class DiskRepository extends WriteKBRepository {
                 if (hq != null) {
                     String query = this.getAllPrefixes() + "SELECT DISTINCT * WHERE { \n"
                             + loi.getHypothesisQuery().replaceAll("\n", ".\n") + " }";
-                    System.out.println("Query: " + query + "\n---------------------------");
+                    //System.out.println("Query: " + query + "\n---------------------------");
                     ArrayList<ArrayList<SparqlQuerySolution>> allSolutions = null;
                     try {
                         allSolutions = hypKB.sparqlQuery(query);
