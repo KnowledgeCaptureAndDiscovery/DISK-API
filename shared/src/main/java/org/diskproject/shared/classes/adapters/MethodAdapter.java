@@ -12,6 +12,9 @@ import org.diskproject.shared.classes.workflow.WorkflowRun;
 public abstract class MethodAdapter {
     private String name;
     private String endpointUrl;
+    private String inventoryUrl;
+
+
     private String username;
     private String password;
     private String description;
@@ -27,6 +30,14 @@ public abstract class MethodAdapter {
         this.endpointUrl = url;
         this.username = username;
         this.password = password;
+    }
+
+    public MethodAdapter (String adapterName, String url, String username, String password, String inventory) {
+        this.name = adapterName;
+        this.endpointUrl = url;
+        this.username = username;
+        this.password = password;
+        this.inventoryUrl = inventory;
     }
 
     public Float getVersion () {
@@ -65,6 +76,14 @@ public abstract class MethodAdapter {
         return "[" + this.name + "] " + (this.username != null ? this.username + "@" : "") + this.endpointUrl;
     }
     
+    public String getInventoryUrl() {
+        return inventoryUrl;
+    }
+
+    public void setInventoryUrl(String inventoryUrl) {
+        this.inventoryUrl = inventoryUrl;
+    }
+
 	public abstract List<Workflow> getWorkflowList();
 
 	public abstract List<Variable> getWorkflowVariables(String id);

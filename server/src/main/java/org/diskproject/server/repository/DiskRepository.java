@@ -25,6 +25,7 @@ import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.jena.query.QueryParseException;
 import org.diskproject.server.adapters.AirFlowAdapter;
+import org.diskproject.server.adapters.ReanaAdapter;
 import org.diskproject.server.adapters.SparqlAdapter;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.ConfigKeys;
@@ -369,7 +370,8 @@ public class DiskRepository extends WriteKBRepository {
                 continue;
             }
             String curURI = cur.get(ConfigKeys.ENDPOINT), curType = cur.get(ConfigKeys.TYPE);
-            String curUser = null, curPass = null, curDomain = null, curInternalServer = null;
+            String curUser = null, curPass = null, curDomain = null, curInternalServer = null, inventory = null;
+            
             Float curVersion = null;
             if (cur.containsKey(ConfigKeys.USERNAME))
                 curUser = cur.get(ConfigKeys.USERNAME);
@@ -381,6 +383,8 @@ public class DiskRepository extends WriteKBRepository {
                 curInternalServer = cur.get(ConfigKeys.INTERNAL_SERVER);
             if (cur.containsKey(ConfigKeys.VERSION))
                 curVersion = Float.parseFloat(cur.get(ConfigKeys.VERSION));
+            if (cur.containsKey(ConfigKeys.INVENTORY))
+                inventory = cur.get(ConfigKeys.INVENTORY);
 
             MethodAdapter curAdapter = null;
             switch (curType) {
@@ -389,6 +393,9 @@ public class DiskRepository extends WriteKBRepository {
                     break;
                 case ConfigKeys.METHOD_TYPE_AIRFLOW:
                     curAdapter = new AirFlowAdapter(name, curURI, curUser, curPass);
+                    break;
+                case ConfigKeys.METHOD_TYPE_REANA:
+                    curAdapter = new ReanaAdapter(name, curURI, curUser, curPass, inventory);
                     break;
                 default:
                     break;

@@ -23,6 +23,7 @@ public class ConfigKeys {
     public static final String VERSION = "version";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
+    public static final String INVENTORY = "inventory";
 
     public static final String DOMAIN = "domain";
     public static final String INTERNAL_SERVER = "internal_server";
@@ -30,4 +31,5 @@ public class ConfigKeys {
     public static final String DATA_TYPE_SPARQL = "sparql";
     public static final String METHOD_TYPE_WINGS = "wings";
     public static final String METHOD_TYPE_AIRFLOW = "airflow";
+    public static final String METHOD_TYPE_REANA = "reana";
 }
