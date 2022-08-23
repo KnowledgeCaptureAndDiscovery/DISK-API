@@ -88,9 +88,9 @@ public class WriteKBRepository extends KBRepository {
         KBObject subj = kb.getResource(triple.getSubject());
         KBObject pred = kb.getResource(triple.getPredicate());
         KBObject obj = getKBValue(triple.getObject(), kb);
-        KBObject subprop = kb.getProperty(KBConstants.RDFNS() + "subject");
-        KBObject predprop = kb.getProperty(KBConstants.RDFNS() + "predicate");
-        KBObject objprop = kb.getProperty(KBConstants.RDFNS() + "object");
+        KBObject subprop = kb.getProperty(KBConstants.RDF_NS + "subject");
+        KBObject predprop = kb.getProperty(KBConstants.RDF_NS + "predicate");
+        KBObject objprop = kb.getProperty(KBConstants.RDF_NS + "object");
         kb.addTriple(st, subprop, subj);
         kb.addTriple(st, predprop, pred);
         kb.addTriple(st, objprop, obj);
@@ -120,9 +120,9 @@ public class WriteKBRepository extends KBRepository {
         for (Triple t : graph.getTriples())
             tripleMap.put(t.toString(), t);
 
-        KBObject subprop = provKB.getProperty(KBConstants.RDFNS() + "subject");
-        KBObject predprop = provKB.getProperty(KBConstants.RDFNS() + "predicate");
-        KBObject objprop = provKB.getProperty(KBConstants.RDFNS() + "object");
+        KBObject subprop = provKB.getProperty(KBConstants.RDF_NS + "subject");
+        KBObject predprop = provKB.getProperty(KBConstants.RDF_NS + "predicate");
+        KBObject objprop = provKB.getProperty(KBConstants.RDF_NS + "object");
 
         for (KBTriple kbt : provKB.genericTripleQuery(null, subprop, null)) {
             KBObject stobj = kbt.getSubject();
@@ -421,7 +421,7 @@ public class WriteKBRepository extends KBRepository {
         if (userKB != null) {
             this.start_read();
             KBObject hypcls = DISKOnt.getClass(DISK.HYPOTHESIS);
-            KBObject typeprop = userKB.getProperty(KBConstants.RDFNS() + "type");
+            KBObject typeprop = userKB.getProperty(KBConstants.RDF_NS + "type");
             for (KBTriple t : userKB.genericTripleQuery(null, typeprop, hypcls)) {
                 KBObject hypobj = t.getSubject();
                 String name = userKB.getLabel(hypobj);
@@ -634,7 +634,7 @@ public class WriteKBRepository extends KBRepository {
         if (userKB != null) {
             this.start_read();
             KBObject loicls = DISKOnt.getClass(DISK.LOI);
-            KBObject typeprop = userKB.getProperty(KBConstants.RDFNS() + "type");
+            KBObject typeprop = userKB.getProperty(KBConstants.RDF_NS + "type");
             for (KBTriple t : userKB.genericTripleQuery(null, typeprop, loicls)) {
                 KBObject loiobj = t.getSubject();
                 String name = userKB.getLabel(loiobj);
@@ -868,7 +868,7 @@ public class WriteKBRepository extends KBRepository {
 
             this.start_read();
             KBObject cls = DISKOnt.getClass(DISK.TLOI);
-            KBObject typeprop = userKB.getProperty(KBConstants.RDFNS() + "type");
+            KBObject typeprop = userKB.getProperty(KBConstants.RDF_NS + "type");
 
             for (KBTriple t : userKB.genericTripleQuery(null, typeprop, cls)) {
                 tloiIds.add(t.getSubject().getID());
@@ -988,7 +988,7 @@ public class WriteKBRepository extends KBRepository {
                 for (VariableBinding vBinding : bindings.getBindings()) {
                     String varId = vBinding.getVariable();
                     String binding = vBinding.getBinding();
-                    Value bindingValue = new Value(binding, KBConstants.XSDNS() + "string");
+                    Value bindingValue = new Value(binding, KBConstants.XSD_NS + "string");
                     KBObject varbindingobj = userKB.createObjectOfClass(null, DISKOnt.getClass(DISK.VARIABLE_BINDING));
                     userKB.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_VARIABLE),
                             userKB.getResource(workflowuri + "#" + varId));

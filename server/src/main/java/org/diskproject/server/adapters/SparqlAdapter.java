@@ -109,9 +109,9 @@ public class SparqlAdapter extends DataAdapter {
     public List<DataResult> queryOptions(String varname, String queryPart) throws Exception, QueryParseException {
         String name = varname.substring(1);
         String labelVar = varname + "Label";
-        String query = "PREFIX xsd:  <" + KBConstants.XSDNS() + ">\n" +
-                "PREFIX rdfs: <" + KBConstants.RDFSNS() + ">\n" +
-                "PREFIX rdf:  <" + KBConstants.RDFNS() + ">\n" +
+        String query = "PREFIX xsd:  <" + KBConstants.XSD_NS + ">\n" +
+                "PREFIX rdfs: <" + KBConstants.RDFS_NS + ">\n" +
+                "PREFIX rdf:  <" + KBConstants.RDF_NS + ">\n" +
                 "SELECT DISTINCT " + varname + " " + labelVar + " WHERE {\n" +
                 queryPart;
 

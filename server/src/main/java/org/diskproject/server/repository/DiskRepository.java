@@ -140,8 +140,8 @@ public class DiskRepository extends WriteKBRepository {
         if (fac == null)
             throw new Exception("Could not load DISK ontology");
 
-        this.questionKB = fac.getKB(KBConstants.QUESTIONSURI(), OntSpec.PLAIN, false, true);
-        this.hypothesisVocabulary = fac.getKB(KBConstants.HYPURI(), OntSpec.PLAIN, false, true);
+        this.questionKB = fac.getKB(KBConstants.QUESTION_URI, OntSpec.PLAIN, false, true);
+        this.hypothesisVocabulary = fac.getKB(KBConstants.HYP_URI, OntSpec.PLAIN, false, true);
         // Load questions
         optionsCache = new WeakHashMap<String, List<List<String>>>();
         this.start_read();
@@ -452,15 +452,15 @@ public class DiskRepository extends WriteKBRepository {
         this.vocabularies = new HashMap<String, Vocabulary>();
         try {
             this.start_read();
-            this.vocabularies.put(KBConstants.DISKURI(),
-                    this.initializeVocabularyFromKB(this.ontKB, KBConstants.DISKNS(),
+            this.vocabularies.put(KBConstants.DISK_URI,
+                    this.initializeVocabularyFromKB(this.ontKB, KBConstants.DISK_NS,
                             "disk", "The DISK Ontology",
                             "DISK Main ontology. Defines all resources used on the DISK system."));
-            this.vocabularies.put(KBConstants.QUESTIONSURI(),
-                    this.initializeVocabularyFromKB(this.questionKB, KBConstants.QUESTIONSNS(),
+            this.vocabularies.put(KBConstants.QUESTION_URI,
+                    this.initializeVocabularyFromKB(this.questionKB, KBConstants.QUESTION_NS,
                             "sqo", "Scientific Question Ontology", "Ontology to define questions templates."));
-            this.vocabularies.put(KBConstants.HYPURI(),
-                    this.initializeVocabularyFromKB(this.hypothesisVocabulary, KBConstants.HYPNS(),
+            this.vocabularies.put(KBConstants.HYP_URI,
+                    this.initializeVocabularyFromKB(this.hypothesisVocabulary, KBConstants.HYP_NS,
                             "hyp", "DISK Hypothesis Ontology",
                             "The DISK Hypothesis Ontology. Defines properties to be used on Hypothesis creation."));
 
@@ -519,14 +519,14 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     private void fetchTypesAndIndividualsFromKB(KBAPI kb, Vocabulary vocabulary) {
-        KBObject typeprop = kb.getProperty(KBConstants.RDFNS() + "type");
+        KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
         for (KBTriple t : kb.genericTripleQuery(null, typeprop, null)) {
             KBObject inst = t.getSubject();
             KBObject typeobj = t.getObject();
             String instId = inst.getID();
 
             if (instId == null || instId.startsWith(vocabulary.getNamespace())
-                    || typeobj.getNamespace().equals(KBConstants.OWLNS())) {
+                    || typeobj.getNamespace().equals(KBConstants.OWL_NS)) {
                 continue;
             }
 
@@ -553,12 +553,12 @@ public class DiskRepository extends WriteKBRepository {
         }
 
         // Add types not asserted
-        KBObject clsObj = kb.getProperty(KBConstants.OWLNS() + "Class");
+        KBObject clsObj = kb.getProperty(KBConstants.OWL_NS + "Class");
         for (KBTriple t : kb.genericTripleQuery(null, typeprop, clsObj)) {
             KBObject cls = t.getSubject();
             String clsId = cls.getID();
             if (clsId == null || !clsId.startsWith(vocabulary.getNamespace())
-                    || cls.getNamespace().equals(KBConstants.OWLNS())) {
+                    || cls.getNamespace().equals(KBConstants.OWL_NS)) {
                 continue;
             }
 
@@ -576,7 +576,7 @@ public class DiskRepository extends WriteKBRepository {
         }
 
         // Add type hierarchy
-        KBObject subClsProp = kb.getProperty(KBConstants.RDFSNS() + "subClassOf");
+        KBObject subClsProp = kb.getProperty(KBConstants.RDFS_NS + "subClassOf");
         for (KBTriple t : kb.genericTripleQuery(null, subClsProp, null)) {
             KBObject subCls = t.getSubject();
             KBObject cls = t.getObject();
@@ -586,7 +586,7 @@ public class DiskRepository extends WriteKBRepository {
             if (subtype == null)
                 continue;
 
-            if (!clsId.startsWith(KBConstants.OWLNS()))
+            if (!clsId.startsWith(KBConstants.OWL_NS))
                 subtype.setParent(clsId);
 
             Type type = vocabulary.getType(cls.getID());
@@ -632,9 +632,9 @@ public class DiskRepository extends WriteKBRepository {
         } else {
             // Resolve SQO and HYP first
             if (value.startsWith("sqo:")) {
-                value = KBConstants.QUESTIONSNS() + value.substring(4);
+                value = KBConstants.QUESTION_NS + value.substring(4);
             } else if (value.startsWith("hyp:")) {
-                value = KBConstants.HYPNS() + value.substring(4);
+                value = KBConstants.HYP_NS + value.substring(4);
             } else
                 for (String prefix : this.externalVocabularies.keySet()) {
                     if (value.startsWith(prefix + ":")) {
@@ -859,8 +859,8 @@ public class DiskRepository extends WriteKBRepository {
         try {
             KBAPI kb = fac.getKB(url, OntSpec.PLAIN, true, true);
             this.start_read();
-            KBObject typeprop = kb.getProperty(KBConstants.RDFNS() + "type");
-            KBObject labelprop = kb.getProperty(KBConstants.RDFSNS() + "label");
+            KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
+            KBObject labelprop = kb.getProperty(KBConstants.RDFS_NS + "label");
 
             // Load question classes and properties
             for (KBTriple t : kb.genericTripleQuery(null, typeprop, SQOnt.getClass(SQO.QUESTION))) {
@@ -1024,12 +1024,7 @@ public class DiskRepository extends WriteKBRepository {
      */
 
     private String getAllPrefixes() {
-        String prefixes = "PREFIX xsd:  <" + KBConstants.XSDNS() + ">\n"
-                + "PREFIX rdfs: <" + KBConstants.RDFSNS() + ">\n"
-                + "PREFIX rdf:  <" + KBConstants.RDFNS() + ">\n"
-                + "PREFIX disk: <" + KBConstants.DISKNS() + ">\n"
-                + "PREFIX sqo: <" + KBConstants.QUESTIONSNS() + ">\n"
-                + "PREFIX hyp: <" + KBConstants.HYPNS() + ">\n";
+        String prefixes = KBConstants.getAllPrefixes();
         for (VocabularyConfiguration vc : this.externalVocabularies.values()) {
             prefixes += "PREFIX " + vc.getPrefix() + ": <" + vc.getNamespace() + ">\n";
         }
@@ -1619,7 +1614,7 @@ public class DiskRepository extends WriteKBRepository {
             KBObject hypcls = DISKOnt.getClass(DISK.HYPOTHESIS);
 
             this.start_read();
-            KBObject typeprop = kb.getProperty(KBConstants.RDFNS() + "type");
+            KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
             for (KBTriple t : kb.genericTripleQuery(null, typeprop, hypcls)) {
                 KBObject hypobj = t.getSubject();
                 String uri = hypobj.getID();

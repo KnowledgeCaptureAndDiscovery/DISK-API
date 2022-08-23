@@ -19,10 +19,10 @@ public class TripleUtil {
   
   public TripleUtil() {
     nsmap = new HashMap<String, String>();
-    nsmap.put("rdf", KBConstants.RDFNS());
-    nsmap.put("rdfs", KBConstants.RDFSNS());
-    nsmap.put("owl", KBConstants.OWLNS());
-    nsmap.put("xsd", KBConstants.XSDNS());    
+    nsmap.put("rdf", KBConstants.RDF_NS);
+    nsmap.put("rdfs", KBConstants.RDFS_NS);
+    nsmap.put("owl", KBConstants.OWL_NS);
+    nsmap.put("xsd", KBConstants.XSD_NS);    
 
   }
   
@@ -104,25 +104,25 @@ public class TripleUtil {
     Matcher m2 = stringLiteralPattern.matcher(literalstr);
     if(m2.find()) 
       return new Value(m2.group(1), 
-          KBConstants.XSDNS() + "string");
+          KBConstants.XSD_NS + "string");
     
     // Check for int
     Matcher m3 = intLiteralPattern.matcher(literalstr);
     if(m3.find())
       return new Value(Integer.parseInt(literalstr), 
-          KBConstants.XSDNS() + "int");
+          KBConstants.XSD_NS + "int");
     
     // Check for float
     Matcher m4 = floatLiteralPattern.matcher(literalstr);
     if(m4.find())
       return new Value(Float.parseFloat(literalstr), 
-          KBConstants.XSDNS() + "float");
+          KBConstants.XSD_NS + "float");
     
     // Check for boolean
     Matcher m5 = boolLiteralPattern.matcher(literalstr);
     if(m5.find())
       return new Value(Boolean.parseBoolean(literalstr), 
-          KBConstants.XSDNS() + "boolean");
+          KBConstants.XSD_NS + "boolean");
     
     return null;
   }
