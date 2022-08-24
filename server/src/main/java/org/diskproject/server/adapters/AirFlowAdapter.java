@@ -133,4 +133,10 @@ public class AirFlowAdapter extends MethodAdapter {
         // Auto-generated method stub
         return null;
     }
+
+    @Override
+    public String addData(String url, String workSpaceId, String name, String dType) throws Exception {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

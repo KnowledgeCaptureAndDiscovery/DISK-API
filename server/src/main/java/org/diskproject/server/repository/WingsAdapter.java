@@ -1270,4 +1270,10 @@ public class WingsAdapter extends MethodAdapter {
 		return this.fetchDataFromWings(dataId);
 	}
 
+	@Override
+	public String addData(String url, String workSpaceId, String name, String dType) throws Exception {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }
