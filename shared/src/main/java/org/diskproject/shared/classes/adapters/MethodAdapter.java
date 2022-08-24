@@ -84,9 +84,21 @@ public abstract class MethodAdapter {
         this.inventoryUrl = inventoryUrl;
     }
 
+	/**
+     * Returns a list of available methods for the adapter.
+	 * @return
+	 */
 	public abstract List<Workflow> getWorkflowList();
 
-	public abstract List<Variable> getWorkflowVariables(String id);
+	/**
+     * Return the list of variable of a given workflow. 
+     * A variable can be a parameter or a input
+     * 
+     * @param id
+     * @return
+	 * @throws Exception
+     */
+	public abstract List<Variable> getWorkflowVariables(String id) throws Exception;
 
 	public abstract String getWorkflowId(String id);
 
@@ -96,15 +108,35 @@ public abstract class MethodAdapter {
 
 	public abstract String getDataUri (String id);
 
+	/**
+     * If the method adapter needs to store the data, check if it is already stored.
+	 * @param fileList A list of files to check.
+	 * @param dType The RDF file type, this is used by Wings to determine the file type.
+	 * @return
+	 */
 	public abstract List<String> areFilesAvailable (Set<String> fileList, String dType);
 
 	public abstract String addData (String url, String name, String dType) throws Exception;
 
+	public abstract String addData (String url, String workSpaceId, String name, String dType) throws Exception;
+	/**
+     * Return a Map of the variable name and variable for a given workflow run.
+	 * @param id
+	 * @return
+	 */
 	public abstract Map<String, Variable> getWorkflowInputs (String id);
 
-	public abstract String runWorkflow (String wfId, List<VariableBinding> vBindings, Map<String, Variable> inputVariables);
+	/**
+     * Run the workflow.
+	 * @param wfId Workflow ID
+	 * @param vBindings An array of VariableBindings from the Disk System. A VariableBinding is a pair of a variable name and a value.
+	 * @param inputVariables A map of input variables from the Workflow System. The key is the variable name and the value is the variable.
+	 * @return
+	 * @throws Exception
+	 */
+	public abstract String runWorkflow (String wfId, List<VariableBinding> vBindings, Map<String, Variable> inputVariables) throws Exception;
 
-	public abstract WorkflowRun getRunStatus (String runId);
+	public abstract WorkflowRun getRunStatus (String runId) throws Exception;
 
 	public abstract String fetchData (String dataId);
 
