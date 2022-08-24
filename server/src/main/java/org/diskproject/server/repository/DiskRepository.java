@@ -71,7 +71,7 @@ public class DiskRepository extends WriteKBRepository {
 
     private static SimpleDateFormat dateformatter = new SimpleDateFormat("HH:mm:ss yyyy-MM-dd");
     Pattern varPattern = Pattern.compile("\\?(.+?)\\b");
-    Pattern varCollPattern = Pattern.compile("\\[\\s*\\?(.+?)\\s*\\]");
+    Pattern varCollectionPattern = Pattern.compile("\\[\\s*\\?(.+?)\\s*\\]");
 
     protected KBAPI questionKB, hypothesisVocabulary;
     protected KBCache SQOnt;
@@ -434,7 +434,7 @@ public class DiskRepository extends WriteKBRepository {
         return list;
     }
 
-    public List<Variable> getWorkflowVariables(String source, String id) {
+    public List<Variable> getWorkflowVariables(String source, String id) throws Exception {
         for (MethodAdapter adapter : this.methodAdapters.values()) {
             if (adapter.getName().equals(source)) {
                 return adapter.getWorkflowVariables(id);
@@ -1446,19 +1446,19 @@ public class DiskRepository extends WriteKBRepository {
 
             List<Variable> allVars = methodAdapter.getWorkflowVariables(bindings.getWorkflow());
 
-            for (VariableBinding vbinding : bindings.getBindings()) { // Normal variable bindings.
+            for (VariableBinding variableBinding : bindings.getBindings()) { // Normal variable bindings.
                 // For each Variable binding, check :
                 // - If this variable expects a collection or single values
                 // - Check the binding values on the data store
-                String binding = vbinding.getBinding();
-                Matcher collmat = varCollPattern.matcher(binding);
+                String binding = variableBinding.getBinding();
+                Matcher collectionMatch = varCollectionPattern.matcher(binding);
                 Matcher mat = varPattern.matcher(binding);
 
                 // Get the sparql variable
                 boolean isCollection = false;
                 String sparqlvar = null;
-                if (collmat.find() && dataVarBindings.containsKey(collmat.group(1))) {
-                    sparqlvar = collmat.group(1);
+                if (collectionMatch.find() && dataVarBindings.containsKey(collectionMatch.group(1))) {
+                    sparqlvar = collectionMatch.group(1);
                     isCollection = true;
                 } else if (mat.find() && dataVarBindings.containsKey(mat.group(1))) {
                     sparqlvar = mat.group(1);
@@ -1483,7 +1483,7 @@ public class DiskRepository extends WriteKBRepository {
                 List<String> dsnames = new ArrayList<String>();
 
                 if (bindingsAreFiles) {
-                    String varName = vbinding.getVariable();
+                    String varName = variableBinding.getVariable();
                     String dType = null;
                     for (Variable v: allVars) {
                         if (varName.equals(v.getName()))
@@ -1512,10 +1512,10 @@ public class DiskRepository extends WriteKBRepository {
                 if (isCollection) {
                     // This variable expects a collection. Modify the existing tloiBinding values,
                     // collections of non-files are send as comma separated values:
-                    tloiBinding.addBinding(new VariableBinding(vbinding.getVariable(), dsnames.toString()));
+                    tloiBinding.addBinding(new VariableBinding(variableBinding.getVariable(), dsnames.toString()));
                 } else {
                     if (dsnames.size() == 1) {
-                        tloiBinding.addBinding(new VariableBinding(vbinding.getVariable(), dsnames.get(0)));
+                        tloiBinding.addBinding(new VariableBinding(variableBinding.getVariable(), dsnames.get(0)));
                     } else {
                         System.out.println("IS MORE THAN ONE VALUE BUT NOT COLLECTION!");
                         // This variable expects a single file. Add new tloi bindings for each dataset
@@ -1530,7 +1530,7 @@ public class DiskRepository extends WriteKBRepository {
                                         bindings.getWorkflow(),
                                         bindings.getWorkflowLink(),
                                         newBindings);
-                                newWorkflowBindings.addBinding(new VariableBinding(vbinding.getVariable(), dsname));
+                                newWorkflowBindings.addBinding(new VariableBinding(variableBinding.getVariable(), dsname));
                                 newWorkflowBindings.setMeta(bindings.getMeta());
                                 newWorkflowBindings.setSource(bindings.getSource());
                                 newTloiBindings.add(newWorkflowBindings);
@@ -1869,7 +1869,7 @@ public class DiskRepository extends WriteKBRepository {
      * Threads helpers
      */
 
-    public WorkflowRun getWorkflowRunStatus(String source, String id) {
+    public WorkflowRun getWorkflowRunStatus(String source, String id) throws Exception {
         MethodAdapter methodAdapter = getMethodAdapterByName(source);
         if (methodAdapter == null)
             return null;
