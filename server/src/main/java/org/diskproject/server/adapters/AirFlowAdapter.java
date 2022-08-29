@@ -105,7 +105,7 @@ public class AirFlowAdapter extends MethodAdapter {
     }
 
     @Override
-    public String runWorkflow(String wfId, List<VariableBinding> vBindings, Map<String, Variable> inputVariables) {
+    public String runWorkflow(String wfId, String workflowName, List<VariableBinding> vBindings, Map<String, Variable> inputVariables) {
         // Auto-generated method stub
         return null;
     }
@@ -136,6 +136,13 @@ public class AirFlowAdapter extends MethodAdapter {
 
     @Override
     public String addData(String url, String workSpaceId, String name, String dType) throws Exception {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+
+    @Override
+    public String duplicateWorkflow(String workflowId, String newName) {
         // TODO Auto-generated method stub
         return null;
     }

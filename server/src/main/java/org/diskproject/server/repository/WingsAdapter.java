@@ -508,12 +508,12 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public String runWorkflow(String wflowname, List<VariableBinding> vbindings, Map<String, Variable> inputVariables) {
-		wflowname = WFLOWID(wflowname);
+	public String runWorkflow(String workflowName, String workflowLink, List<VariableBinding> vbindings, Map<String, Variable> inputVariables) {
+		workflowName = WFLOWID(workflowName);
 		String toPost = null, getData = null, getParams = null, getExpansions = null;
 		JsonObject response = null;
 		try {
-			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			toPost = toPlanAcceptableFormat(workflowName, vbindings, inputVariables);
 			getData = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/plan/getData",
 					toPost, "application/json", "application/json");
 
@@ -538,7 +538,7 @@ public class WingsAdapter extends MethodAdapter {
 		
 		try {
 			vbindings = addDataBindings(inputVariables, vbindings, getData, false);
-			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			toPost = toPlanAcceptableFormat(workflowName, vbindings, inputVariables);
 			getParams = postWithSpecifiedMediaType(
 					"users/" + getUsername() + "/" + domain + "/plan/getParameters",
 					toPost, "application/json", "application/json");
@@ -559,13 +559,13 @@ public class WingsAdapter extends MethodAdapter {
 
 		try {
 			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
-			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			toPost = toPlanAcceptableFormat(workflowName, vbindings, inputVariables);
 
 			// TODO: This should be called after getting expanded workflow.
 			// - Create mapping data from expanded workflow, and then check.
 			// - *NEEDED* to handle collections properly
 
-			String runid = getWorkflowRunWithSameBindings(wflowname, vbindings);
+			String runid = getWorkflowRunWithSameBindings(workflowName, vbindings);
 			if (runid != null) {
 				System.out.println("Found existing run : " + runid);
 				return runid;
@@ -614,7 +614,7 @@ public class WingsAdapter extends MethodAdapter {
 
 			// Run the first Expanded workflow
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
-		formdata.add(new BasicNameValuePair("template_id", wflowname));
+		formdata.add(new BasicNameValuePair("template_id", workflowName));
 		formdata.add(new BasicNameValuePair("json", jsonTemplate));
 		formdata.add(new BasicNameValuePair("constraints_json", jsonConstraints));
 		formdata.add(new BasicNameValuePair("seed_json", jsonSeed));
@@ -1276,4 +1276,9 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
+	@Override
+	public String duplicateWorkflow(String workflowId, String workflowName) throws Exception {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

@@ -3,6 +3,8 @@ package org.diskproject.server.adapters;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -87,13 +89,12 @@ public class ReanaAdapter extends MethodAdapter {
      * String, java.util.List, java.util.Map)
      */
     @Override
-    public String runWorkflow(String workflowId, List<VariableBinding> variableBindings,
+    public String runWorkflow(String workflowName, String workflowId, List<VariableBinding> variableBindings,
             Map<String, Variable> inputVariables) throws Exception {
 
-        String newWorkflowId = duplicateWorkflow(workflowId);
         Map<String, String> inputParameters = createInputParameters(variableBindings, inputVariables);
-        this.apiClient.startWorkflow(newWorkflowId, inputParameters, null);
-        return newWorkflowId;
+        this.apiClient.startWorkflow(workflowId, inputParameters, null);
+        return workflowId;
     }
 
     @Override
@@ -118,12 +119,8 @@ public class ReanaAdapter extends MethodAdapter {
         try {
             ResponseListWorkflow workflowResponse = this.apiClient.getWorkflows();
             for (ReanaWorkflow workflowReana : workflowResponse.items) {
-                Workflow workflow = new Workflow();
                 String url = this.getEndpointUrl() + "/api/workflows/" + workflowReana.id;
-                workflow.setName(workflowReana.name);
-                workflow.setLink(url);
-                workflow.setId(workflowReana.id);
-                workflow.setSource(this.getName());
+                Workflow workflow = new Workflow(workflowReana.id, workflowReana.name, url, this.getName());
                 workflowDisk.add(workflow);
             }
         } catch (Exception e) {
@@ -175,8 +172,8 @@ public class ReanaAdapter extends MethodAdapter {
 
         ReanaSpecification specification = this.apiClient.getSpecification(runId);
         if (run.getStatus() == "finished") {
-            run.setOutputs(convertReanaOutputs(specification, run));
-            run.setFiles(convertReanaInputs(specification, run));
+            run.setOutputs(convertReanaOutputs(specification));
+            run.setFiles(convertReanaInputs(specification));
         }
 
         return run;
@@ -227,24 +224,26 @@ public class ReanaAdapter extends MethodAdapter {
         return variables;
     }
 
-    private String duplicateWorkflow(String id) throws Exception {
+    public String duplicateWorkflow(String id) throws Exception {
         ReanaSpecification oldSpecification = this.apiClient.getSpecification(id);
         runStatus = this.apiClient.getRunStatus(id);
         String newWorkflowId = this.apiClient.createWorkflow(oldSpecification, runStatus.getName());
         return newWorkflowId;
     }
 
-    private Map<String, String> convertReanaOutputs(ReanaSpecification specification, WorkflowRun run)
+    Map<String, String> convertReanaOutputs(ReanaSpecification specification)
             throws Exception {
         Map<String, String> outputs = new HashMap<String, String>();
         Outputs reanaRunOutputs = specification.getSpecification().getOutputs();
         for (String output : reanaRunOutputs.getFiles()) {
-            outputs.put(output, output);
+            Path path = Paths.get(output);
+            path.getFileName();
+            outputs.put(path.getFileName().toString(), output);
         }
         return outputs;
     }
 
-    private Map<String, String> convertReanaInputs(ReanaSpecification specification, WorkflowRun run) throws Exception {
+    private Map<String, String> convertReanaInputs(ReanaSpecification specification) throws Exception {
         Map<String, String> inputs = new HashMap<String, String>();
         Inputs reanaRunInputs = specification.getSpecification().getInputs();
         for (String input : reanaRunInputs.getFiles()) {
@@ -258,5 +257,11 @@ public class ReanaAdapter extends MethodAdapter {
         String filePath = downloadData(url, name);
         String remoteUrl = this.apiClient.addFileWorkspace(workSpaceId, filePath);
         return remoteUrl;
+    }
+
+    @Override
+    public String duplicateWorkflow(String workflowId, String newName) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }
