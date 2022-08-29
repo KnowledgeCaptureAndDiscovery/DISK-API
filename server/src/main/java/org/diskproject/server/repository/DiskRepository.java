@@ -371,7 +371,7 @@ public class DiskRepository extends WriteKBRepository {
             }
             String curURI = cur.get(ConfigKeys.ENDPOINT), curType = cur.get(ConfigKeys.TYPE);
             String curUser = null, curPass = null, curDomain = null, curInternalServer = null, inventory = null;
-            
+
             Float curVersion = null;
             if (cur.containsKey(ConfigKeys.USERNAME))
                 curUser = cur.get(ConfigKeys.USERNAME);
@@ -801,7 +801,8 @@ public class DiskRepository extends WriteKBRepository {
             if (this.deleteTLOI(username, id) && this.writeTLOI(username, updatedTLOI))
                 return tloi;
         }
-        //TODO: We return the request as default, check what when wrong and send apropiate error.
+        // TODO: We return the request as default, check what when wrong and send
+        // apropiate error.
         return tloi;
     }
 
@@ -1294,8 +1295,8 @@ public class DiskRepository extends WriteKBRepository {
                 continue;
             } else {
                 boolean allOk = true;
-                for (WorkflowBindings wb: loi.getWorkflows()) {
-                    String source =  wb.getSource();
+                for (WorkflowBindings wb : loi.getWorkflows()) {
+                    String source = wb.getSource();
                     if (source == null || getMethodAdapterByName(source) == null) {
                         allOk = false;
                         System.out.println("Warning: " + loi.getId() + " uses an unknown method adapter: " + source);
@@ -1303,11 +1304,12 @@ public class DiskRepository extends WriteKBRepository {
                     }
                 }
                 if (allOk)
-                    for (WorkflowBindings wb: loi.getMetaWorkflows()) {
-                        String source =  wb.getSource();
+                    for (WorkflowBindings wb : loi.getMetaWorkflows()) {
+                        String source = wb.getSource();
                         if (source == null || getMethodAdapterByName(source) == null) {
                             allOk = false;
-                            System.out.println("Warning: " + loi.getId() + " uses an unknown method adapter: " + source);
+                            System.out
+                                    .println("Warning: " + loi.getId() + " uses an unknown method adapter: " + source);
                             break;
                         }
                     }
@@ -1389,8 +1391,7 @@ public class DiskRepository extends WriteKBRepository {
                     tloi.setDataQuery(dq); // Updated data query
                     tloi.setDateCreated(dateformatter.format(new Date()));
                     tlois.add(tloi);
-                }
-                else {
+                } else {
                     System.out.println("LOI " + loi.getId() + " got no results");
                 }
             }
@@ -1430,19 +1431,28 @@ public class DiskRepository extends WriteKBRepository {
         return checked;
     }
 
+
     @SuppressWarnings("unchecked")
     private List<WorkflowBindings> getTLOIBindings(String username, List<WorkflowBindings> wflowBindings,
             Map<String, List<String>> dataVarBindings, DataAdapter dataAdapter) throws Exception {
         List<WorkflowBindings> tloiBindings = new ArrayList<WorkflowBindings>();
         for (WorkflowBindings bindings : wflowBindings) { // FOR EACH WORKFLOW
             // For each Workflow, create an empty copy to set the values
+            MethodAdapter methodAdapter = getMethodAdapterByName(bindings.getSource());
+            if (methodAdapter == null)
+                throw new Exception("No method adapter found for " + bindings.getSource());
+            else if (methodAdapter instanceof ReanaAdapter) {
+                String newWorkflowId = methodAdapter.duplicateWorkflow(bindings.getWorkflowLink(), bindings.getWorkflow());
+                bindings.setWorkflow(newWorkflowId);
+            }
+
+            String workflowId = bindings.getWorkflow();
             WorkflowBindings tloiBinding = new WorkflowBindings(
                     bindings.getWorkflow(),
                     bindings.getWorkflowLink());
             tloiBinding.setSource(bindings.getSource());
             tloiBinding.setMeta(bindings.getMeta());
             tloiBindings.add(tloiBinding);
-            MethodAdapter methodAdapter = getMethodAdapterByName(bindings.getSource());
 
             List<Variable> allVars = methodAdapter.getWorkflowVariables(bindings.getWorkflow());
 
@@ -1468,11 +1478,11 @@ public class DiskRepository extends WriteKBRepository {
                     continue;
 
                 // Get the data bindings for the sparql variable
-                List<String> dsurls = dataVarBindings.get(sparqlvar);
+                List<String> resourcesUrl = dataVarBindings.get(sparqlvar);
 
                 // Checks if the bindings are input files.
                 boolean bindingsAreFiles = true;
-                for (String candurl : dsurls) {
+                for (String candurl : resourcesUrl) {
                     if (!candurl.startsWith("http")) {
                         bindingsAreFiles = false;
                         break;
@@ -1480,31 +1490,31 @@ public class DiskRepository extends WriteKBRepository {
                 }
 
                 // Datasets names
-                List<String> dsnames = new ArrayList<String>();
+                List<String> datasetNames = new ArrayList<String>();
 
                 if (bindingsAreFiles) {
                     String varName = variableBinding.getVariable();
-                    String dType = null;
-                    for (Variable v: allVars) {
+                    String resourceDataType = null;
+                    for (Variable v : allVars) {
                         if (varName.equals(v.getName()))
-                            dType = v.getType();
+                            resourceDataType = v.getType();
                     }
                     // TODO: this should be async
                     // Check hashes, create local name and upload data:
-                    Map<String, String> urlToName = addData(dsurls, methodAdapter, dataAdapter, dType);
-                    for (String dsurl : dsurls) {
+                    Map<String, String> urlToName = addData(resourcesUrl, methodAdapter, dataAdapter, resourceDataType, workflowId);
+                    for (String dsurl : resourcesUrl) {
                         String dsname = urlToName.containsKey(dsurl) ? urlToName.get(dsurl)
                                 : dsurl.replaceAll("^.*\\/", "");
-                        dsnames.add(dsname);
+                        datasetNames.add(dsname);
                     }
                 } else {
                     // If the binding is not a file, send the value with no quotes
-                    for (String value : dsurls) {
+                    for (String value : resourcesUrl) {
                         // Remove quotes from parameters
                         if (value.charAt(0) == '"' && value.charAt(value.length() - 1) == '"') {
                             value = value.substring(1, value.length() - 1);
                         }
-                        dsnames.add(value);
+                        datasetNames.add(value);
                     }
                 }
 
@@ -1512,17 +1522,17 @@ public class DiskRepository extends WriteKBRepository {
                 if (isCollection) {
                     // This variable expects a collection. Modify the existing tloiBinding values,
                     // collections of non-files are send as comma separated values:
-                    tloiBinding.addBinding(new VariableBinding(variableBinding.getVariable(), dsnames.toString()));
+                    tloiBinding.addBinding(new VariableBinding(variableBinding.getVariable(), datasetNames.toString()));
                 } else {
-                    if (dsnames.size() == 1) {
-                        tloiBinding.addBinding(new VariableBinding(variableBinding.getVariable(), dsnames.get(0)));
+                    if (datasetNames.size() == 1) {
+                        tloiBinding.addBinding(new VariableBinding(variableBinding.getVariable(), datasetNames.get(0)));
                     } else {
                         System.out.println("IS MORE THAN ONE VALUE BUT NOT COLLECTION!");
                         // This variable expects a single file. Add new tloi bindings for each dataset
                         List<WorkflowBindings> newTloiBindings = new ArrayList<WorkflowBindings>();
                         for (WorkflowBindings tmpBinding : tloiBindings) { // For all already processed workflow
                                                                            // bindings
-                            for (String dsname : dsnames) {
+                            for (String dsname : datasetNames) {
                                 ArrayList<VariableBinding> newBindings = (ArrayList<VariableBinding>) SerializationUtils
                                         .clone((Serializable) tmpBinding.getBindings());
 
@@ -1530,7 +1540,8 @@ public class DiskRepository extends WriteKBRepository {
                                         bindings.getWorkflow(),
                                         bindings.getWorkflowLink(),
                                         newBindings);
-                                newWorkflowBindings.addBinding(new VariableBinding(variableBinding.getVariable(), dsname));
+                                newWorkflowBindings
+                                        .addBinding(new VariableBinding(variableBinding.getVariable(), dsname));
                                 newWorkflowBindings.setMeta(bindings.getMeta());
                                 newWorkflowBindings.setSource(bindings.getSource());
                                 newTloiBindings.add(newWorkflowBindings);
@@ -1545,17 +1556,19 @@ public class DiskRepository extends WriteKBRepository {
         return tloiBindings;
     }
 
-    //This adds dsUrls to the data-repository, returns filename -> URL
-    private Map<String, String> addData(List<String> dsurls, MethodAdapter methodAdapter, DataAdapter dataAdapter, String dType)
+    // This adds dsUrls to the data-repository, returns filename -> URL
+    private Map<String, String> addData(List<String> resourceUrl, MethodAdapter methodAdapter, DataAdapter dataAdapter,
+            String resourceDataType, String workflowId)
             throws Exception {
-        // To add files to wings and not replace anything, we need to get the hash from the wiki.
+        // To add files to wings and not replace anything, we need to get the hash from
+        // the wiki.
         // TODO: here connect with minio.
         Map<String, String> nameToUrl = new HashMap<String, String>();
         Map<String, String> urlToName = new HashMap<String, String>();
-        Map<String, String> filesETag = dataAdapter.getFileHashesByETag(dsurls);  // File -> ETag
+        Map<String, String> filesETag = dataAdapter.getFileHashesByETag(resourceUrl); // File -> ETag
         boolean allOk = true; // All is OK if we have all file ETags.
 
-        for (String fileUrl: dsurls) {
+        for (String fileUrl : resourceUrl) {
             if (filesETag.containsKey(fileUrl)) {
                 String eTag = filesETag.get(fileUrl);
                 // This name should be different now, this is not the SHA
@@ -1569,8 +1582,8 @@ public class DiskRepository extends WriteKBRepository {
         }
 
         if (!allOk) { // Get hashes from the data-adapter (SPARQL)
-            Map<String, String> hashes = dataAdapter.getFileHashes(dsurls); // File -> SHA1
-            for (String fileUrl : dsurls) {
+            Map<String, String> hashes = dataAdapter.getFileHashes(resourceUrl); // File -> SHA1
+            for (String fileUrl : resourceUrl) {
                 if (hashes.containsKey(fileUrl)) {
                     if (!urlToName.containsKey(fileUrl)) {
                         String hash = hashes.get(fileUrl);
@@ -1585,23 +1598,23 @@ public class DiskRepository extends WriteKBRepository {
         }
 
         // Show files with no hash and throw a exception.
-        for (String file : dsurls) {
+        for (String file : resourceUrl) {
             if (!urlToName.containsKey(file)) {
-                //TODO: hadnle exception
+                // TODO: hadnle exception
                 System.err.println("Warning: file " + file + " does not contain any hash on " + dataAdapter.getName());
             }
         }
 
         // avoid to duplicate files
         Set<String> names = nameToUrl.keySet();
-        List<String> availableFiles = methodAdapter.areFilesAvailable(names, dType);
+        List<String> availableFiles = methodAdapter.areFilesAvailable(names, resourceDataType);
         names.removeAll(availableFiles);
 
         // upload the files
         for (String newFilename : names) {
             String newFile = nameToUrl.get(newFilename);
             System.out.println("Uploading to " + methodAdapter.getName() + ": " + newFile + " as " + newFilename);
-            methodAdapter.addData(newFile, newFilename, dType);
+            methodAdapter.addData(newFile, newFilename, resourceDataType, workflowId);
         }
 
         return urlToName;
@@ -1934,7 +1947,8 @@ public class DiskRepository extends WriteKBRepository {
                                 + (l == null ? v.getBinding() : l[0] + " (" + l.length + ")"));
                     }
 
-                    String runid = methodAdapter.runWorkflow(bindings.getWorkflow(), sendbindings, inputs);
+                    String runid = methodAdapter.runWorkflow(bindings.getWorkflow(), bindings.getWorkflowLink(),
+                            sendbindings, inputs);
 
                     if (runid != null) {
                         System.out.println("[R] Run ID: " + runid);
