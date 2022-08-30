@@ -12,10 +12,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.diskproject.server.adapters.Reana.ApiClient;
 import org.diskproject.server.adapters.Reana.ApiClient.ResponseListWorkflow;
 import org.diskproject.server.adapters.Reana.ApiSchema.ReanaSpecification;
@@ -29,22 +25,33 @@ import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 public class ReanaAdapter extends MethodAdapter {
-    private static final int CONNECT_TIMEOUT = 60 * 1000;
-    private static final int READ_TIMEOUT = 60 * 1000;
+    private static final int CONNECT_TIMEOUT = 60;
+    private static final int READ_TIMEOUT = 60;
     private ApiClient apiClient;
     private ResponseRunStatus runStatus;
 
-
+    /**
+     * Method Adapter for Reana https://reanahub.io/
+     * @param adapterName Name of the adapter: reana
+     * @param apiUrl REANA API URL
+     * @param username REANA username (leave blank for token access)
+     * @param password REANA password (if you are using token access, use the token)
+     * @param inventory Deprecated
+     */
     public ReanaAdapter(String adapterName, String apiUrl, String username, String password, String inventory) {
         super(adapterName, apiUrl, username, password, inventory);
         this.apiClient = new ApiClient(apiUrl, password, username);
     }
 
-    public Map<String, String> createInputParameters(List<VariableBinding> variableBindings,
+    /**
+     * Create the parameters for the REANA workflow using DISK variables binding
+     * @param variableBindings
+     * @param inputVariables
+     * @return
+     */
+    private Map<String, String> createInputParameters(List<VariableBinding> variableBindings,
             Map<String, Variable> inputVariables) {
         /**
          * Convert variable bindings to json
@@ -120,7 +127,7 @@ public class ReanaAdapter extends MethodAdapter {
             ResponseListWorkflow workflowResponse = this.apiClient.getWorkflows();
             for (ReanaWorkflow workflowReana : workflowResponse.items) {
                 String url = this.getEndpointUrl() + "/api/workflows/" + workflowReana.id;
-                Workflow workflow = new Workflow(workflowReana.id, workflowReana.name, url, this.getName());
+                Workflow workflow = new Workflow(url, workflowReana.id, url, this.getName());
                 workflowDisk.add(workflow);
             }
         } catch (Exception e) {
@@ -231,6 +238,13 @@ public class ReanaAdapter extends MethodAdapter {
         return newWorkflowId;
     }
 
+    public String duplicateWorkflow(String id, String name) throws Exception {
+        ReanaSpecification oldSpecification = this.apiClient.getSpecification(id);
+        runStatus = this.apiClient.getRunStatus(id);
+        String newWorkflowId = this.apiClient.createWorkflow(oldSpecification, name);
+        return newWorkflowId;
+    }
+
     Map<String, String> convertReanaOutputs(ReanaSpecification specification)
             throws Exception {
         Map<String, String> outputs = new HashMap<String, String>();
@@ -257,11 +271,5 @@ public class ReanaAdapter extends MethodAdapter {
         String filePath = downloadData(url, name);
         String remoteUrl = this.apiClient.addFileWorkspace(workSpaceId, filePath);
         return remoteUrl;
-    }
-
-    @Override
-    public String duplicateWorkflow(String workflowId, String newName) {
-        // TODO Auto-generated method stub
-        return null;
     }
 }

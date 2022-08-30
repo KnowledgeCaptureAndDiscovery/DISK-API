@@ -1442,8 +1442,14 @@ public class DiskRepository extends WriteKBRepository {
             if (methodAdapter == null)
                 throw new Exception("No method adapter found for " + bindings.getSource());
             else if (methodAdapter instanceof ReanaAdapter) {
-                String newWorkflowId = methodAdapter.duplicateWorkflow(bindings.getWorkflowLink(), bindings.getWorkflow());
-                bindings.setWorkflow(newWorkflowId);
+                try {
+                    String newWorkflowId = methodAdapter.duplicateWorkflow(bindings.getWorkflowLink(),
+                            bindings.getWorkflow());
+                    bindings.setWorkflow(newWorkflowId);
+                } catch (Exception e) {
+                    System.out.println("Error duplicating workflow " + bindings.getWorkflowLink());
+                    continue;
+                }
             }
 
             String workflowId = bindings.getWorkflow();
@@ -1501,7 +1507,8 @@ public class DiskRepository extends WriteKBRepository {
                     }
                     // TODO: this should be async
                     // Check hashes, create local name and upload data:
-                    Map<String, String> urlToName = addData(resourcesUrl, methodAdapter, dataAdapter, resourceDataType, workflowId);
+                    Map<String, String> urlToName = addData(resourcesUrl, methodAdapter, dataAdapter, resourceDataType,
+                            workflowId);
                     for (String dsurl : resourcesUrl) {
                         String dsname = urlToName.containsKey(dsurl) ? urlToName.get(dsurl)
                                 : dsurl.replaceAll("^.*\\/", "");
