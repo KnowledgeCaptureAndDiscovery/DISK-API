@@ -5,68 +5,34 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ApiSchema {
-
+    public class ResponseGetSpecification {
+        public Map<String, String> parameters;
+        public ReanaSpecification specification;
+    }
 
     public class ReanaSpecification {
-        Map<String, String> parameters = new HashMap<String, String>();
-        Specification specification;
-
-        public Specification getSpecification() {
-            return specification;
-        }
-
-        public void setSpecification(Specification specificationObject) {
-            this.specification = specificationObject;
-        }
-
-        public class Specification {
-            Inputs inputs;
-            Outputs outputs;
-            private String version;
-            Workflow workflow;
-
-            // Getter Methods
-
-            public Inputs getInputs() {
-                return inputs;
-            }
-
-            public Outputs getOutputs() {
-                return outputs;
-            }
-
-            public String getVersion() {
-                return version;
-            }
-
-            public Workflow getWorkflow() {
-                return workflow;
-            }
-
-        }
+        public Inputs inputs;
+        public Outputs outputs;
+        String version;
+        Workflow workflow;
 
         public class Workflow {
-            private String file;
-            private String type;
+            public WorkflowSpecification specification;
+            public String type;
 
-            // Getter Methods
-
-            public String getFile() {
-                return file;
+            public class WorkflowSpecification {
+                public Inputs inputs;
+                public Outputs outputs;
+                public String version;
+                public Workflow workflow;
+                public ArrayList<Step> steps;
             }
 
-            public String getType() {
-                return type;
-            }
-
-            // Setter Methods
-
-            public void setFile(String file) {
-                this.file = file;
-            }
-
-            public void setType(String type) {
-                this.type = type;
+            public class Step {
+                public ArrayList<String> commands;
+                public String environment;
+                public String kubernetes_memory_limit;
+                public String name;
             }
         }
 
@@ -172,31 +138,40 @@ public class ApiSchema {
             String run_started_at;
             Object running;
             Object total;
+
             public String getCurrent_command() {
                 return current_command;
             }
+
             public String getCurrent_step_name() {
                 return current_step_name;
             }
+
             public Object getFailed() {
                 return failed;
             }
+
             public Object getFinished() {
                 return finished;
             }
+
             public String getRun_finished_at() {
                 return run_finished_at;
             }
+
             public String getRun_started_at() {
                 return run_started_at;
             }
+
             public Object getRunning() {
                 return running;
             }
+
             public Object getTotal() {
                 return total;
             }
         }
+
         public String created;
         public String id;
         public String logs;
@@ -204,24 +179,31 @@ public class ApiSchema {
         public Progress progress;
         public String status;
         public String user;
+
         public String getCreated() {
             return created;
         }
+
         public String getId() {
             return id;
         }
+
         public String getLogs() {
             return logs;
         }
+
         public String getName() {
             return name;
         }
+
         public Object getProgress() {
             return progress;
         }
+
         public String getStatus() {
             return status;
         }
+
         public String getUser() {
             return user;
         }

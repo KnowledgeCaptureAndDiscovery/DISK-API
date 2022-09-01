@@ -1,0 +1,47 @@
+{
+  "parameters": {
+    "events": "10"
+  },
+  "specification": {
+    "inputs": {
+      "files": [
+        "code/gendata.C",
+        "code/fitdata.C"
+      ],
+      "parameters": {
+        "data": "results/data.root",
+        "events": 20000,
+        "plot": "results/plot.png"
+      }
+    },
+    "outputs": {
+      "files": [
+        "results/plot.png"
+      ]
+    },
+    "version": "0.6.0",
+    "workflow": {
+      "specification": {
+        "steps": [
+          {
+            "commands": [
+              "mkdir -p results && root -b -q 'code/gendata.C(${events},\"${data}\")'"
+            ],
+            "environment": "reanahub/reana-env-root6:6.18.04",
+            "kubernetes_memory_limit": "256Mi",
+            "name": "gendata"
+          },
+          {
+            "commands": [
+              "root -b -q 'code/fitdata.C(\"${data}\",\"${plot}\")'"
+            ],
+            "environment": "reanahub/reana-env-root6:6.18.04",
+            "kubernetes_memory_limit": "256Mi",
+            "name": "fitdata"
+          }
+        ]
+      },
+      "type": "serial"
+    }
+  }
+}

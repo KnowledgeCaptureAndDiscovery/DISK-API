@@ -40,6 +40,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
+import org.diskproject.shared.classes.loi.TriggeredLOI.Status;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
@@ -65,6 +66,10 @@ public class WingsAdapter extends MethodAdapter {
 	private String domain;
 	private String internal_server;
 
+	public enum STATUS {
+		FAILURE, SUCCESS, RUNNING, QUEUED, UNKNOWN
+	}
+
 	private CookieStore cookieStore;
 
 	public String workflowNS = "http://www.wings-workflows.org/ontology/workflow.owl#";
@@ -80,6 +85,10 @@ public class WingsAdapter extends MethodAdapter {
 		this.cookieStore = new BasicCookieStore();
 		this.json = new Gson();
 		this.jsonParser = new JsonParser();
+        this.status.put(Status.QUEUED, "QUEUED");
+        this.status.put(Status.FAILED, "FAILED");
+        this.status.put(Status.RUNNING, "RUNNING");
+        this.status.put(Status.SUCCESSFUL, "SUCCESSFUL");
 	}
 
 	public String DOMURI() {

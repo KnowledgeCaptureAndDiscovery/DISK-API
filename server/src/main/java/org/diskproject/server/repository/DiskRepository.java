@@ -395,7 +395,7 @@ public class DiskRepository extends WriteKBRepository {
                     curAdapter = new AirFlowAdapter(name, curURI, curUser, curPass);
                     break;
                 case ConfigKeys.METHOD_TYPE_REANA:
-                    curAdapter = new ReanaAdapter(name, curURI, curUser, curPass, inventory);
+                    curAdapter = new ReanaAdapter(name, curURI, curUser, curPass);
                     break;
                 default:
                     break;
@@ -1443,11 +1443,13 @@ public class DiskRepository extends WriteKBRepository {
                 throw new Exception("No method adapter found for " + bindings.getSource());
             else if (methodAdapter instanceof ReanaAdapter) {
                 try {
-                    String newWorkflowId = methodAdapter.duplicateWorkflow(bindings.getWorkflowLink(),
-                            bindings.getWorkflow());
+                    String newWorkflowId = methodAdapter.duplicateWorkflow(bindings.getWorkflow(), null);
+                    String newWorkflowLink = methodAdapter.getWorkflowLink(newWorkflowId);
                     bindings.setWorkflow(newWorkflowId);
+                    bindings.setWorkflowLink(newWorkflowLink);
                 } catch (Exception e) {
                     System.out.println("Error duplicating workflow " + bindings.getWorkflowLink());
+                    System.out.println(e.getMessage());
                     continue;
                 }
             }
@@ -1621,7 +1623,7 @@ public class DiskRepository extends WriteKBRepository {
         for (String newFilename : names) {
             String newFile = nameToUrl.get(newFilename);
             System.out.println("Uploading to " + methodAdapter.getName() + ": " + newFile + " as " + newFilename);
-            methodAdapter.addData(newFile, newFilename, resourceDataType, workflowId);
+            methodAdapter.addData(newFile, workflowId, newFilename, resourceDataType);
         }
 
         return urlToName;
@@ -2015,17 +2017,17 @@ public class DiskRepository extends WriteKBRepository {
                     WorkflowRun wstatus = methodAdapter.getRunStatus(rname);
                     bindings.setRun(wstatus);
 
-                    if (wstatus.getStatus().equals("FAILURE")) {
+                    if (wstatus.getStatus().equals(methodAdapter.status.get(Status.FAILED))) {
                         overallStatus = Status.FAILED;
                         numFinished++;
                         continue;
                     }
-                    if (wstatus.getStatus().equals("RUNNING")) {
+                    if (wstatus.getStatus().equals(methodAdapter.status.get(Status.RUNNING))) {
                         if (overallStatus != Status.FAILED)
                             overallStatus = Status.RUNNING;
                         continue;
                     }
-                    if (wstatus.getStatus().equals("SUCCESS")) {
+                    if (wstatus.getStatus().equals(methodAdapter.status.get(Status.SUCCESSFUL))) {
                         numFinished++;
                         numSuccessful++;
 

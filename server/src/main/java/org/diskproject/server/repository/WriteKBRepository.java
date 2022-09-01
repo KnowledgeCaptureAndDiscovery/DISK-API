@@ -1080,6 +1080,7 @@ public class WriteKBRepository extends KBRepository {
                 // Workflow details
                 KBObject workflowobj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_WORKFLOW));
                 if (workflowobj != null && methodAdapter != null) {
+                    
                     bindings.setWorkflow(workflowobj.getName());
                     String link = methodAdapter.getWorkflowLink(workflowobj.getName());
                     if (link != null)

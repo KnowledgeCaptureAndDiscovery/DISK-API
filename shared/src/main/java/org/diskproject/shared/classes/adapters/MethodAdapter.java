@@ -1,15 +1,18 @@
 package org.diskproject.shared.classes.adapters;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.diskproject.shared.classes.loi.TriggeredLOI.Status;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 public abstract class MethodAdapter {
+    public HashMap<Status, String> status = new HashMap<Status, String>();
     private String name;
     private String endpointUrl;
     private String inventoryUrl;
@@ -23,20 +26,12 @@ public abstract class MethodAdapter {
         this.name = adapterName;
         this.endpointUrl = url;
     }
-
+    
     public MethodAdapter(String adapterName, String url, String username, String password) {
         this.name = adapterName;
         this.endpointUrl = url;
         this.username = username;
         this.password = password;
-    }
-
-    public MethodAdapter(String adapterName, String url, String username, String password, String inventory) {
-        this.name = adapterName;
-        this.endpointUrl = url;
-        this.username = username;
-        this.password = password;
-        this.inventoryUrl = inventory;
     }
 
     public Float getVersion() {
@@ -131,15 +126,16 @@ public abstract class MethodAdapter {
      * @return
      * @throws Exception
      */
-    public abstract String addData(String url, String name, String dataType, String workSpaceId) throws Exception;
+    public abstract String addData(String url, String workSpaceId, String name, String dataType) throws Exception;
 
     /**
      * Return a Map of the variable name and variable for a given workflow run.
      * 
      * @param id
      * @return
+     * @throws Exception
      */
-    public abstract Map<String, Variable> getWorkflowInputs(String id);
+    public abstract Map<String, Variable> getWorkflowInputs(String id) throws Exception;
 
     /**
      * Run the workflow.
