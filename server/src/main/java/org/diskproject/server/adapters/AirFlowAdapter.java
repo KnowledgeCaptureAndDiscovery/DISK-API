@@ -129,7 +129,7 @@ public class AirFlowAdapter extends MethodAdapter {
     }
 
     @Override
-    public String getDataUri(String id) {
+    public String getDataUri(String dataId, String runId) {
         // Auto-generated method stub
         return null;
     }

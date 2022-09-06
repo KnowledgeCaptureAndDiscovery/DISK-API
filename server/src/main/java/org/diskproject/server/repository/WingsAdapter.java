@@ -135,7 +135,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public String getDataUri(String id) {
+	public String getDataUri(String id, String workflowId) {
 		return this.DATAID(id);
 	}
 

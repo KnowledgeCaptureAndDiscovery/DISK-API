@@ -582,15 +582,35 @@ public class DiskResource implements DiskService {
 
   @POST
   @Path("getData")
-  @Produces("text/html")
   @Override
   public String getOutputData(
       @JsonProperty("request") ExternalDataRequest r) {
-    String result = this.repo.getOutputData(r.getSource(), r.getDataId());
-    if (result == null) {
-      System.out.println("ERROR: " + r.getDataId() + " not available on " + r.getSource() + ".");
-      result = "";
+    try {
+      String result = this.repo.getOutputData(r.getSource(), r.getRunId(), r.getDataId());
+      response.setContentType("application/json");
+      if (result == null) {
+        throw new Exception("No data found");
+      }
+      return result;
+    } catch (Exception e) {
+      try {
+        // Create Json error response
+        Gson gson = new Gson();
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = gson.toJson(error);
+
+        // Prepare the response
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+
+        // Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
     }
-    return result;
+    return null;
   }
 }

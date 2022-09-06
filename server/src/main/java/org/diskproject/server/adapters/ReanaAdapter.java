@@ -256,13 +256,13 @@ public class ReanaAdapter extends MethodAdapter {
     }
 
     /**
-     * @param dataId
+     * @param dataUrl
      * @return String
+     * @throws Exception
      */
     @Override
-    public String fetchData(String dataId) {
-        // Auto-generated method stub
-        return null;
+    public String fetchData(String dataUrl) throws Exception {
+        return this.apiClient.downloadData(dataUrl);
     }
 
     /**
@@ -280,8 +280,9 @@ public class ReanaAdapter extends MethodAdapter {
      * @return String
      */
     @Override
-    public String getDataUri(String id) {
-        return null;
+    public String getDataUri(String dataId, String runId) {
+        String requestUrl = String.format(this.apiClient.API_WORKFLOW_DOWNLOAD_FILE, this.apiClient.url, runId, dataId);
+        return requestUrl;
     }
 
     /**

@@ -28,7 +28,7 @@ import org.diskproject.server.adapters.Reana.ApiSchema.ResponseRunStatus;
 import com.google.gson.Gson;
 
 public class ApiClient {
-    String url;
+    public String url;
     String token;
     CloseableHttpClient httpClient;
     String API_WORKFLOW_URL = "%s/api/workflows";
@@ -36,6 +36,7 @@ public class ApiClient {
     String API_WORKFLOW_START = "%s/api/workflows/%s/start";
     String API_WORKFLOW_ADD_FILE = "%s/api/workflows/%s/workspace";
     String API_WORKFLOW_SPECIFICATION = "%s/api/workflows/%s/specification";
+    public String API_WORKFLOW_DOWNLOAD_FILE = "%s/api/workflows/%s/workspace/%s";
 
     String API_LAUNCH_URL = "/api/launch";
 
@@ -123,6 +124,27 @@ public class ApiClient {
         }
     }
 
+    public String downloadData(String url) throws Exception {
+        String requestAccept = "application/octet-stream";
+        try {
+            return this.performHTTPGet(url, requestAccept);
+        } catch (Exception e) {
+            System.err.println("Unable to fetch file");
+            System.err.println(e.getMessage());
+            throw e;
+        }
+    }
+    public void fetchFile(String workflowId, String filename) throws Exception {
+        String requestUrl = String.format(API_WORKFLOW_DOWNLOAD_FILE, this.url, workflowId, filename);
+        String requestAccept = "application/octet-stream";
+        try {
+            this.performHTTPGet(requestUrl, requestAccept);
+        } catch (Exception e) {
+            System.err.println("Unable to fetch file");
+            System.err.println(e.getMessage());
+            throw e;
+        }
+    }
     public Object startWorkflow(String workflowId, Map<String, String> inputParameters,
             Map<String, String> operationParameters) throws Exception {
         String requestUrl = String.format(API_WORKFLOW_START, this.url, workflowId);

@@ -34,46 +34,90 @@ public abstract class MethodAdapter {
         this.password = password;
     }
 
+    
+    /** 
+     * @return Float
+     */
     public Float getVersion() {
         return this.version;
     }
 
+    
+    /** 
+     * @param v
+     */
     public void setVersion(Float v) {
         this.version = v;
     }
 
+    
+    /** 
+     * @return String
+     */
     public String getDescription() {
         return this.description;
     }
 
+    
+    /** 
+     * @param desc
+     */
     public void setDescription(String desc) {
         this.description = desc;
     }
 
+    
+    /** 
+     * @return String
+     */
     public String getName() {
         return this.name;
     }
 
+    
+    /** 
+     * @return String
+     */
     public String getEndpointUrl() {
         return this.endpointUrl;
     }
 
+    
+    /** 
+     * @return String
+     */
     protected String getUsername() {
         return this.username;
     }
 
+    
+    /** 
+     * @return String
+     */
     protected String getPassword() {
         return this.password;
     }
 
+    
+    /** 
+     * @return String
+     */
     public String toString() {
         return "[" + this.name + "] " + (this.username != null ? this.username + "@" : "") + this.endpointUrl;
     }
 
+    
+    /** 
+     * @return String
+     */
     public String getInventoryUrl() {
         return inventoryUrl;
     }
 
+    
+    /** 
+     * @param inventoryUrl
+     */
     public void setInventoryUrl(String inventoryUrl) {
         this.inventoryUrl = inventoryUrl;
     }
@@ -101,7 +145,7 @@ public abstract class MethodAdapter {
 
     public abstract String getWorkflowLink(String id);
 
-    public abstract String getDataUri(String id);
+    public abstract String getDataUri(String dataId, String workflowId);
 
     /**
      * If the method adapter needs to store the data, check if it is already stored.
@@ -154,7 +198,7 @@ public abstract class MethodAdapter {
 
     public abstract WorkflowRun getRunStatus(String runId) throws Exception;
 
-    public abstract String fetchData(String dataId);
+    public abstract String fetchData(String dataId) throws Exception;
 
     public abstract Map<String, String> getRunVariableBindings(String runId);
 

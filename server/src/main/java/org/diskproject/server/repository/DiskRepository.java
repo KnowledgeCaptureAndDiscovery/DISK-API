@@ -84,11 +84,19 @@ public class DiskRepository extends WriteKBRepository {
     private Map<String, List<List<String>>> optionsCache;
     private Map<String, VocabularyConfiguration> externalVocabularies;
 
+    
+    /** 
+     * @param args
+     */
     public static void main(String[] args) {
         get();
         get().shutdownExecutors();
     }
 
+    
+    /** 
+     * @return DiskRepository
+     */
     public static DiskRepository get() {
         if (!creatingKB && singleton == null) {
             creatingKB = true;
@@ -152,6 +160,10 @@ public class DiskRepository extends WriteKBRepository {
         this.initializeVocabularies();
     }
 
+    
+    /** 
+     * @throws Exception
+     */
     private void loadKBFromConfig() throws Exception {
         this.externalVocabularies = new HashMap<String, VocabularyConfiguration>();
 
@@ -211,6 +223,10 @@ public class DiskRepository extends WriteKBRepository {
         }
     }
 
+    
+    /** 
+     * @throws Exception
+     */
     public void reloadKBCaches() throws Exception {
         KBAPI[] kbs = { this.ontKB, this.questionKB, this.hypothesisVocabulary };
 
@@ -245,6 +261,10 @@ public class DiskRepository extends WriteKBRepository {
         this.initializeKB();
     }
 
+    
+    /** 
+     * @return PropertyListConfiguration
+     */
     public PropertyListConfiguration getConfig() {
         return Config.get().getProperties();
     }
@@ -326,12 +346,21 @@ public class DiskRepository extends WriteKBRepository {
             }
     }
 
+    
+    /** 
+     * @param url
+     * @return DataAdapter
+     */
     private DataAdapter getDataAdapter(String url) {
         if (this.dataAdapters.containsKey(url))
             return this.dataAdapters.get(url);
         return null;
     }
 
+    
+    /** 
+     * @return List<DataAdapterResponse>
+     */
     public List<DataAdapterResponse> getDataAdapters() {
         List<DataAdapterResponse> adapters = new ArrayList<DataAdapterResponse>();
         for (DataAdapter da : this.dataAdapters.values()) {
@@ -418,12 +447,21 @@ public class DiskRepository extends WriteKBRepository {
             }
     }
 
+    
+    /** 
+     * @param url
+     * @return MethodAdapter
+     */
     public MethodAdapter getMethodAdapter(String url) {
         if (this.methodAdapters.containsKey(url))
             return this.methodAdapters.get(url);
         return null;
     }
 
+    
+    /** 
+     * @return List<Workflow>
+     */
     public List<Workflow> getWorkflowList() {
         List<Workflow> list = new ArrayList<Workflow>();
         for (MethodAdapter adapter : this.methodAdapters.values()) {
@@ -434,6 +472,13 @@ public class DiskRepository extends WriteKBRepository {
         return list;
     }
 
+    
+    /** 
+     * @param source
+     * @param id
+     * @return List<Variable>
+     * @throws Exception
+     */
     public List<Variable> getWorkflowVariables(String source, String id) throws Exception {
         for (MethodAdapter adapter : this.methodAdapters.values()) {
             if (adapter.getName().equals(source)) {
@@ -473,10 +518,24 @@ public class DiskRepository extends WriteKBRepository {
         }
     }
 
+    
+    /** 
+     * @param uri
+     * @return Vocabulary
+     */
     public Vocabulary getVocabulary(String uri) {
         return this.vocabularies.get(uri);
     }
 
+    
+    /** 
+     * @param kb
+     * @param ns
+     * @param prefix
+     * @param title
+     * @param description
+     * @return Vocabulary
+     */
     public Vocabulary initializeVocabularyFromKB(KBAPI kb, String ns, String prefix, String title, String description) {
         Vocabulary vocabulary = new Vocabulary(ns);
         vocabulary.setPrefix(prefix);
@@ -488,6 +547,11 @@ public class DiskRepository extends WriteKBRepository {
         return vocabulary;
     }
 
+    
+    /** 
+     * @param kb
+     * @param vocabulary
+     */
     private void fetchPropertiesFromKB(KBAPI kb, Vocabulary vocabulary) {
         for (KBObject prop : kb.getAllProperties()) {
             if (!prop.getID().startsWith(vocabulary.getNamespace()))
@@ -514,6 +578,11 @@ public class DiskRepository extends WriteKBRepository {
         }
     }
 
+    
+    /** 
+     * @param kb
+     * @param vocabulary
+     */
     private void fetchTypesAndIndividualsFromKB(KBAPI kb, Vocabulary vocabulary) {
         KBObject typeprop = kb.getProperty(KBConstants.RDFNS() + "type");
         for (KBTriple t : kb.genericTripleQuery(null, typeprop, null)) {
@@ -592,6 +661,11 @@ public class DiskRepository extends WriteKBRepository {
         }
     }
 
+    
+    /** 
+     * @param pname
+     * @return String
+     */
     private String createPropertyLabel(String pname) {
         // Remove starting "has"
         pname = pname.replaceAll("^has", "");
@@ -610,6 +684,12 @@ public class DiskRepository extends WriteKBRepository {
         return this.vocabularies;
     }
 
+    
+    /** 
+     * @param graph
+     * @param localDomain
+     * @return Graph
+     */
     private Graph resolvePrefixesForGraph(Graph graph, String localDomain) {
         List<Triple> triples = new ArrayList<Triple>();
         for (Triple triple : graph.getTriples()) {
@@ -622,6 +702,12 @@ public class DiskRepository extends WriteKBRepository {
         return newGraph;
     }
 
+    
+    /** 
+     * @param value
+     * @param localDomain
+     * @return String
+     */
     private String resolvePrefixes(String value, String localDomain) {
         if (localDomain != null && !localDomain.equals("") && value.charAt(0) == ':') { // replace ":" for local domain
             value = localDomain + value.substring(1);
@@ -642,6 +728,12 @@ public class DiskRepository extends WriteKBRepository {
         return value;
     }
 
+    
+    /** 
+     * @param username
+     * @param hypothesis
+     * @return Hypothesis
+     */
     /*
      * Hypotheses
      */
@@ -672,14 +764,33 @@ public class DiskRepository extends WriteKBRepository {
         return null;
     }
 
+    
+    /** 
+     * @param username
+     * @param id
+     * @return boolean
+     */
     public boolean removeHypothesis(String username, String id) {
         return this.deleteHypothesis(username, id);
     }
 
+    
+    /** 
+     * @param username
+     * @param id
+     * @return Hypothesis
+     */
     public Hypothesis getHypothesis(String username, String id) {
         return loadHypothesis(username, id);
     }
 
+    
+    /** 
+     * @param username
+     * @param id
+     * @param hypothesis
+     * @return Hypothesis
+     */
     public Hypothesis updateHypothesis(String username, String id, Hypothesis hypothesis) {
         String name = hypothesis.getName();
         String desc = hypothesis.getDescription();
@@ -691,6 +802,11 @@ public class DiskRepository extends WriteKBRepository {
         return null;
     }
 
+    
+    /** 
+     * @param username
+     * @return List<TreeItem>
+     */
     public List<TreeItem> listHypotheses(String username) {
         List<TreeItem> list = new ArrayList<TreeItem>();
         List<Hypothesis> hypothesisList = listHypothesesPreviews(username);
@@ -707,6 +823,12 @@ public class DiskRepository extends WriteKBRepository {
         return list;
     }
 
+    
+    /** 
+     * @param username
+     * @param loi
+     * @return LineOfInquiry
+     */
     /*
      * Lines of Inquiry
      */
@@ -731,20 +853,44 @@ public class DiskRepository extends WriteKBRepository {
             return null;
     }
 
+    
+    /** 
+     * @param username
+     * @param id
+     * @return boolean
+     */
     public boolean removeLOI(String username, String id) {
         return deleteLOI(username, id);
     }
 
+    
+    /** 
+     * @param username
+     * @param id
+     * @return LineOfInquiry
+     */
     public LineOfInquiry getLOI(String username, String id) {
         return this.loadLOI(username, id);
     }
 
+    
+    /** 
+     * @param username
+     * @param id
+     * @param loi
+     * @return LineOfInquiry
+     */
     public LineOfInquiry updateLOI(String username, String id, LineOfInquiry loi) {
         if (loi.getId() != null && this.deleteLOI(username, id))
             return this.addLOI(username, loi);
         return null;
     }
 
+    
+    /** 
+     * @param username
+     * @return List<TreeItem>
+     */
     public List<TreeItem> listLOIs(String username) {
         List<TreeItem> list = new ArrayList<TreeItem>();
         List<LineOfInquiry> lois = this.listLOIPreviews(username);
@@ -761,6 +907,12 @@ public class DiskRepository extends WriteKBRepository {
         return list;
     }
 
+    
+    /** 
+     * @param username
+     * @param tloi
+     * @return TriggeredLOI
+     */
     /*
      * Triggered Lines of Inquiries (TLOIs)
      */
@@ -780,20 +932,46 @@ public class DiskRepository extends WriteKBRepository {
         return tloi;
     }
 
+    
+    /** 
+     * @param username
+     * @param id
+     * @return boolean
+     */
     public boolean removeTriggeredLOI(String username, String id) {
         return deleteTLOI(username, id);
     }
 
+    
+    /** 
+     * @param username
+     * @param id
+     * @return TriggeredLOI
+     */
     public TriggeredLOI getTriggeredLOI(String username, String id) {
         return loadTLOI(username, id);
     }
 
+    
+    /** 
+     * @param username
+     * @param id
+     * @param tloi
+     * @return TriggeredLOI
+     */
     private TriggeredLOI updateTriggeredLOI(String username, String id, TriggeredLOI tloi) {
         if (tloi.getId() != null && this.deleteTLOI(username, id) && this.writeTLOI(username, tloi))
             return tloi;
         return null;
     }
 
+    
+    /** 
+     * @param username
+     * @param id
+     * @param tloi
+     * @return TriggeredLOI
+     */
     public TriggeredLOI updateTLOINotes(String username, String id, TriggeredLOI tloi) {
         TriggeredLOI updatedTLOI = getTriggeredLOI(username, id);
         if (updatedTLOI != null && tloi != null) {
@@ -806,6 +984,11 @@ public class DiskRepository extends WriteKBRepository {
         return tloi;
     }
 
+    
+    /** 
+     * @param username
+     * @return List<TriggeredLOI>
+     */
     public List<TriggeredLOI> listTriggeredLOIs(String username) {
         return listTLOIs(username);
     }
@@ -850,6 +1033,11 @@ public class DiskRepository extends WriteKBRepository {
         }
     }
 
+    
+    /** 
+     * @param url
+     * @return List<Question>
+     */
     public List<Question> loadQuestionsFromKB(String url) {
         System.out.println("Loading Question Templates: " + url);
         List<Question> questions = new ArrayList<Question>();
@@ -908,10 +1096,20 @@ public class DiskRepository extends WriteKBRepository {
         return null;
     }
 
+    
+    /** 
+     * @return List<Question>
+     */
     public List<Question> listHypothesesQuestions() {
         return new ArrayList<Question>(this.allQuestions.values());
     }
 
+    
+    /** 
+     * @param sid
+     * @return List<List<String>>
+     * @throws Exception
+     */
     public List<List<String>> listVariableOptions(String sid) throws Exception {
         if (!optionsCache.containsKey(sid)) {
             optionsCache.put(sid, this.loadVariableOptions(sid));
@@ -919,6 +1117,12 @@ public class DiskRepository extends WriteKBRepository {
         return optionsCache.get(sid);
     }
 
+    
+    /** 
+     * @param sid
+     * @return List<List<String>>
+     * @throws Exception
+     */
     private List<List<String>> loadVariableOptions(String sid) throws Exception {
         List<List<String>> options = new ArrayList<List<String>>();
         QuestionVariable variable = null;
@@ -1016,6 +1220,10 @@ public class DiskRepository extends WriteKBRepository {
         return options;
     }
 
+    
+    /** 
+     * @return String
+     */
     /*
      * Querying
      */
@@ -1033,6 +1241,15 @@ public class DiskRepository extends WriteKBRepository {
         return prefixes;
     }
 
+    
+    /** 
+     * @param endpoint
+     * @param sparqlQuery
+     * @param variables
+     * @return Map<String, List<String>>
+     * @throws Exception
+     * @throws QueryParseException
+     */
     public Map<String, List<String>> queryExternalStore(String endpoint, String sparqlQuery, String variables)
             throws Exception, QueryParseException {
         // FIXME: change this to DataResults
@@ -1084,6 +1301,13 @@ public class DiskRepository extends WriteKBRepository {
         return dataVarBindings;
     }
 
+    
+    /** 
+     * @param queryPattern
+     * @param variablePattern
+     * @param variableBindings
+     * @return String
+     */
     private String getQueryBindings(String queryPattern, Pattern variablePattern,
             Map<String, String> variableBindings) {
         String pattern = "";
@@ -1109,6 +1333,12 @@ public class DiskRepository extends WriteKBRepository {
         return pattern;
     }
 
+    
+    /** 
+     * @param queryA
+     * @param queryB
+     * @return Set<String>
+     */
     public Set<String> interceptVariables(final String queryA, final String queryB) {
         Set<String> A = new HashSet<String>();
         Matcher a = varPattern.matcher(queryA);
@@ -1128,6 +1358,11 @@ public class DiskRepository extends WriteKBRepository {
         return B;
     }
 
+    
+    /** 
+     * @param loi
+     * @return Boolean
+     */
     /*
      * Executing hypothesis
      */
@@ -1158,6 +1393,12 @@ public class DiskRepository extends WriteKBRepository {
         return true;
     }
 
+    
+    /** 
+     * @param loi
+     * @param hypothesisBindings
+     * @return Boolean
+     */
     private Boolean isValid(LineOfInquiry loi, Map<String, String> hypothesisBindings) {
         // Check if the hypothesis bindings (values from the user) are valid in this LOI
         if (!isValid(loi))
@@ -1189,6 +1430,12 @@ public class DiskRepository extends WriteKBRepository {
         return true;
     }
 
+    
+    /** 
+     * @param username
+     * @param id
+     * @return Map<LineOfInquiry, List<Map<String, String>>>
+     */
     public Map<LineOfInquiry, List<Map<String, String>>> getLOIByHypothesisId(String username, String id) {
         String hypuri = this.HYPURI(username) + "/" + id;
         // LOIID -> [{ variable -> value }]
@@ -1276,6 +1523,14 @@ public class DiskRepository extends WriteKBRepository {
         return results;
     }
 
+    
+    /** 
+     * @param username
+     * @param id
+     * @return List<TriggeredLOI>
+     * @throws Exception
+     * @throws QueryParseException
+     */
     public List<TriggeredLOI> queryHypothesis(String username, String id) throws Exception, QueryParseException {
         // Create TLOIs that match with a hypothesis and username
         List<TriggeredLOI> tlois = new ArrayList<TriggeredLOI>();
@@ -1400,6 +1655,12 @@ public class DiskRepository extends WriteKBRepository {
         return checkExistingTLOIs(username, tlois);
     }
 
+    
+    /** 
+     * @param username
+     * @param tlois
+     * @return List<TriggeredLOI>
+     */
     // This replaces all triggered lines of inquiry already executed.
     private List<TriggeredLOI> checkExistingTLOIs(String username, List<TriggeredLOI> tlois) {
         List<TriggeredLOI> checked = new ArrayList<TriggeredLOI>();
@@ -1432,6 +1693,13 @@ public class DiskRepository extends WriteKBRepository {
     }
 
 
+    
+    /** 
+     * @param dataVarBindings
+     * @param dataAdapter
+     * @return List<WorkflowBindings>
+     * @throws Exception
+     */
     @SuppressWarnings("unchecked")
     private List<WorkflowBindings> getTLOIBindings(String username, List<WorkflowBindings> wflowBindings,
             Map<String, List<String>> dataVarBindings, DataAdapter dataAdapter) throws Exception {
@@ -1565,6 +1833,16 @@ public class DiskRepository extends WriteKBRepository {
         return tloiBindings;
     }
 
+    
+    /** 
+     * @param resourceUrl
+     * @param methodAdapter
+     * @param dataAdapter
+     * @param resourceDataType
+     * @param workflowId
+     * @return Map<String, String>
+     * @throws Exception
+     */
     // This adds dsUrls to the data-repository, returns filename -> URL
     private Map<String, String> addData(List<String> resourceUrl, MethodAdapter methodAdapter, DataAdapter dataAdapter,
             String resourceDataType, String workflowId)
@@ -1629,6 +1907,12 @@ public class DiskRepository extends WriteKBRepository {
         return urlToName;
     }
 
+    
+    /** 
+     * @param username
+     * @return Boolean
+     * @throws Exception
+     */
     public Boolean runAllHypotheses(String username) throws Exception {
         List<String> hlist = new ArrayList<String>();
         String url = this.HYPURI(username);
@@ -1672,6 +1956,12 @@ public class DiskRepository extends WriteKBRepository {
         return true;
     }
 
+    
+    /** 
+     * @param username
+     * @param tloid
+     * @return Map<String, String>
+     */
     /*
      * Narratives
      */
@@ -1783,6 +2073,11 @@ public class DiskRepository extends WriteKBRepository {
         return narratives;
     }
 
+    
+    /** 
+     * @param dataQuery
+     * @return String
+     */
     private String dataQueryNarrative(String dataQuery) {
         // this is necessary to replace the new line characters in query
         String dataQuery1 = dataQuery.replaceAll("^(//)n${1}", "");
@@ -1851,6 +2146,13 @@ public class DiskRepository extends WriteKBRepository {
 
     }
 
+    
+    /** 
+     * @param username
+     * @param hypId
+     * @param loiId
+     * @return List<TriggeredLOI>
+     */
     /*
      * Running
      */
@@ -1869,6 +2171,14 @@ public class DiskRepository extends WriteKBRepository {
         return list;
     }
 
+    
+    /** 
+     * @param username
+     * @param hypid
+     * @param loiid
+     * @return List<TriggeredLOI>
+     * @throws Exception
+     */
     public List<TriggeredLOI> runHypothesisAndLOI(String username, String hypid, String loiid) throws Exception {
         List<TriggeredLOI> hyptlois = queryHypothesis(username, hypid);
         // TriggeredLOI match = null;
@@ -1887,6 +2197,13 @@ public class DiskRepository extends WriteKBRepository {
         return getTLOIsForHypothesisAndLOI(username, hypid, loiid);
     }
 
+    
+    /** 
+     * @param source
+     * @param id
+     * @return WorkflowRun
+     * @throws Exception
+     */
     /*
      * Threads helpers
      */
@@ -1898,11 +2215,19 @@ public class DiskRepository extends WriteKBRepository {
         return methodAdapter.getRunStatus(id);
     }
 
-    public String getOutputData(String source, String id) {
+    
+    /** 
+     * @param source
+     * @param id
+     * @return String
+     * @throws Exception
+     */
+    public String getOutputData(String source, String dataId, String workflowId) throws Exception {
         MethodAdapter methodAdapter = getMethodAdapterByName(source);
         if (methodAdapter == null)
             return null;
-        return methodAdapter.fetchData(methodAdapter.getDataUri(id));
+        String dataUrl = methodAdapter.getDataUri(workflowId, dataId);
+        return methodAdapter.fetchData(dataUrl);
     }
 
     /*
