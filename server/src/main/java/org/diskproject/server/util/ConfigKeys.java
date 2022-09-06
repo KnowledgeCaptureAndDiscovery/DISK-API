@@ -23,7 +23,6 @@ public class ConfigKeys {
     public static final String VERSION = "version";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
-    public static final String INVENTORY = "inventory";
 
     public static final String DOMAIN = "domain";
     public static final String INTERNAL_SERVER = "internal_server";

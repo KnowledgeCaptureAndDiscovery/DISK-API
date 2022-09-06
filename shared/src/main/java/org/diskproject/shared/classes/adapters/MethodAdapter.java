@@ -15,8 +15,6 @@ public abstract class MethodAdapter {
     public HashMap<Status, String> status = new HashMap<Status, String>();
     private String name;
     private String endpointUrl;
-    private String inventoryUrl;
-
     private String username;
     private String password;
     private String description;
@@ -104,22 +102,6 @@ public abstract class MethodAdapter {
      */
     public String toString() {
         return "[" + this.name + "] " + (this.username != null ? this.username + "@" : "") + this.endpointUrl;
-    }
-
-    
-    /** 
-     * @return String
-     */
-    public String getInventoryUrl() {
-        return inventoryUrl;
-    }
-
-    
-    /** 
-     * @param inventoryUrl
-     */
-    public void setInventoryUrl(String inventoryUrl) {
-        this.inventoryUrl = inventoryUrl;
     }
 
     /**

@@ -13,7 +13,7 @@ public class Workflow {
    * @param source the source of the workflow
    * @throws MalformedURLException
    */
-  public Workflow (String id, String name, String link, String source) throws MalformedURLException {
+  public Workflow (String id, String name, String link, String source) { 
     this.id = id;
     this.name = name;
     this.link = link;

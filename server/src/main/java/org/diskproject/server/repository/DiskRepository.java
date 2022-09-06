@@ -412,8 +412,6 @@ public class DiskRepository extends WriteKBRepository {
                 curInternalServer = cur.get(ConfigKeys.INTERNAL_SERVER);
             if (cur.containsKey(ConfigKeys.VERSION))
                 curVersion = Float.parseFloat(cur.get(ConfigKeys.VERSION));
-            if (cur.containsKey(ConfigKeys.INVENTORY))
-                inventory = cur.get(ConfigKeys.INVENTORY);
 
             MethodAdapter curAdapter = null;
             switch (curType) {
