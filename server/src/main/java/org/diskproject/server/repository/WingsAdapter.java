@@ -88,7 +88,7 @@ public class WingsAdapter extends MethodAdapter {
         this.status.put(Status.QUEUED, "QUEUED");
         this.status.put(Status.FAILED, "FAILED");
         this.status.put(Status.RUNNING, "RUNNING");
-        this.status.put(Status.SUCCESSFUL, "SUCCESSFUL");
+        this.status.put(Status.SUCCESSFUL, "SUCCESS");
 	}
 
 	public String DOMURI() {
