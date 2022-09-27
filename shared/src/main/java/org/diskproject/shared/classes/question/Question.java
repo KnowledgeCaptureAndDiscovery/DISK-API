@@ -8,6 +8,7 @@ public class Question {
   String name;
   String template;
   String pattern;
+  String constraint;
   List<QuestionVariable> variables;
 
   public Question () {
@@ -79,5 +80,13 @@ public class Question {
   
   public void addVariable (QuestionVariable var) {
 	  this.variables.add(var);
+  }
+
+  public void setConstraint (String query) {
+    this.constraint = query;
+  }
+
+  public String getConstraint () {
+    return this.constraint;
   }
 }

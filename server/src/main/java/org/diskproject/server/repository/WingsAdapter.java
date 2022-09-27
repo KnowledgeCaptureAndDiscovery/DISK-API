@@ -170,8 +170,7 @@ public class WingsAdapter extends MethodAdapter {
 			for (int i = 0; i < len; i++) {
 				JsonObject varObj = variables.get(i).getAsJsonObject();
 				String name = varObj.get("name").getAsString();
-				String dType = varObj.get("dtype").getAsString();
-				//String varId = varObj.get("id").getAsString();
+				String dType = (varObj.has("dtype")) ? varObj.get("dtype").getAsString() : null;
 				String type = varObj.get("type").getAsString();
 				JsonElement dObj = varObj.get("dim");
 				int dim = dObj != null ? dObj.getAsInt() : 0;

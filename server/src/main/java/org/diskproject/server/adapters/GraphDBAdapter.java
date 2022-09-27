@@ -2,13 +2,17 @@ package org.diskproject.server.adapters;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -17,6 +21,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.diskproject.shared.classes.adapters.DataAdapter;
 import org.diskproject.shared.classes.adapters.DataResult;
+import org.diskproject.shared.classes.util.KBConstants;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -74,9 +79,6 @@ public class GraphDBAdapter extends DataAdapter {
         if (token != null)
             request.addHeader("Authorization", token);
 
-        System.out.println(builder);
-
-        System.out.println("q: " + queryString);
         try (CloseableHttpResponse response = httpClient.execute(request)) {
             HttpEntity entity = response.getEntity();
 			String strResponse = EntityUtils.toString(entity);
@@ -93,10 +95,11 @@ public class GraphDBAdapter extends DataAdapter {
                     DataResult curResult = new DataResult();
                     for (JsonElement variable : variables) {
                         String varName = variable.getAsString();
-                        curResult.addValue(varName, binding.getAsJsonObject().get(varName).getAsJsonObject().get("value").getAsString());
+                        JsonElement valueJson = binding.getAsJsonObject().get(varName);
+                        String value = valueJson == null ? null : valueJson.getAsJsonObject().get("value").getAsString();
+                        curResult.addValue(varName, value);
                     }
                     results.add(curResult);
-                    System.out.println(curResult);
                 }
                 return results;
             } catch (Exception e) {
@@ -113,8 +116,43 @@ public class GraphDBAdapter extends DataAdapter {
 
     @Override
     public List<DataResult> queryOptions(String varname, String constraintQuery) throws Exception {
-        // TODO Auto-generated method stub
-        return null;
+        String name = varname.substring(1);
+        String labelVar = varname + "Label";
+        String query = "PREFIX xsd:  <" + KBConstants.XSD_NS + ">\n" +
+                "PREFIX rdfs: <" + KBConstants.RDFS_NS + ">\n" +
+                "PREFIX rdf:  <" + KBConstants.RDF_NS + ">\n" +
+                "SELECT DISTINCT " + varname + " " + labelVar + " WHERE {\n" +
+                constraintQuery;
+
+        if (!constraintQuery.contains(labelVar))
+            query += "\n  OPTIONAL { " + varname + " rdfs:label " + labelVar + " . }";
+        query += "\n}";
+
+        System.out.println("Q: " + query);
+
+        List<DataResult> solutions = this.query(query);
+        List<DataResult> fixedSolutions = new ArrayList<DataResult>();
+
+        for (DataResult solution : solutions) {
+            DataResult cur = new DataResult();
+            String valUrl = solution.getValue(name);
+            String valName = solution.getName(name);
+            String label = solution.getValue(name + "Label");
+            if (label == null && valName != null) {
+                label = valName;
+            } else if (label == null) {
+                label = valUrl.replaceAll("^.*\\/", "");
+                // Try to remove mediawiki stuff
+                label = label.replaceAll("Property-3A", "");
+                label = label.replaceAll("-28E-29", "");
+                label = label.replaceAll("_", " ");
+            }
+            cur.addValue(VARURI, valUrl);
+            cur.addValue(VARLABEL, label);
+            fixedSolutions.add(cur);
+        }
+
+        return fixedSolutions;
     }
 
     @Override
@@ -135,8 +173,30 @@ public class GraphDBAdapter extends DataAdapter {
     }
 
     @Override
-    public Map<String, String> getFileHashesByETag(List<String> dsurls) throws Exception {
-        // TODO Auto-generated method stub
+    public Map<String, String> getFileHashesByETag(List<String> files) {
+        Map<String, String> result = new HashMap<String, String>();
+        for (String file : files) {
+            String eTag = getFileETag(file);
+            if (eTag != null)
+                result.put(file, eTag);
+        }
+        return result;
+    }
+
+    public String getFileETag(String url){
+        try {
+            HttpHead request = new HttpHead(url); 
+            HttpResponse response = httpClient.execute(request);
+            if (response.containsHeader(HttpHeaders.ETAG)) {
+                Header[] eHeaders = response.getHeaders(HttpHeaders.ETAG);
+                if (eHeaders.length > 0) {
+                    String eTag = eHeaders[0].getValue();
+                    return eTag.replaceAll("\"", "").replaceAll("/", "").replaceAll("_", "").replaceAll("-", "");
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return null;
     }
     

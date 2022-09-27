@@ -30,6 +30,7 @@ import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.question.Question;
 import org.diskproject.shared.classes.util.DataAdapterResponse;
 import org.diskproject.shared.classes.util.ExternalDataRequest;
+import org.diskproject.shared.classes.util.QuestionOptionsRequest;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.Workflow;
@@ -459,6 +460,35 @@ public class DiskResource implements DiskService {
     return null;
   };
 
+  @POST
+  @Path("question/options")
+  public Map<String, List<List<String>>> listDynamicOptions(
+      @JsonProperty("config") QuestionOptionsRequest opts) {
+    try {
+      return this.repo.listDynamicOptions(opts);
+    } catch (Exception e) {
+      try {
+        e.printStackTrace();
+        // Create Json error response
+        Gson gson = new Gson();
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = gson.toJson(error);
+
+        // Prepare the response
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+
+        // Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
+    return null;
+      };
+  
   /*
    * CUSTOM
    */
