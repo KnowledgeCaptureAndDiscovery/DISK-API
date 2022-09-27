@@ -310,6 +310,7 @@ public class DiskRepository extends WriteKBRepository {
                     curAdapter = ga;
                     break;
                 default:
+                    System.out.println("Error: Data adapter type not found: '" + curType + "'");
                     break;
             }
             if (curType != null) {
@@ -403,6 +404,7 @@ public class DiskRepository extends WriteKBRepository {
                     curAdapter = new AirFlowAdapter(name, curURI, curUser, curPass);
                     break;
                 default:
+                    System.out.println("Error: Method adapter type not found: '" + curType + "'");
                     break;
             }
             if (curAdapter != null) {
