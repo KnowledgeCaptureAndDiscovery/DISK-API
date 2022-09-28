@@ -1426,6 +1426,7 @@ public class DiskRepository extends WriteKBRepository {
                             }
                         }
                     }
+                    System.out.print(dataVarBindings);
 
                     TriggeredLOI tloi = new TriggeredLOI(loi, id);
                     tloi.setWorkflows(
