@@ -15,7 +15,7 @@ env:
   MANIFEST_REPOSITORY: KnowledgeCaptureAndDiscovery/k8s
   MANIFEST_REPOSITORY_BRANCH: master
   KUSTOMIZE_IMAGE_NAME: backend-image-prod
-  MANIFEST_REPOSITORY_PATH: disk-server/disk/prod
+  MANIFEST_REPOSITORY_PATH: disk-server/disk/bikes
   NEURO_MANIFEST_REPOSITORY_PATH: disk-server/disk/neuro
   CLIMATE_MANIFEST_REPOSITORY_PATH: disk-server/disk/climate
   DEV_MANIFEST_REPOSITORY_PATH: disk-server/disk/dev
