@@ -1426,7 +1426,6 @@ public class DiskRepository extends WriteKBRepository {
                             }
                         }
                     }
-                    System.out.print(dataVarBindings);
 
                     TriggeredLOI tloi = new TriggeredLOI(loi, id);
                     tloi.setWorkflows(
@@ -1534,8 +1533,11 @@ public class DiskRepository extends WriteKBRepository {
                     String varName = vbinding.getVariable();
                     String dType = null;
                     for (Variable v: allVars) {
-                        if (varName.equals(v.getName()))
-                            dType = v.getType();
+                        if (varName.equals(v.getName())) {
+                            List<String> classes = v.getType();
+                            if (classes != null && classes.size() > 0)
+                                dType = classes.get(0); //TODO: This should be a selection of some type
+                        }
                     }
                     // TODO: this should be async
                     // Check hashes, create local name and upload data:

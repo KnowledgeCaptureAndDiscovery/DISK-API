@@ -1,15 +1,17 @@
 package org.diskproject.shared.classes.workflow;
 
+import java.util.List;
+
 public class Variable {
 	  String name;
-	  String type;
+	  List<String> type;
 	  int dimensionality;
 	  boolean param;
 	  boolean input;
 
 	  public Variable(){}
 	  
-	  public Variable(String name, String type, int dimensionality, boolean param, boolean input){
+	  public Variable(String name, List<String> type, int dimensionality, boolean param, boolean input){
 		  this.name = name;
 		  this.type = type;
 		  this.dimensionality = dimensionality;
@@ -28,11 +30,11 @@ public class Variable {
 	    this.name = name;
 	  }
 
-	  public String getType() {
+	  public List<String> getType() {
 	    return type;
 	  }
 
-	  public void setType(String type) {
+	  public void setType(List<String> type) {
 	    this.type = type;
 	  }
 

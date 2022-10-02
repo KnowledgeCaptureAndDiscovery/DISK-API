@@ -40,6 +40,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
+import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
@@ -171,11 +172,12 @@ public class WingsAdapter extends MethodAdapter {
 				JsonObject varObj = variables.get(i).getAsJsonObject();
 				String name = varObj.get("name").getAsString();
 				String dType = (varObj.has("dtype")) ? varObj.get("dtype").getAsString() : null;
-				String type = varObj.get("type").getAsString();
+				String param = varObj.get("type").getAsString();
 				JsonElement dObj = varObj.get("dim");
 				int dim = dObj != null ? dObj.getAsInt() : 0;
 
-				vList.add(new Variable(name, dType, dim, type.equals("param"), true));
+				List<String> type = getSubClasses(dType);
+				vList.add(new Variable(name, type, dim, param.equals("param"), true));
 			}
 
 		} catch (Exception e) {
@@ -184,6 +186,39 @@ public class WingsAdapter extends MethodAdapter {
 			throw new RuntimeException(e);
 		}
 		return vList;
+	}
+
+	private List<String> getSubClasses(String superClass) {
+		List<String> subClasses = new ArrayList<String>();
+		if (superClass == null)
+			return subClasses;
+		
+		subClasses.add(superClass);
+		if (superClass.startsWith(KBConstants.XSD_NS))
+			return subClasses;
+
+		String query = "SELECT ?sc WHERE {\n  ?sc <http://www.w3.org/2000/01/rdf-schema#subClassOf> <" + superClass + ">\n}";
+		String pageid = "sparql";
+		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
+		formdata.add(new BasicNameValuePair("query", query));
+		formdata.add(new BasicNameValuePair("format", "json"));
+		System.out.println("q> " + query);
+		String resultjson = get(pageid, formdata);
+		if (resultjson != null && !resultjson.equals("")) {
+			JsonObject result = jsonParser.parse(resultjson).getAsJsonObject();
+			JsonArray bindings = result.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
+
+			for (JsonElement binding : bindings) {
+				JsonObject bindingJson = binding.getAsJsonObject();
+				if (bindingJson.get("sc") == null)
+					continue;
+				String subClass = bindingJson.get("sc").getAsJsonObject().get("value").getAsString();
+				System.out.println("1> " + subClass);
+				subClasses.add(subClass);
+			}
+		}
+
+		return subClasses;
 	}
 
 	@Override
@@ -236,7 +271,8 @@ public class WingsAdapter extends MethodAdapter {
 				var.setDimensionality(((Double) inputitem.get("dim"))
 						.intValue());
 			if (inputitem.containsKey("dtype"))
-				var.setType((String) inputitem.get("dtype"));
+				var.setType(getSubClasses((String) inputitem.get("dtype")));
+
 			String vartype = (String) inputitem.get("type");
 			var.setParam(vartype.equals("param"));
 
