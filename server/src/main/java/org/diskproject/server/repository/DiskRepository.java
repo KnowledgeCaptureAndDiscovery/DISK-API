@@ -1514,6 +1514,9 @@ public class DiskRepository extends WriteKBRepository {
                 if (sparqlvar == null)
                     continue;
 
+                System.out.println("1 " + sparqlvar);
+                System.out.println(dataVarBindings);
+
                 // Get the data bindings for the sparql variable
                 List<String> dsurls = dataVarBindings.get(sparqlvar);
 
