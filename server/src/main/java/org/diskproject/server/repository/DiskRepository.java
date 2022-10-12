@@ -658,6 +658,7 @@ public class DiskRepository extends WriteKBRepository {
         String desc = hypothesis.getDescription();
         String question = hypothesis.getQuestion();
         String dateCreated = hypothesis.getDateCreated();
+        System.out.println(dateCreated);
         if (dateCreated == null || dateCreated.equals("")) {
             // SET DATE
             hypothesis.setDateCreated(dateformatter.format(new Date()));
@@ -1263,8 +1264,8 @@ public class DiskRepository extends WriteKBRepository {
                     if (allSolutions != null) {
                         if (allSolutions.size() == 0) {
                             System.out.println("No solutions for " + loi.getId());
-                             String errorMesString = "No solutions found for the query: \n" + query;
-                             System.out.println(errorMesString);
+                            //String errorMesString = "No solutions found for the query: \n" + query;
+                            //System.out.println(errorMesString);
                             // throw new NotFoundException(errorMesString);
                         } else
                             for (List<SparqlQuerySolution> row : allSolutions) {
@@ -1514,9 +1515,6 @@ public class DiskRepository extends WriteKBRepository {
                 if (sparqlvar == null)
                     continue;
 
-                System.out.println("1 " + sparqlvar);
-                System.out.println(dataVarBindings);
-
                 // Get the data bindings for the sparql variable
                 List<String> dsurls = dataVarBindings.get(sparqlvar);
 
@@ -1538,8 +1536,9 @@ public class DiskRepository extends WriteKBRepository {
                     for (Variable v: allVars) {
                         if (varName.equals(v.getName())) {
                             List<String> classes = v.getType();
-                            if (classes != null && classes.size() > 0)
-                                dType = classes.get(0); //TODO: This should be a selection of some type
+                            if (classes != null && classes.size() > 0) {
+                                dType = classes.contains(vbinding.getType()) ? vbinding.getType() : classes.get(0);
+                            }
                         }
                     }
                     // TODO: this should be async
@@ -1653,7 +1652,7 @@ public class DiskRepository extends WriteKBRepository {
         // upload the files
         for (String newFilename : names) {
             String newFile = nameToUrl.get(newFilename);
-            System.out.println("Uploading to " + methodAdapter.getName() + ": " + newFile + " as " + newFilename);
+            System.out.println("Uploading to " + methodAdapter.getName() + ": " + newFile + " as " + newFilename + "(" + dType + ")");
             methodAdapter.addData(newFile, newFilename, dType);
         }
 
@@ -1779,7 +1778,6 @@ public class DiskRepository extends WriteKBRepository {
                             dataset += "<li>" + anchor + "</li>";
                         }
                     }
-                    System.out.println("binding: " + binding);
                 }
             }
             Double confidence = tloi.getConfidenceValue();

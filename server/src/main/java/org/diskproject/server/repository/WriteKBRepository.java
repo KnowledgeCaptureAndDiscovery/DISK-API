@@ -74,13 +74,22 @@ public class WriteKBRepository extends KBRepository {
     }
 
     private KBObject getKBValue(Value v, KBAPI kb) {
+        String dataType = v.getDatatype();
+        Object value = v.getValue();
         if (v.getType() == Value.Type.LITERAL) {
-            if (v.getDatatype() != null)
-                return kb.createXSDLiteral(v.getValue().toString(), v.getDatatype());
+            if (dataType != null)
+                return kb.createXSDLiteral(value.toString(), v.getDatatype());
             else
-                return kb.createLiteral(v.getValue());
+                return kb.createLiteral(value.toString());
         } else {
-            return kb.getResource(v.getValue().toString());
+            if (dataType != null) {
+                //FIXME: if we assing a new datatype to V we must ensure is an URI
+                //KBObject cls = kb.createClass(dataType);
+                //return kb.createObjectOfClass(value.toString(), cls);
+                return kb.getResource(value.toString());
+            } else {
+                return kb.getResource(value.toString());
+            }
         }
     }
 
@@ -543,6 +552,24 @@ public class WriteKBRepository extends KBRepository {
             return null;
 
         this.start_read();
+        /*
+        KBObject typeprop = userKB.getProperty(KBConstants.RDF_NS + "type");
+        for (KBTriple t : userKB.genericTripleQuery(null, typeprop, null)) {
+            KBObject s = t.getSubject();
+            KBObject o = t.getObject();
+            if (o != null && !o.getValueAsString().startsWith("http://disk-project.org/ontology/disk#")) {
+                System.out.println("> " + s + " = " + o);
+                if (s!= null) {
+                    this.end();
+                    this.start_write();
+                    userKB.removeTriple(t);
+                    this.save(userKB);
+                    this.end();
+                    this.start_read();
+                }
+            }
+        } */
+
         KBObject loiItem = userKB.getIndividual(loiId);
         if (loiItem == null) {
             this.end();
@@ -988,8 +1015,22 @@ public class WriteKBRepository extends KBRepository {
                 for (VariableBinding vBinding : bindings.getBindings()) {
                     String varId = vBinding.getVariable();
                     String binding = vBinding.getBinding();
-                    Value bindingValue = new Value(binding, KBConstants.XSD_NS + "string");
+                    String cType = vBinding.getType();
+
+                    String type = cType != null ? cType :  KBConstants.XSD_NS + "string"; // default type
+                    Value bindingValue = new Value(binding, type);
+                    if (cType != null && !cType.startsWith(KBConstants.XSD_NS)) {
+                        bindingValue.setType(Value.Type.URI);
+                    }
+
                     KBObject varbindingobj = userKB.createObjectOfClass(null, DISKOnt.getClass(DISK.VARIABLE_BINDING));
+                    if (bindingValue.getType() == Value.Type.URI) {
+                        // We store the type of the binding on the binding object. We should store it on the binding itself
+                        // but most of the time the binding is a rdf-literal value.
+                        KBObject typeProp = userKB.getProperty(KBConstants.RDF_NS + "type");
+                        userKB.addTriple(varbindingobj, typeProp, userKB.getResource(type));
+                        //userKB.addClassForInstance(varbindingobj, userKB.getResource(type));
+                    }
                     userKB.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_VARIABLE),
                             userKB.getResource(workflowuri + "#" + varId));
                     userKB.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE),
@@ -1091,6 +1132,22 @@ public class WriteKBRepository extends KBRepository {
                     KBObject varobj = kb.getPropertyValue(vbobj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
                     KBObject bindobj = kb.getPropertyValue(vbobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
                     VariableBinding vBinding = new VariableBinding(varobj.getName(), bindobj.getValueAsString());
+                    String cls = null;
+                    try {
+                        KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
+                        for (KBTriple tr : kb.genericTripleQuery(vbobj, typeprop, null)) {
+                            KBObject o = tr.getObject();
+                            if (o != null && !o.getValueAsString().startsWith("http://disk-project.org/ontology/disk#")) {
+                                cls = o.getValueAsString();
+                            }
+                        }
+                    } catch (Exception e) {
+                        // TODO: handle exception
+                        System.out.println("Something weird has happened");
+                    }
+                    if (cls != null) {
+                        vBinding.setType(cls);
+                    }
                     bindings.getBindings().add(vBinding);
                 }
 

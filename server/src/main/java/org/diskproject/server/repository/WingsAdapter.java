@@ -1,5 +1,6 @@
 package org.diskproject.server.repository;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -202,7 +203,6 @@ public class WingsAdapter extends MethodAdapter {
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 		formdata.add(new BasicNameValuePair("query", query));
 		formdata.add(new BasicNameValuePair("format", "json"));
-		System.out.println("q> " + query);
 		String resultjson = get(pageid, formdata);
 		if (resultjson != null && !resultjson.equals("")) {
 			JsonObject result = jsonParser.parse(resultjson).getAsJsonObject();
@@ -213,7 +213,6 @@ public class WingsAdapter extends MethodAdapter {
 				if (bindingJson.get("sc") == null)
 					continue;
 				String subClass = bindingJson.get("sc").getAsJsonObject().get("value").getAsString();
-				System.out.println("1> " + subClass);
 				subClasses.add(subClass);
 			}
 		}
@@ -765,9 +764,9 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 
-	public String addDataToWingsAsFile(String id, String contents, String type) {
+	public String addDataToWingsAsFile(String id, byte[] contents, String type) {
 		// Compute the hash of the contents and check it agains filename.
-		String sha = DigestUtils.sha1Hex(contents.getBytes());
+		String sha = DigestUtils.sha1Hex(contents);
 		String correctName = "SHA" + sha.substring(0, 6);
 		if (!id.contains(correctName))
 			System.out.println("File " + id + " does not have the same hash: " + sha);
@@ -782,7 +781,7 @@ public class WingsAdapter extends MethodAdapter {
 				return null;
 			}
 			File f = new File(dir.getAbsolutePath() + "/" + id);
-			FileUtils.write(f, contents);
+			FileUtils.writeByteArrayToFile(f, contents);
 			String uploadResponse = this.upload(uploadPage, "data", f);
 
 			// Decode response
@@ -831,15 +830,17 @@ public class WingsAdapter extends MethodAdapter {
 		/* FIXME: Wings rename does not rename the file, only the id
 		 * thus we cannot upload two files with the same name and then rename them. */
 		// Get the file.
-		String fileContents = null;
 		CloseableHttpClient client = HttpClientBuilder.create().build();
+		byte[] bytes = null;
 		try {
 			HttpGet securedResource = new HttpGet(url);
 			CloseableHttpResponse httpResponse = client.execute(securedResource);
 
 			try {
 				HttpEntity responseEntity = httpResponse.getEntity();
-				fileContents = EntityUtils.toString(responseEntity);
+				ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
+    			responseEntity.writeTo(baos);
+				bytes = baos.toByteArray();
 				EntityUtils.consume(responseEntity);
 				httpResponse.close();
 			} catch (Exception e) {
@@ -856,8 +857,8 @@ public class WingsAdapter extends MethodAdapter {
 			}
 		}
 
-		System.out.println("Content downloaded [" + fileContents.length() + "] " + fileContents.substring(0, fileContents.length() > 10 ? 10 : fileContents.length()-1) + "...");
-		String dataid = addDataToWingsAsFile(name, fileContents, dType);
+		System.out.println("Content downloaded [" + bytes.length + "] ");
+		String dataid = addDataToWingsAsFile(name, bytes, dType);
 		System.out.println("Data ID generated: " + dataid);
 		return dataid;
 	}
