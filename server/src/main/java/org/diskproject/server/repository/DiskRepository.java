@@ -313,7 +313,7 @@ public class DiskRepository extends WriteKBRepository {
                     System.out.println("Error: Data adapter type not found: '" + curType + "'");
                     break;
             }
-            if (curType != null) {
+            if (curType != null && curAdapter != null) {
                 if (curNamespace != null && curPrefix != null) {
                     curAdapter.setPrefix(curPrefix, curNamespace);
                 }
@@ -1706,9 +1706,10 @@ public class DiskRepository extends WriteKBRepository {
      * Narratives
      */
 
-    public Map<String, String> getNarratives(String username, String tloid) {
+    public Map<String, String> getNarratives(String username, String tloiId) {
+        // DEPRECATED!
         Map<String, String> narratives = new HashMap<String, String>();
-        TriggeredLOI tloi = this.getTriggeredLOI(username, tloid);
+        TriggeredLOI tloi = this.getTriggeredLOI(username, tloiId);
         if (tloi != null) {
             String hypId = tloi.getParentHypothesisId();
             String loiId = tloi.getParentLoiId();
@@ -1723,14 +1724,15 @@ public class DiskRepository extends WriteKBRepository {
             // Assuming each tloi only has a workflow or metaworkdflow:
             WorkflowBindings wf = null;
             List<WorkflowBindings> wfs = tloi.getWorkflows();
-            List<WorkflowBindings> mwfs = tloi.getMetaWorkflows();
+            List<WorkflowBindings> metaWfs = tloi.getMetaWorkflows();
 
-            if (mwfs != null && mwfs.size() > 0) {
-                wf = mwfs.get(0);
+            if (metaWfs != null && metaWfs.size() > 0) {
+                wf = metaWfs.get(0);
             } else if (wfs != null && wfs.size() > 0) {
                 wf = wfs.get(0);
             } else {
-                System.out.println("TLOID: " + tloid + " has does not have any workflow.");
+                System.out.println("TLO ID: " + tloiId + " has does not have any workflow.");
+                return null;
             }
 
             // List of data used.

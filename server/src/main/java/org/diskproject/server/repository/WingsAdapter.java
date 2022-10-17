@@ -654,6 +654,8 @@ public class WingsAdapter extends MethodAdapter {
 		formdata.add(new BasicNameValuePair("seed_json", jsonSeed));
 		formdata.add(new BasicNameValuePair("seed_constraints_json", jsonSeedConstraints));
 		String pageid = "users/" + getUsername() + "/" + domain + "/executions/runWorkflow";
+		System.out.println(pageid);
+		System.out.println(formdata);
 		return post(pageid, formdata);
 		//} catch (Exception e) {
 		//	e.printStackTrace();
@@ -835,7 +837,6 @@ public class WingsAdapter extends MethodAdapter {
 		try {
 			HttpGet securedResource = new HttpGet(url);
 			CloseableHttpResponse httpResponse = client.execute(securedResource);
-
 			try {
 				HttpEntity responseEntity = httpResponse.getEntity();
 				ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
@@ -855,6 +856,9 @@ public class WingsAdapter extends MethodAdapter {
 				client.close();
 			} catch (IOException e) {
 			}
+		}
+		if (bytes == null) {
+			return null;
 		}
 
 		System.out.println("Content downloaded [" + bytes.length + "] ");
@@ -1104,8 +1108,12 @@ public class WingsAdapter extends MethodAdapter {
 		// Set Parameter Types
 		String paramTypes = "";
 		for (String key : ivm.keySet()) {
-			if (ivm.get(key).isParam())
-				paramTypes += "\"" + wfname + key + "\":\"" + ivm.get(key).getType() + "\",";
+			Variable var = ivm.get(key);
+			if (var.isParam()) {
+				List<String> types = var.getType();
+				String type = types != null && types.size() > 0 ? types.get(0) : KBConstants.XSD_NS + "string";
+				paramTypes += "\"" + wfname + key + "\":\"" + type + "\",";
+			}
 		}
 		if (paramTypes.length() > 0)
 			paramTypes = paramTypes.substring(0, paramTypes.length() - 1);
