@@ -1,6 +1,7 @@
 package org.diskproject.server.repository;
 
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -1929,7 +1930,7 @@ public class DiskRepository extends WriteKBRepository {
         return methodAdapter.getRunStatus(id);
     }
 
-    public String getOutputData(String source, String id) {
+    public byte[] getOutputData(String source, String id) {
         MethodAdapter methodAdapter = getMethodAdapterByName(source);
         if (methodAdapter == null)
             return null;
@@ -2067,14 +2068,15 @@ public class DiskRepository extends WriteKBRepository {
                             for (String outname : outputs.keySet()) {
                                 if (outname.equals("p_value") || outname.equals("pval") || outname.equals("p_val")) {
                                     String dataid = outputs.get(outname);
-                                    String wingsP = methodAdapter.fetchData(dataid);
-                                    Double pval = 0.0;
+                                    byte[] byteConf = methodAdapter.fetchData(dataid);
+                                    String wingsP = byteConf != null ? new String(byteConf, StandardCharsets.UTF_8) : null;
+                                    Double pval = null;
                                     try {
                                         pval = Double.valueOf(wingsP);
                                     } catch (Exception e) {
                                         System.err.println("[M] Error: " + dataid + " is a non valid p-value");
                                     }
-                                    if (pval > 0) {
+                                    if (pval != null) {
                                         System.out.println("[M] Detected p-value: " + pval);
                                         tloi.setConfidenceValue(pval);
                                         tloi.setConfidenceType("P-VALUE");

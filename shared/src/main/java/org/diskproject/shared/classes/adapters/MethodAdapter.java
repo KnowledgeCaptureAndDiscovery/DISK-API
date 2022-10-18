@@ -87,7 +87,7 @@ public abstract class MethodAdapter {
 
 	public abstract WorkflowRun getRunStatus (String runId);
 
-	public abstract String fetchData (String dataId);
+	public abstract byte[] fetchData (String dataId);
 
 	public abstract Map<String, String> getRunVariableBindings (String runId);
 

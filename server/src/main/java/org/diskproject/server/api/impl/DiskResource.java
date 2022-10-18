@@ -1,6 +1,7 @@
 package org.diskproject.server.api.impl;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -573,11 +574,13 @@ public class DiskResource implements DiskService {
   @Override
   public String getOutputData(
       @JsonProperty("request") ExternalDataRequest r) {
-    String result = this.repo.getOutputData(r.getSource(), r.getDataId());
+    byte[] result = this.repo.getOutputData(r.getSource(), r.getDataId());
+    String tmp = ""; // FIXME: this should not be an string.
     if (result == null) {
       System.out.println("ERROR: " + r.getDataId() + " not available on " + r.getSource() + ".");
-      result = "";
+    } else {
+      tmp = new String(result, StandardCharsets.UTF_8);
     }
-    return result;
+    return tmp;
   }
 }

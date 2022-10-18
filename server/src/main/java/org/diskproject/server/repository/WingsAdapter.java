@@ -663,13 +663,41 @@ public class WingsAdapter extends MethodAdapter {
 		//return null;
 	}
 
-	public String fetchDataFromWings(String dataid) {
-		String getpage = "users/" + getUsername() + "/" + domain + "/data/fetch";
-
-		// Check for data already present on the server
+	public byte[] fetchDataFromWings(String dataid) {
+		String url = this.server + "/users/" + getUsername() + "/" + domain + "/data/fetch";
+		// Download data already present on the server
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 		formdata.add(new BasicNameValuePair("data_id", dataid));
-		return this.get(getpage, formdata);
+		url += "?" + URLEncodedUtils.format(formdata, "UTF-8");
+
+		this.login();
+		CloseableHttpClient client = HttpClientBuilder.create().build();
+		byte[] bytes = null;
+		try {
+			HttpGet securedResource = new HttpGet(url);
+			CloseableHttpResponse httpResponse = client.execute(securedResource);
+			try {
+				HttpEntity responseEntity = httpResponse.getEntity();
+				ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
+    			responseEntity.writeTo(baos);
+				bytes = baos.toByteArray();
+				EntityUtils.consume(responseEntity);
+				httpResponse.close();
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				httpResponse.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				client.close();
+			} catch (IOException e) {
+			}
+		}
+
+		return bytes;
 	}
 
 	public String addOrUpdateData(String id, String type, String contents, boolean addServer) {
@@ -1310,7 +1338,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public String fetchData(String dataId) {
+	public byte[] fetchData(String dataId) {
 		return this.fetchDataFromWings(dataId);
 	}
 
