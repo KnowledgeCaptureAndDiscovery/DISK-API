@@ -12,3 +12,7 @@ metadata and outputs for posterior analysis.
 ## Documentation
 
 Full documentation is available at [https://disk.readthedocs.io](https://disk.readthedocs.io)
+
+## Related repositories
+
+- [DISK User Interface](https://github.com/KnowledgeCaptureAndDiscovery/DISK-UI)
