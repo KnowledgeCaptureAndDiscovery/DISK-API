@@ -261,7 +261,7 @@ public class ReanaAdapter extends MethodAdapter {
      * @throws Exception
      */
     @Override
-    public String fetchData(String dataUrl) throws Exception {
+    public byte[] fetchData(String dataUrl) throws Exception {
         return this.apiClient.downloadData(dataUrl);
     }
 
@@ -308,15 +308,17 @@ public class ReanaAdapter extends MethodAdapter {
             Variable variable = new Variable();
             variable.setName(key);
             variable.setInput(true);
+            List<String> type = new ArrayList<String>();
             if (reanaFiles.contains(value)) {
-                variable.setType("File");
+                type.add("File");
                 variable.setParam(false);
             } else {
                 variable.setName(key.toString());
                 // TODO: the spec doesn't contain information about the type
-                variable.setType("Parameter");
+                type.add("Parameter");
                 variable.setParam(true);
             }
+            variable.setType(type);
             variables.add(variable);
         });
         return variables;
@@ -423,15 +425,18 @@ public class ReanaAdapter extends MethodAdapter {
             Variable variable = new Variable();
             variable.setName(key);
             variable.setInput(true);
+
+            List<String> type = new ArrayList<String>();
             if (reanaFiles.contains(value)) {
-                variable.setType("File");
+                type.add("File");
                 variable.setParam(false);
             } else {
                 variable.setName(key.toString());
                 // TODO: the spec doesn't contain information about the type
-                variable.setType("Parameter");
+                type.add("Parameter");
                 variable.setParam(true);
             }
+            variable.setType(type);
             variables2.put(key, variable);
         });
         return variables2;

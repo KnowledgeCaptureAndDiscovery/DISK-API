@@ -1829,7 +1829,7 @@ public class DiskRepository extends WriteKBRepository {
                         if (varName.equals(v.getName())) {
                             List<String> classes = v.getType();
                             if (classes != null && classes.size() > 0) {
-                                resourceDataType = classes.contains(vbinding.getType()) ? vbinding.getType() : classes.get(0);
+                                resourceDataType = classes.contains(variableBinding.getType()) ? variableBinding.getType() : classes.get(0);
                             }
                         }
                     }

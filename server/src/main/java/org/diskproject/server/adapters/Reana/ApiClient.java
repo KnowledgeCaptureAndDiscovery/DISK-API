@@ -124,10 +124,10 @@ public class ApiClient {
         }
     }
 
-    public String downloadData(String url) throws Exception {
+    public byte[] downloadData(String url) throws Exception {
         String requestAccept = "application/octet-stream";
         try {
-            return this.performHTTPGet(url, requestAccept);
+            return this.performHTTPGetByte(url, requestAccept);
         } catch (Exception e) {
             System.err.println("Unable to fetch file");
             System.err.println(e.getMessage());
@@ -217,6 +217,25 @@ public class ApiClient {
         return responseString;
     }
 
+    public byte[] performHTTPGetByte(String url, String accept) throws Exception {
+        /**
+         * Perform an HTTP GET request
+         */
+        HttpGet httpGet = new HttpGet(url);
+        ArrayList<NameValuePair> parameters = new ArrayList<NameValuePair>();
+        parameters.add(new BasicNameValuePair("access_token", this.token));
+        httpGet.setHeader(HttpHeaders.ACCEPT, accept);
+        URI uri = new URIBuilder(httpGet.getURI())
+                .addParameters(parameters)
+                .build();
+        ((HttpRequestBase) httpGet).setURI(uri);
+        CloseableHttpResponse response = httpClient.execute(httpGet);
+        if (response.getStatusLine().getStatusCode() != 200) {
+            throw new Exception("HTTP GET request failed: " + response.getStatusLine().getStatusCode());
+        }
+        HttpEntity entity = response.getEntity();
+        return EntityUtils.toByteArray(entity);
+    }
     /**
      * Perform an HTTP POST request
      * 

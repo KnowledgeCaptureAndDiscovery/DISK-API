@@ -617,12 +617,12 @@ public class DiskResource implements DiskService {
   public String getOutputData(
       @JsonProperty("request") ExternalDataRequest r) {
     try {
-      String result = this.repo.getOutputData(r.getSource(), r.getRunId(), r.getDataId());
+      byte[] result = this.repo.getOutputData(r.getSource(), r.getRunId(), r.getDataId());
       response.setContentType("application/json");
       if (result == null) {
         throw new Exception("No data found");
       }
-      return result;
+      return new String(result, StandardCharsets.UTF_8);
     } catch (Exception e) {
       try {
         // Create Json error response
