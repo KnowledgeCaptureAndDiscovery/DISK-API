@@ -52,10 +52,10 @@ public class KBRepository implements TransactionsAPI {
     this.transaction = new TransactionsJena(this.fac);
 
     try {
-      this.ontKB = fac.getKB(KBConstants.DISKURI(), OntSpec.PELLET, false, true);
+      this.ontKB = fac.getKB(KBConstants.DISK_URI, OntSpec.PELLET, false, true);
     } catch (Exception e) {
       e.printStackTrace();
-      System.out.println("Error reading KB: " + KBConstants.DISKURI());
+      System.out.println("Error reading KB: " + KBConstants.DISK_URI);
       return;
     }
 

@@ -3,8 +3,9 @@ package org.diskproject.shared.classes.question;
 public class QuestionVariable {
   String id;
   String varname;
-  String constraints;
-  String[] fixedOptions;
+  String constraints; //FIXME: change name to something more intuive
+  String[] fixedOptions; //FIXME: MAP {[id, name], [id, name]}
+  Number cardinalityMax, cardinalityMin;
 
   public QuestionVariable () {
   }

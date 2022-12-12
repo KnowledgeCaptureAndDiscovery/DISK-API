@@ -182,6 +182,7 @@ public abstract class MethodAdapter {
 
     public abstract String fetchData(String dataId) throws Exception;
 
+	public abstract byte[] fetchData (String dataId);
     public abstract Map<String, String> getRunVariableBindings(String runId);
 
     public abstract String duplicateWorkflow(String workflowId, String newName) throws Exception;

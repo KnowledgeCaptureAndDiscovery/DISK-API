@@ -6,23 +6,19 @@ import java.util.List;
 import java.util.Set;
 
 public class LineOfInquiry {
-  String id;
-  String name;
-  String description;
-  String hypothesisQuery;
-  String dataQuery;
-  List<WorkflowBindings> workflows;
-  List<WorkflowBindings> metaWorkflows;
+  String id, name, description;
+  String hypothesisQuery, dataQuery;
+  List<WorkflowBindings> workflows, metaWorkflows;
   String notes;
   String author;
-  String dateCreated;
-  String dateModified;
+  String dateCreated, dateModified;
 
-  String tableVariables;
-  String tableDescription;
+  String tableVariables, tableDescription;
   String dataQueryExplanation;
   String dataSource;
   String question;
+
+  Boolean active;
 
   public LineOfInquiry() {
     this.workflows = new ArrayList<WorkflowBindings>();
@@ -33,6 +29,7 @@ public class LineOfInquiry {
 	  this.id = id;
 	  this.name = name;
 	  this.description = description;
+    this.active = true;
   }
 
   public LineOfInquiry(String id,
@@ -51,6 +48,7 @@ public class LineOfInquiry {
 	  this.dataQuery = dataQuery;
 	  this.workflows = workflows;
 	  this.metaWorkflows = metaWorkflows;
+    this.active = true;
   }
   
   public void setDataSource (String ds) {
@@ -222,5 +220,13 @@ public class LineOfInquiry {
   
   public void setDataQueryExplanation (String v) {
 	  this.dataQueryExplanation = v;
+  }
+
+  public void setActive (Boolean b) {
+    this.active = b;
+  }
+
+  public Boolean getActive () {
+    return this.active;
   }
 }

@@ -1,5 +1,6 @@
 package org.diskproject.server.repository;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -41,6 +42,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.loi.TriggeredLOI.Status;
+import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
@@ -179,13 +181,13 @@ public class WingsAdapter extends MethodAdapter {
 			for (int i = 0; i < len; i++) {
 				JsonObject varObj = variables.get(i).getAsJsonObject();
 				String name = varObj.get("name").getAsString();
-				String dType = varObj.get("dtype").getAsString();
-				//String varId = varObj.get("id").getAsString();
-				String type = varObj.get("type").getAsString();
+				String dType = (varObj.has("dtype")) ? varObj.get("dtype").getAsString() : null;
+				String param = varObj.get("type").getAsString();
 				JsonElement dObj = varObj.get("dim");
 				int dim = dObj != null ? dObj.getAsInt() : 0;
 
-				vList.add(new Variable(name, dType, dim, type.equals("param"), true));
+				List<String> type = getSubClasses(dType);
+				vList.add(new Variable(name, type, dim, param.equals("param"), true));
 			}
 
 		} catch (Exception e) {
@@ -194,6 +196,37 @@ public class WingsAdapter extends MethodAdapter {
 			throw new RuntimeException(e);
 		}
 		return vList;
+	}
+
+	private List<String> getSubClasses(String superClass) {
+		List<String> subClasses = new ArrayList<String>();
+		if (superClass == null)
+			return subClasses;
+		
+		subClasses.add(superClass);
+		if (superClass.startsWith(KBConstants.XSD_NS))
+			return subClasses;
+
+		String query = "SELECT ?sc WHERE {\n  ?sc <http://www.w3.org/2000/01/rdf-schema#subClassOf> <" + superClass + ">\n}";
+		String pageid = "sparql";
+		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
+		formdata.add(new BasicNameValuePair("query", query));
+		formdata.add(new BasicNameValuePair("format", "json"));
+		String resultjson = get(pageid, formdata);
+		if (resultjson != null && !resultjson.equals("")) {
+			JsonObject result = jsonParser.parse(resultjson).getAsJsonObject();
+			JsonArray bindings = result.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
+
+			for (JsonElement binding : bindings) {
+				JsonObject bindingJson = binding.getAsJsonObject();
+				if (bindingJson.get("sc") == null)
+					continue;
+				String subClass = bindingJson.get("sc").getAsJsonObject().get("value").getAsString();
+				subClasses.add(subClass);
+			}
+		}
+
+		return subClasses;
 	}
 
 	@Override
@@ -246,7 +279,8 @@ public class WingsAdapter extends MethodAdapter {
 				var.setDimensionality(((Double) inputitem.get("dim"))
 						.intValue());
 			if (inputitem.containsKey("dtype"))
-				var.setType((String) inputitem.get("dtype"));
+				var.setType(getSubClasses((String) inputitem.get("dtype")));
+
 			String vartype = (String) inputitem.get("type");
 			var.setParam(vartype.equals("param"));
 
@@ -629,6 +663,8 @@ public class WingsAdapter extends MethodAdapter {
 		formdata.add(new BasicNameValuePair("seed_json", jsonSeed));
 		formdata.add(new BasicNameValuePair("seed_constraints_json", jsonSeedConstraints));
 		String pageid = "users/" + getUsername() + "/" + domain + "/executions/runWorkflow";
+		System.out.println(pageid);
+		System.out.println(formdata);
 		return post(pageid, formdata);
 		//} catch (Exception e) {
 		//	e.printStackTrace();
@@ -636,13 +672,41 @@ public class WingsAdapter extends MethodAdapter {
 		//return null;
 	}
 
-	public String fetchDataFromWings(String dataid) {
-		String getpage = "users/" + getUsername() + "/" + domain + "/data/fetch";
-
-		// Check for data already present on the server
+	public byte[] fetchDataFromWings(String dataid) {
+		String url = this.server + "/users/" + getUsername() + "/" + domain + "/data/fetch";
+		// Download data already present on the server
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 		formdata.add(new BasicNameValuePair("data_id", dataid));
-		return this.get(getpage, formdata);
+		url += "?" + URLEncodedUtils.format(formdata, "UTF-8");
+
+		this.login();
+		CloseableHttpClient client = HttpClientBuilder.create().build();
+		byte[] bytes = null;
+		try {
+			HttpGet securedResource = new HttpGet(url);
+			CloseableHttpResponse httpResponse = client.execute(securedResource);
+			try {
+				HttpEntity responseEntity = httpResponse.getEntity();
+				ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
+    			responseEntity.writeTo(baos);
+				bytes = baos.toByteArray();
+				EntityUtils.consume(responseEntity);
+				httpResponse.close();
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				httpResponse.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				client.close();
+			} catch (IOException e) {
+			}
+		}
+
+		return bytes;
 	}
 
 	public String addOrUpdateData(String id, String type, String contents, boolean addServer) {
@@ -739,9 +803,9 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 
-	public String addDataToWingsAsFile(String id, String contents, String type) {
+	public String addDataToWingsAsFile(String id, byte[] contents, String type) {
 		// Compute the hash of the contents and check it agains filename.
-		String sha = DigestUtils.sha1Hex(contents.getBytes());
+		String sha = DigestUtils.sha1Hex(contents);
 		String correctName = "SHA" + sha.substring(0, 6);
 		if (!id.contains(correctName))
 			System.out.println("File " + id + " does not have the same hash: " + sha);
@@ -756,7 +820,7 @@ public class WingsAdapter extends MethodAdapter {
 				return null;
 			}
 			File f = new File(dir.getAbsolutePath() + "/" + id);
-			FileUtils.write(f, contents);
+			FileUtils.writeByteArrayToFile(f, contents);
 			String uploadResponse = this.upload(uploadPage, "data", f);
 
 			// Decode response
@@ -805,15 +869,16 @@ public class WingsAdapter extends MethodAdapter {
 		/* FIXME: Wings rename does not rename the file, only the id
 		 * thus we cannot upload two files with the same name and then rename them. */
 		// Get the file.
-		String fileContents = null;
 		CloseableHttpClient client = HttpClientBuilder.create().build();
+		byte[] bytes = null;
 		try {
 			HttpGet securedResource = new HttpGet(url);
 			CloseableHttpResponse httpResponse = client.execute(securedResource);
-
 			try {
 				HttpEntity responseEntity = httpResponse.getEntity();
-				fileContents = EntityUtils.toString(responseEntity);
+				ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
+    			responseEntity.writeTo(baos);
+				bytes = baos.toByteArray();
 				EntityUtils.consume(responseEntity);
 				httpResponse.close();
 			} catch (Exception e) {
@@ -829,9 +894,12 @@ public class WingsAdapter extends MethodAdapter {
 			} catch (IOException e) {
 			}
 		}
+		if (bytes == null) {
+			return null;
+		}
 
-		System.out.println("Content downloaded [" + fileContents.length() + "] " + fileContents.substring(0, fileContents.length() > 10 ? 10 : fileContents.length()-1) + "...");
-		String dataid = addDataToWingsAsFile(name, fileContents, dType);
+		System.out.println("Content downloaded [" + bytes.length + "] ");
+		String dataid = addDataToWingsAsFile(name, bytes, dType);
 		System.out.println("Data ID generated: " + dataid);
 		return dataid;
 	}
@@ -1077,8 +1145,12 @@ public class WingsAdapter extends MethodAdapter {
 		// Set Parameter Types
 		String paramTypes = "";
 		for (String key : ivm.keySet()) {
-			if (ivm.get(key).isParam())
-				paramTypes += "\"" + wfname + key + "\":\"" + ivm.get(key).getType() + "\",";
+			Variable var = ivm.get(key);
+			if (var.isParam()) {
+				List<String> types = var.getType();
+				String type = types != null && types.size() > 0 ? types.get(0) : KBConstants.XSD_NS + "string";
+				paramTypes += "\"" + wfname + key + "\":\"" + type + "\",";
+			}
 		}
 		if (paramTypes.length() > 0)
 			paramTypes = paramTypes.substring(0, paramTypes.length() - 1);
@@ -1275,7 +1347,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public String fetchData(String dataId) {
+	public byte[] fetchData(String dataId) {
 		return this.fetchDataFromWings(dataId);
 	}
 

@@ -27,7 +27,10 @@ public class ConfigKeys {
     public static final String DOMAIN = "domain";
     public static final String INTERNAL_SERVER = "internal_server";
 
+    public static final String REPOSITORY = "repository";
+
     public static final String DATA_TYPE_SPARQL = "sparql";
+    public static final String DATA_TYPE_GRAPH_DB = "graphdb";
     public static final String METHOD_TYPE_WINGS = "wings";
     public static final String METHOD_TYPE_AIRFLOW = "airflow";
     public static final String METHOD_TYPE_REANA = "reana";

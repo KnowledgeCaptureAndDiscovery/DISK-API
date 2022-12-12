@@ -8,10 +8,17 @@ public class VariableBinding implements Serializable, Comparable<VariableBinding
   
   String variable;
   String binding;
+  String type;
    
   public VariableBinding(String v, String b) {
 	  variable = v;
 	  binding = b;
+  }
+
+  public VariableBinding(String v, String b, String t) {
+	  variable = v;
+	  binding = b;
+    type = t;
   }
   
   public VariableBinding(){}
@@ -27,7 +34,19 @@ public class VariableBinding implements Serializable, Comparable<VariableBinding
   public String getBinding() {
     return binding;
   }
+
+  public void setBinding(String binding) {
+    this.binding = binding;
+  }
   
+  public String getType () {
+    return type;
+  }
+
+  public void setType (String t) {
+    this.type = t;
+  }
+
   public String[] getBindingAsArray () {
 	String b = getBinding().replace("]", "").replace("[", "").replaceAll(" ", "");
     return b.split(",");
@@ -37,15 +56,11 @@ public class VariableBinding implements Serializable, Comparable<VariableBinding
     return (binding.charAt(0) == '[' && binding.charAt(binding.length()-1) == ']');
   }
 
-  public void setBinding(String binding) {
-    this.binding = binding;
-  }
-
-  public String toString() {
+  public String toString () {
     return variable+" = "+binding;
   }
 
-  public int compareTo(VariableBinding o) {
+  public int compareTo (VariableBinding o) {
     return this.toString().compareTo(o.toString());
   }
 }

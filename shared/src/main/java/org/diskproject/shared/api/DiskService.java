@@ -20,6 +20,7 @@ import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.question.Question;
 import org.diskproject.shared.classes.util.DataAdapterResponse;
 import org.diskproject.shared.classes.util.ExternalDataRequest;
+import org.diskproject.shared.classes.util.QuestionOptionsRequest;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.Workflow;
@@ -181,6 +182,11 @@ public interface DiskService {
   @Path("question/{id}/options")
   public List<List<String>> listOptions(
       @PathParam("id") String id);
+
+  @POST
+  @Path("question/options")
+  public Map<String, List<List<String>>> listDynamicOptions(
+      @JsonProperty("config") QuestionOptionsRequest opts);
   
   /*
    * CUSTOM

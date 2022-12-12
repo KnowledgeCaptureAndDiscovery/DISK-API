@@ -55,7 +55,7 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
 
   public class JwtValidator {
     private final List<String> allowedIsses = Collections
-        .singletonList("https://auth.mint.isi.edu/auth/realms/production");
+        .singletonList("https://auth.mint.isi.edu/realms/production");
 
     private String getKeycloakCertificateUrl(DecodedJWT token) {
       return token.getIssuer() + "/protocol/openid-connect/certs";
