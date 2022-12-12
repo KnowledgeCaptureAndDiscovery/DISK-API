@@ -33,4 +33,5 @@ public class ConfigKeys {
     public static final String DATA_TYPE_GRAPH_DB = "graphdb";
     public static final String METHOD_TYPE_WINGS = "wings";
     public static final String METHOD_TYPE_AIRFLOW = "airflow";
+    public static final String METHOD_TYPE_REANA = "reana";
 }

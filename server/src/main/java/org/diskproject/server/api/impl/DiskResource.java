@@ -377,7 +377,28 @@ public class DiskResource implements DiskService {
   public List<Variable> getWorkflowVariables(
       @PathParam("source") String source,
       @PathParam("id") String id) {
-    return this.repo.getWorkflowVariables(source, id);
+    Gson response_error = new Gson();
+    try {
+      return this.repo.getWorkflowVariables(source, id);
+    } catch (Exception e) {
+      try {
+        // Create Json error response
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = response_error.toJson(error);
+
+        // Prepare the response
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+
+        // Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
+    return null;
   }
 
   @GET
@@ -386,7 +407,29 @@ public class DiskResource implements DiskService {
   public WorkflowRun monitorWorkflow(
       @PathParam("source") String source,
       @PathParam("id") String id) {
-    return this.repo.getWorkflowRunStatus(source, id);
+    try {
+      // return WingsAdapter.get().getWorkflowList();
+      return this.repo.getWorkflowRunStatus(source, id);
+    } catch (Exception e) {
+      try {
+        // Create Json error response
+        Gson gson = new Gson();
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = gson.toJson(error);
+
+        // Prepare the response
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+
+        // Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
+    return null;
   }
 
   @GET
@@ -570,17 +613,35 @@ public class DiskResource implements DiskService {
 
   @POST
   @Path("getData")
-  @Produces("text/html")
   @Override
   public String getOutputData(
       @JsonProperty("request") ExternalDataRequest r) {
-    byte[] result = this.repo.getOutputData(r.getSource(), r.getDataId());
-    String tmp = ""; // FIXME: this should not be an string.
-    if (result == null) {
-      System.out.println("ERROR: " + r.getDataId() + " not available on " + r.getSource() + ".");
-    } else {
-      tmp = new String(result, StandardCharsets.UTF_8);
+    try {
+      byte[] result = this.repo.getOutputData(r.getSource(), r.getRunId(), r.getDataId());
+      response.setContentType("application/json");
+      if (result == null) {
+        throw new Exception("No data found");
+      }
+      return new String(result, StandardCharsets.UTF_8);
+    } catch (Exception e) {
+      try {
+        // Create Json error response
+        Gson gson = new Gson();
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = gson.toJson(error);
+
+        // Prepare the response
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+
+        // Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
     }
-    return tmp;
+    return null;
   }
 }

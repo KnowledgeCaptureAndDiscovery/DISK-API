@@ -9,6 +9,7 @@ public class WorkflowRun {
   String status;
 
   Map<String, String> outputs;
+  //TODO: files is good name for this file?
   Map<String, String> files;
   String startDate, endDate;
 

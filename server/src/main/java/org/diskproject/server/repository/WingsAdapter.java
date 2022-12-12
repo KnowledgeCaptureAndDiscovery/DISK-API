@@ -41,6 +41,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
+import org.diskproject.shared.classes.loi.TriggeredLOI.Status;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
@@ -67,6 +68,10 @@ public class WingsAdapter extends MethodAdapter {
 	private String domain;
 	private String internal_server;
 
+	public enum STATUS {
+		FAILURE, SUCCESS, RUNNING, QUEUED, UNKNOWN
+	}
+
 	private CookieStore cookieStore;
 
 	public String workflowNS = "http://www.wings-workflows.org/ontology/workflow.owl#";
@@ -82,6 +87,10 @@ public class WingsAdapter extends MethodAdapter {
 		this.cookieStore = new BasicCookieStore();
 		this.json = new Gson();
 		this.jsonParser = new JsonParser();
+        this.status.put(Status.QUEUED, "QUEUED");
+        this.status.put(Status.FAILED, "FAILED");
+        this.status.put(Status.RUNNING, "RUNNING");
+        this.status.put(Status.SUCCESSFUL, "SUCCESS");
 	}
 
 	public String DOMURI() {
@@ -128,7 +137,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public String getDataUri(String id) {
+	public String getDataUri(String id, String workflowId) {
 		return this.DATAID(id);
 	}
 
@@ -542,12 +551,12 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public String runWorkflow(String wflowname, List<VariableBinding> vbindings, Map<String, Variable> inputVariables) {
-		wflowname = WFLOWID(wflowname);
+	public String runWorkflow(String workflowName, String workflowLink, List<VariableBinding> vbindings, Map<String, Variable> inputVariables) {
+		workflowName = WFLOWID(workflowName);
 		String toPost = null, getData = null, getParams = null, getExpansions = null;
 		JsonObject response = null;
 		try {
-			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			toPost = toPlanAcceptableFormat(workflowName, vbindings, inputVariables);
 			getData = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/plan/getData",
 					toPost, "application/json", "application/json");
 
@@ -572,7 +581,7 @@ public class WingsAdapter extends MethodAdapter {
 		
 		try {
 			vbindings = addDataBindings(inputVariables, vbindings, getData, false);
-			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			toPost = toPlanAcceptableFormat(workflowName, vbindings, inputVariables);
 			getParams = postWithSpecifiedMediaType(
 					"users/" + getUsername() + "/" + domain + "/plan/getParameters",
 					toPost, "application/json", "application/json");
@@ -593,13 +602,13 @@ public class WingsAdapter extends MethodAdapter {
 
 		try {
 			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
-			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			toPost = toPlanAcceptableFormat(workflowName, vbindings, inputVariables);
 
 			// TODO: This should be called after getting expanded workflow.
 			// - Create mapping data from expanded workflow, and then check.
 			// - *NEEDED* to handle collections properly
 
-			String runid = getWorkflowRunWithSameBindings(wflowname, vbindings);
+			String runid = getWorkflowRunWithSameBindings(workflowName, vbindings);
 			if (runid != null) {
 				System.out.println("Found existing run : " + runid);
 				return runid;
@@ -648,7 +657,7 @@ public class WingsAdapter extends MethodAdapter {
 
 			// Run the first Expanded workflow
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
-		formdata.add(new BasicNameValuePair("template_id", wflowname));
+		formdata.add(new BasicNameValuePair("template_id", workflowName));
 		formdata.add(new BasicNameValuePair("json", jsonTemplate));
 		formdata.add(new BasicNameValuePair("constraints_json", jsonConstraints));
 		formdata.add(new BasicNameValuePair("seed_json", jsonSeed));
@@ -1342,4 +1351,15 @@ public class WingsAdapter extends MethodAdapter {
 		return this.fetchDataFromWings(dataId);
 	}
 
+	@Override
+	public String addData(String url, String workSpaceId, String name, String dType) throws Exception {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String duplicateWorkflow(String workflowId, String workflowName) throws Exception {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
