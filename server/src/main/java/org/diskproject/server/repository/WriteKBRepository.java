@@ -461,6 +461,21 @@ public class WriteKBRepository extends KBRepository {
                 if (questionobj != null)
                     question = questionobj.getValueAsString();
 
+                ArrayList<KBObject> questionBindings = userKB.getPropertyValues(hypobj,
+                        DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING));
+                List<VariableBinding> variableBindings = new ArrayList<VariableBinding>();
+                if (questionBindings != null) {
+                    for (KBObject binding : questionBindings) {
+                        KBObject kbVar = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_VARIABLE));
+                        KBObject kbVal = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
+                        if (kbVar != null && kbVal != null) {
+                            String var = kbVar.getValueAsString();
+                            String val = kbVal.getValueAsString();
+                            variableBindings.add(new VariableBinding(var, val));
+                        }
+                    }
+                }
+
                 Hypothesis item = new Hypothesis(hypobj.getName(), name, description, parentid, null);
                 if (dateCreated != null)
                     item.setDateCreated(dateCreated);
@@ -470,6 +485,9 @@ public class WriteKBRepository extends KBRepository {
                     item.setAuthor(author);
                 if (question != null)
                     item.setQuestion(question);
+
+                if (variableBindings.size() > 0)
+                    item.setQuestionBindings(variableBindings);
 
                 list.add(item);
             }

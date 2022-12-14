@@ -9,6 +9,7 @@ public class Question {
   String template;
   String pattern;
   String constraint;
+  QuestionCategory category;
   List<QuestionVariable> variables;
 
   public Question () {
@@ -88,5 +89,13 @@ public class Question {
 
   public String getConstraint () {
     return this.constraint;
+  }
+
+  public void setCategory (QuestionCategory cat) {
+    this.category = cat;
+  }
+
+  public QuestionCategory getCategory () {
+    return this.category;
   }
 }

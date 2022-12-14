@@ -18,6 +18,7 @@ import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.question.Question;
+import org.diskproject.shared.classes.question.VariableOption;
 import org.diskproject.shared.classes.util.DataAdapterResponse;
 import org.diskproject.shared.classes.util.ExternalDataRequest;
 import org.diskproject.shared.classes.util.QuestionOptionsRequest;
@@ -59,7 +60,7 @@ public interface DiskService {
   
   @GET
   @Path("hypotheses")
-  public List<TreeItem> listHypotheses();
+  public List<Hypothesis> listHypotheses();
   
   @GET
   @Path("hypotheses/{id}")
@@ -180,12 +181,12 @@ public interface DiskService {
   
   @GET
   @Path("question/{id}/options")
-  public List<List<String>> listOptions(
+  public List<VariableOption> listOptions(
       @PathParam("id") String id);
 
   @POST
   @Path("question/options")
-  public Map<String, List<List<String>>> listDynamicOptions(
+  public Map<String, List<VariableOption>> listDynamicOptions(
       @JsonProperty("config") QuestionOptionsRequest opts);
   
   /*

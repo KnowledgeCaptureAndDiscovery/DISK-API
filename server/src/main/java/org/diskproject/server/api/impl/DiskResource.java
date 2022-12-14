@@ -29,6 +29,7 @@ import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.question.Question;
+import org.diskproject.shared.classes.question.VariableOption;
 import org.diskproject.shared.classes.util.DataAdapterResponse;
 import org.diskproject.shared.classes.util.ExternalDataRequest;
 import org.diskproject.shared.classes.util.QuestionOptionsRequest;
@@ -124,7 +125,7 @@ public class DiskResource implements DiskService {
   @GET
   @Path("hypotheses")
   @Override
-  public List<TreeItem> listHypotheses() {
+  public List<Hypothesis> listHypotheses() {
     return this.repo.listHypotheses(USERNAME);
   }
 
@@ -434,7 +435,7 @@ public class DiskResource implements DiskService {
   @GET
   @Path("question/{id}/options")
   @Override
-  public List<List<String>> listOptions(
+  public List<VariableOption> listOptions(
       @PathParam("id") String id) {
     try {
       // return WingsAdapter.get().getWorkflowList();
@@ -463,7 +464,7 @@ public class DiskResource implements DiskService {
 
   @POST
   @Path("question/options")
-  public Map<String, List<List<String>>> listDynamicOptions(
+  public Map<String, List<VariableOption>> listDynamicOptions(
       @JsonProperty("config") QuestionOptionsRequest opts) {
     try {
       return this.repo.listDynamicOptions(opts);

@@ -68,8 +68,29 @@ public class GraphDBAdapter extends DataAdapter {
         return false;
     }
 
+    public List<DataResult> getDataResultFromJsonString (String jsonString) {
+        JsonObject json = (JsonObject) jsonParser.parse(jsonString);
+        JsonArray variables = json.get("head").getAsJsonObject().get("vars").getAsJsonArray();
+        JsonArray bindings = json.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
+
+        List<DataResult> results = new ArrayList<DataResult>();
+
+        for (JsonElement binding : bindings) {
+            DataResult curResult = new DataResult();
+            for (JsonElement variable : variables) {
+                String varName = variable.getAsString();
+                JsonElement valueJson = binding.getAsJsonObject().get(varName);
+                String value = valueJson == null ? null : valueJson.getAsJsonObject().get("value").getAsString();
+                curResult.addValue(varName, value);
+            }
+            results.add(curResult);
+        }
+        return results;
+    }
+
     @Override
     public List<DataResult> query(String queryString) throws Exception {
+        // queryString is not being checked
         String queryUrl = getEndpointUrl() + "repositories/" + this.repository;
         URIBuilder builder = new URIBuilder(queryUrl);
         builder.setParameter("query", queryString);
@@ -82,35 +103,18 @@ public class GraphDBAdapter extends DataAdapter {
         try (CloseableHttpResponse response = httpClient.execute(request)) {
             HttpEntity entity = response.getEntity();
 			String strResponse = EntityUtils.toString(entity);
-
 		    EntityUtils.consume(entity);
-            try {
-                JsonObject json = (JsonObject) jsonParser.parse(strResponse);
-                JsonArray variables = json.get("head").getAsJsonObject().get("vars").getAsJsonArray();
-                JsonArray bindings = json.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
 
-                List<DataResult> results = new ArrayList<DataResult>();
-
-                for (JsonElement binding : bindings) {
-                    DataResult curResult = new DataResult();
-                    for (JsonElement variable : variables) {
-                        String varName = variable.getAsString();
-                        JsonElement valueJson = binding.getAsJsonObject().get(varName);
-                        String value = valueJson == null ? null : valueJson.getAsJsonObject().get("value").getAsString();
-                        curResult.addValue(varName, value);
-                    }
-                    results.add(curResult);
-                }
-                return results;
-            } catch (Exception e) {
-                System.err.println("Error decoding " + strResponse);
-                e.printStackTrace();
-                throw new RuntimeException(e);
+            if (strResponse.startsWith("MALFORMED QUERY")) {
+                System.out.println(strResponse);
+                System.out.println(queryString);
+                throw new RuntimeException("MALFORMED QUERY");
+            } else {
+                return getDataResultFromJsonString(strResponse);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         return null;
     }
 
@@ -128,26 +132,18 @@ public class GraphDBAdapter extends DataAdapter {
             query += "\n  OPTIONAL { " + varname + " rdfs:label " + labelVar + " . }";
         query += "\n}";
 
-        System.out.println("Q: " + query);
-
         List<DataResult> solutions = this.query(query);
         List<DataResult> fixedSolutions = new ArrayList<DataResult>();
 
         for (DataResult solution : solutions) {
             DataResult cur = new DataResult();
-            String valUrl = solution.getValue(name);
-            String valName = solution.getName(name);
+            String uri = solution.getValue(name);
             String label = solution.getValue(name + "Label");
-            if (label == null && valName != null) {
-                label = valName;
-            } else if (label == null) {
-                label = valUrl.replaceAll("^.*\\/", "");
-                // Try to remove mediawiki stuff
-                label = label.replaceAll("Property-3A", "");
-                label = label.replaceAll("-28E-29", "");
-                label = label.replaceAll("_", " ");
+            if (label == null) { //Theres no label, create one with the def value or extract it from the URI
+                String defName = solution.getName(name);
+                label = defName != null ? defName : uri.replaceAll("^.*\\/", "").replaceAll("_", " ");
             }
-            cur.addValue(VARURI, valUrl);
+            cur.addValue(VARURI, uri);
             cur.addValue(VARLABEL, label);
             fixedSolutions.add(cur);
         }

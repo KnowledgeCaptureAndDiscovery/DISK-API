@@ -44,7 +44,9 @@ import org.diskproject.shared.classes.loi.WorkflowBindings;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.loi.TriggeredLOI.Status;
 import org.diskproject.shared.classes.question.Question;
+import org.diskproject.shared.classes.question.QuestionCategory;
 import org.diskproject.shared.classes.question.QuestionVariable;
+import org.diskproject.shared.classes.question.VariableOption;
 import org.diskproject.shared.classes.util.DataAdapterResponse;
 import org.diskproject.shared.classes.util.GUID;
 import org.diskproject.shared.classes.util.KBConstants;
@@ -83,7 +85,7 @@ public class DiskRepository extends WriteKBRepository {
     ExecutorService executor;
     static DataMonitor dataThread;
 
-    private Map<String, List<List<String>>> optionsCache;
+    private Map<String, List<VariableOption>> optionsCache;
     private Map<String, VocabularyConfiguration> externalVocabularies;
 
     public static void main(String[] args) {
@@ -145,7 +147,7 @@ public class DiskRepository extends WriteKBRepository {
         this.questionKB = fac.getKB(KBConstants.QUESTION_URI, OntSpec.PLAIN, false, true);
         this.hypothesisVocabulary = fac.getKB(KBConstants.HYP_URI, OntSpec.PLAIN, false, true);
         // Load questions
-        optionsCache = new WeakHashMap<String, List<List<String>>>();
+        optionsCache = new WeakHashMap<String, List<VariableOption>>();
         this.start_read();
         SQOnt = new KBCache(this.questionKB);
         this.end();
@@ -466,7 +468,7 @@ public class DiskRepository extends WriteKBRepository {
             this.vocabularies.put(KBConstants.HYP_URI,
                     this.initializeVocabularyFromKB(this.hypothesisVocabulary, KBConstants.HYP_NS,
                             "hyp", "DISK Hypothesis Ontology",
-                            "The DISK Hypothesis Ontology. Defines properties to be used on Hypothesis creation."));
+                            "DISK Hypothesis Ontology: Defines general terms to express hypotheses."));
 
             // Load vocabularies from config file
             for (VocabularyConfiguration vc : this.externalVocabularies.values()) {
@@ -700,20 +702,8 @@ public class DiskRepository extends WriteKBRepository {
         return null;
     }
 
-    public List<TreeItem> listHypotheses(String username) {
-        List<TreeItem> list = new ArrayList<TreeItem>();
-        List<Hypothesis> hypothesisList = listHypothesesPreviews(username);
-
-        for (Hypothesis h : hypothesisList) {
-            TreeItem item = new TreeItem(h.getId(), h.getName(), h.getDescription(), h.getParentId(),
-                    h.getDateCreated(), h.getAuthor());
-            if (h.getDateModified() != null)
-                item.setDateModified(h.getDateModified());
-            if (h.getQuestion() != null)
-                item.setQuestion(h.getQuestion());
-            list.add(item);
-        }
-        return list;
+    public List<Hypothesis> listHypotheses(String username) {
+        return listHypothesesPreviews(username);
     }
 
     /*
@@ -875,6 +865,7 @@ public class DiskRepository extends WriteKBRepository {
                 KBObject template = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_TEMPLATE));
                 KBObject pattern = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_PATTERN));
                 KBObject constraint = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_QUESTION_CONSTRAINT_QUERY));
+                KBObject category = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_QUESTION_CATEGORY));
                 ArrayList<KBObject> variables = kb.getPropertyValues(question, SQOnt.getProperty(SQO.HAS_VARIABLE));
 
                 if (name != null && template != null && pattern != null) {
@@ -882,18 +873,9 @@ public class DiskRepository extends WriteKBRepository {
                     if (variables != null && variables.size() > 0) {
                         vars = new ArrayList<QuestionVariable>();
                         for (KBObject var : variables) {
-                            KBObject vname = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_VARIABLE_NAME));
-                            KBObject vconstraints = kb.getPropertyValue(var,
-                                    SQOnt.getProperty(SQO.HAS_CONSTRAINT_QUERY));
-                            KBObject vfixedOptions = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_FIXED_OPTIONS));
-                            if (vname != null) {
-                                QuestionVariable q = new QuestionVariable(var.getID(), vname.getValueAsString(),
-                                        vconstraints == null ? null : vconstraints.getValueAsString());
-                                if (vfixedOptions != null) {
-                                    q.setFixedOptions(vfixedOptions.getValueAsString().split("\\s*,\\s*"));
-                                }
-                                vars.add(q);
-                            }
+                            QuestionVariable qv = LoadQuestionVariableFromKB(var, kb);
+                            if (qv != null)
+                                vars.add(qv);
                         }
                         // Store question variables
                         for (QuestionVariable v : vars)
@@ -903,6 +885,10 @@ public class DiskRepository extends WriteKBRepository {
                     Question q = new Question(question.getID(), name.getValueAsString(), template.getValueAsString(),
                             pattern.getValueAsString(), vars);
                     if (constraint != null) q.setConstraint(constraint.getValueAsString());
+                    if (category != null) {
+                        KBObject catName = kb.getPropertyValue(category, labelprop);
+                        q.setCategory( new QuestionCategory(category.getID(), catName.getValueAsString()) );
+                    }
                     questions.add(q);
                 }
             }
@@ -917,52 +903,125 @@ public class DiskRepository extends WriteKBRepository {
         return null;
     }
 
+    public QuestionVariable LoadQuestionVariableFromKB (KBObject var, KBAPI kb) {
+        KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
+        KBObject variableName = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_VARIABLE_NAME));
+        KBObject representation = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_REPRESENTATION));
+        KBObject optionsQuery = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_OPTIONS_QUERY));
+        KBObject minCardinality = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MIN_CARDINALITY));
+        KBObject maxCardinality = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MAX_CARDINALITY));
+        KBObject explanation = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_EXPLANATION));
+        KBObject explanationQuery = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_EXPLANATION_QUERY));
+
+        // Load fixed options
+        List<KBObject> optionsArray = kb.getPropertyValues(var, SQOnt.getProperty(SQO.HAS_OPTIONS));
+        List<VariableOption> options = null;
+        if (optionsArray != null)
+            for (KBObject opt : optionsArray) {
+                KBObject optValue = kb.getPropertyValue(opt, SQOnt.getProperty(SQO.HAS_VALUE));
+                KBObject optLabel = kb.getPropertyValue(opt, SQOnt.getProperty(SQO.HAS_LABEL));
+                if (optLabel != null && optValue != null) {
+                    VariableOption cur = new VariableOption(optValue.getValueAsString(), optLabel.getValueAsString());
+                    if (options == null)
+                        options = new ArrayList<VariableOption>();
+                    options.add(cur);
+                }
+            }
+        // Load additional types
+        List<KBObject> types = kb.getPropertyValues(var, typeprop);
+        String additionalType = null;
+        if (types != null)
+            for (KBObject typ : types) {
+                String urlvalue = typ.getValueAsString();
+                if (urlvalue.startsWith(KBConstants.QUESTION_NS)
+                        && !urlvalue.equals(KBConstants.QUESTION_NS + SQO.QUESTION_VARIABLE)) {
+                    additionalType = urlvalue;
+                }
+            }
+
+        // Create the question variable
+        if (variableName != null) {
+            QuestionVariable q = new QuestionVariable(var.getID(), variableName.getValueAsString());
+            if (options != null)
+                q.setOptions(options);
+            if (optionsQuery != null)
+                q.setOptionsQuery(optionsQuery.getValueAsString());
+            q.setMinCardinality(minCardinality != null ? Double.valueOf(minCardinality.getValueAsString()) : 1);
+            q.setMaxCardinality(maxCardinality != null ? Double.valueOf(maxCardinality.getValueAsString()) : 1);
+
+            if (representation != null)
+                q.setRepresentation(representation.getValueAsString());
+            if (explanation != null)
+                q.setExplanation(explanation.getValueAsString());
+            if (explanationQuery != null)
+                q.setExplanationQuery(explanationQuery.getValueAsString());
+            if (additionalType != null) {
+                q.setSubType(additionalType);
+                // Load data depending of the type
+                if (additionalType.equals(KBConstants.QUESTION_NS + SQO.USER_INPUT_QUESTION_VARIABLE)) {
+                    KBObject inputDatatype = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_INPUT_DATATYPE));
+                    if (inputDatatype != null)
+                        q.setInputDatatype(inputDatatype.getValueAsString());
+                } else if (additionalType.equals(KBConstants.QUESTION_NS + SQO.BOUNDING_BOX_QUESTION_VARIABLE)) {
+                    KBObject minLatVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MIN_LAT));
+                    KBObject minLngVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MIN_LNG));
+                    KBObject maxLatVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MAX_LAT));
+                    KBObject maxLngVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MAX_LNG));
+                    if (minLatVar != null && minLngVar != null && maxLatVar != null && maxLngVar != null) {
+                        q.setBoundingBoxVariables(
+                            LoadQuestionVariableFromKB(minLatVar, kb),
+                            LoadQuestionVariableFromKB(maxLatVar, kb),
+                            LoadQuestionVariableFromKB(minLngVar, kb),
+                            LoadQuestionVariableFromKB(maxLngVar, kb)
+                        );
+                    }
+                }
+            }
+            return q;
+        }
+        return null;
+    }
+
     public List<Question> listHypothesesQuestions() {
         return new ArrayList<Question>(this.allQuestions.values());
     }
 
-    public List<List<String>> listVariableOptions(String sid) throws Exception {
+    public List<VariableOption> listVariableOptions(String sid) throws Exception {
         if (!optionsCache.containsKey(sid)) {
             optionsCache.put(sid, this.loadVariableOptions(sid));
         }
         return optionsCache.get(sid);
     }
 
-    private List<List<String>> loadVariableOptions(String sid) throws Exception {
+    private List<VariableOption> loadVariableOptions(String sid) throws Exception {
         System.out.println("ID: " + sid);
-        List<List<String>> options = new ArrayList<List<String>>();
         QuestionVariable variable = null;
         // FIXME: Find a better way to handle url prefix or change the request to
         // include the full URI
-        if (allVariables.containsKey("http://disk-project.org/examples/" + sid)) {
-            variable = allVariables.get("http://disk-project.org/examples/" + sid);
+        if (allVariables.containsKey("http://disk-project.org/resources/enigma/variable/" + sid)) {
+            variable = allVariables.get("http://disk-project.org/resources/enigma/variable/" + sid);
         } else if (allVariables.containsKey("http://disk-project.org/resources/question/" + sid)) {
             variable = allVariables.get("http://disk-project.org/resources/question/" + sid);
         } else if (allVariables.containsKey("https://w3id.org/sqo/resource/" + sid)) {
             variable = allVariables.get("https://w3id.org/sqo/resource/" + sid);
         }
-        if (variable != null) {
-            String varname = variable.getVarName();
-            String constraintQuery = variable.getConstraints();
-            String[] fixedoptions = variable.getFixedOptions();
+        // -----
+        //QuestionVariable variable = allVariables.containsKey(sid) ? allVariables.get(sid) : null;
+        if (variable == null)
+            return null;
 
-            // If there are fixed options, return these
-            if (fixedoptions != null) {
-                for (String val : fixedoptions) {
-                    List<String> opt = new ArrayList<String>();
-                    opt.add(val);
-                    opt.add(val);
-                    options.add(opt);
-                }
-            } else if (constraintQuery != null) {
-                options = queryForOptions(varname, constraintQuery);
-            }
-        }
-        return options;
+        String varname = variable.getVariableName();
+        String optionsQuery = variable.getOptionsQuery();
+        List<VariableOption> fixedOptions = variable.getOptions();
+        if (fixedOptions != null)
+            return fixedOptions;
+        if (optionsQuery != null)
+            return queryForOptions(varname, optionsQuery);
+        return null;
     }
 
-    private List<List<String>> queryForOptions (String varName, String query) throws Exception {
-        List<List<String>> options = new ArrayList<List<String>>();
+    private List<VariableOption> queryForOptions (String varName, String query) throws Exception {
+        List<VariableOption> options = new ArrayList<VariableOption>();
         // If there is a constraint query, send it to all data providers;
         Map<String, List<DataResult>> solutions = new HashMap<String, List<DataResult>>();
         for (DataAdapter adapter : this.dataAdapters.values()) {
@@ -994,7 +1053,8 @@ public class DiskRepository extends WriteKBRepository {
         // Add all options with unique labels
         for (List<List<String>> sameLabelOptions : labelToOption.values()) {
             if (sameLabelOptions.size() == 1) {
-                options.add(sameLabelOptions.get(0).subList(0, 2));
+                List<String> opt = sameLabelOptions.get(0);
+                options.add(new VariableOption(opt.get(0), opt.get(1)));
             } else { // There's more than one option with the same label
                 boolean allTheSame = true;
                 String lastValue = sameLabelOptions.get(0).get(0); // Comparing IDs
@@ -1004,23 +1064,22 @@ public class DiskRepository extends WriteKBRepository {
                         break;
                     }
                 }
-
-                if (allTheSame) {
-                    options.add(sameLabelOptions.get(0).subList(0, 2));
+                if (allTheSame) { // All ids are the same, add one option.
+                    List<String> opt = sameLabelOptions.get(0);
+                    options.add(new VariableOption(opt.get(0), opt.get(1)));
                 } else {
                     Map<String, Integer> dsCount = new HashMap<String, Integer>();
 
                     for (List<String> candOption : sameLabelOptions) {
-                        List<String> newOption = new ArrayList<String>();
-                        newOption.add(candOption.get(0));
+                        String curValue = candOption.get(0);
+
                         String dataSource = candOption.get(2);
                         Integer count = dsCount.containsKey(dataSource) ? dsCount.get(dataSource) : 0;
                         String label = candOption.get(1) + " (" + dataSource
                                 + (count > 0 ? "_" + count.toString() : "") + ")";
                         dsCount.put(dataSource, (count + 1));
 
-                        newOption.add(label);
-                        options.add(newOption);
+                        options.add(new VariableOption(curValue, label));
                     }
                 }
             }
@@ -1028,8 +1087,8 @@ public class DiskRepository extends WriteKBRepository {
         return options;
     }
 
-    public Map<String,List<List<String>>> listDynamicOptions (QuestionOptionsRequest cfg) throws Exception {
-        Map<String, List<List<String>>> all = new HashMap<String, List<List<String>>>();
+    public Map<String,List<VariableOption>> listDynamicOptions (QuestionOptionsRequest cfg) throws Exception {
+        Map<String, List<VariableOption>> all = new HashMap<String, List<VariableOption>>();
 
         Map<String, String> bindings = cfg.getBindings();
         Question q = allQuestions.get(cfg.getId());
@@ -1047,24 +1106,23 @@ public class DiskRepository extends WriteKBRepository {
             }
 
         for (QuestionVariable qv: q.getVariables()) {
-            String varName = qv.getVarName();
-            List<List<String>> options = null;
-            if (bindings != null && bindings.containsKey(varName)) {
-                String value = bindings.get(varName);
-                if (!value.startsWith("http")) {
-                    options = new ArrayList<List<String>>();
-                    List<String> curOpt = new ArrayList<String>();
-                    curOpt.add(value);
-                    curOpt.add(value);
-                    options.add(curOpt);
+            if (qv.getSubType() == null) {
+                String varName = qv.getVariableName();
+                List<VariableOption> options = null;
+                if (bindings != null && bindings.containsKey(varName)) {
+                    String value = bindings.get(varName);
+                    if (!value.startsWith("http")) {
+                        options = new ArrayList<VariableOption>();
+                        options.add(new VariableOption(value, value));
+                    }
                 }
+                if (options == null && query != null) {
+                    options = queryForOptions(varName, query);
+                } else if (options == null) {
+                    options = listVariableOptions(qv.getId().replaceAll("^.*\\/", ""));
+                }
+                all.put(varName, options);
             }
-            if (options == null && query != null) {
-                options = queryForOptions(varName, query);
-            } else if (options == null) {
-                options = listVariableOptions(qv.getId().replaceAll("^.*\\/", ""));
-            }
-            all.put(varName, options);
         }
         return all;
     }
