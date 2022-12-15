@@ -26,7 +26,7 @@ public class SQO {
     public static final String HAS_MIN_CARDINALITY = "minCardinality";
     public static final String HAS_MAX_CARDINALITY = "maxCardinality";
     public static final String HAS_OPTIONS_QUERY = "hasOptionsQuery";
-    public static final String HAS_QUESTION_CONSTRAINT_QUERY = "hasQuestionConstraint";
+    public static final String HAS_QUESTION_CONSTRAINT_QUERY = "hasConstraintQuery";
     public static final String HAS_TEMPLATE = "hasQuestionTemplate";
     public static final String HAS_PATTERN = "hasQuestionPattern";
     public static final String HAS_VARIABLE_NAME = "hasVariableName";

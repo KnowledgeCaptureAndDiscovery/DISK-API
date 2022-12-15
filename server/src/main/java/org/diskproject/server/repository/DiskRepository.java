@@ -856,8 +856,13 @@ public class DiskRepository extends WriteKBRepository {
             this.start_read();
             KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
             KBObject labelprop = kb.getProperty(KBConstants.RDFS_NS + "label");
+            // Load question variables:
+            for (KBTriple t : kb.genericTripleQuery(null, typeprop, SQOnt.getClass(SQO.QUESTION_VARIABLE))) {
+                KBObject qv = t.getSubject();
+                allVariables.put(qv.getID(), LoadQuestionVariableFromKB(qv, kb));
+            }
 
-            // Load question classes and properties
+            // Load questions and subproperties
             for (KBTriple t : kb.genericTripleQuery(null, typeprop, SQOnt.getClass(SQO.QUESTION))) {
                 // System.out.println(t.toString());
                 KBObject question = t.getSubject();
@@ -873,13 +878,12 @@ public class DiskRepository extends WriteKBRepository {
                     if (variables != null && variables.size() > 0) {
                         vars = new ArrayList<QuestionVariable>();
                         for (KBObject var : variables) {
-                            QuestionVariable qv = LoadQuestionVariableFromKB(var, kb);
+                            QuestionVariable qv = allVariables.get(var.getID());
                             if (qv != null)
                                 vars.add(qv);
+                            else
+                                System.err.println("Could not find " + var.getID());
                         }
-                        // Store question variables
-                        for (QuestionVariable v : vars)
-                            allVariables.put(v.getId(), v);
                     }
 
                     Question q = new Question(question.getID(), name.getValueAsString(), template.getValueAsString(),
@@ -1093,34 +1097,39 @@ public class DiskRepository extends WriteKBRepository {
         Map<String, String> bindings = cfg.getBindings();
         Question q = allQuestions.get(cfg.getId());
         String query = (q != null) ? q.getConstraint() : null;
-        if (q == null) return null;
+        if (q == null) return null; // TODO: If no query constraint should go to variable queries.
 
-        if (bindings != null && query != null)
-            for (String name: bindings.keySet()) {
-                String value = bindings.get(name);
-                if (value.startsWith("http")) {
-                    query += "VALUES " + name + " { <" + value + "> }\n";
+        // Create map variableName -> filter
+        Map<String, String> filters = new HashMap<String, String>();
+        if (bindings != null && query != null) {
+            for (String varUrl: bindings.keySet()) {
+                QuestionVariable curVar = allVariables.get(varUrl);
+                if (curVar != null) {
+                    String value = bindings.get(varUrl);
+                    String name = curVar.getVariableName();
+                    String sparqlValue = value.startsWith("http") ? "<" + value + ">" : "\"" + value + "\"";
+                    filters.put(name, "VALUES " + name + " { " + sparqlValue + " }");
                 } else {
-                    query = query.replace(name, "\"" + value + "\"");
+                    System.err.println("Cannot find variable ID: " + varUrl);
                 }
             }
+        }
 
         for (QuestionVariable qv: q.getVariables()) {
             if (qv.getSubType() == null) {
                 String varName = qv.getVariableName();
-                List<VariableOption> options = null;
-                if (bindings != null && bindings.containsKey(varName)) {
-                    String value = bindings.get(varName);
-                    if (!value.startsWith("http")) {
-                        options = new ArrayList<VariableOption>();
-                        options.add(new VariableOption(value, value));
+                String curQuery = query;
+                if (filters != null && query != null) {
+                    for (String diffVar: filters.keySet()) {
+                        if (!diffVar.equals(varName)) {
+                            curQuery += "\n" + filters.get(diffVar);
+                        }
                     }
                 }
-                if (options == null && query != null) {
-                    options = queryForOptions(varName, query);
-                } else if (options == null) {
-                    options = listVariableOptions(qv.getId().replaceAll("^.*\\/", ""));
-                }
+                //System.out.println("Variable " + varName + ":\n" + curQuery);
+                List<VariableOption> options = curQuery != null ?
+                    queryForOptions(varName, curQuery)
+                    : listVariableOptions(qv.getId().replaceAll("^.*\\/", ""));
                 all.put(varName, options);
             }
         }

@@ -315,7 +315,6 @@ public class WingsAdapter extends MethodAdapter {
 			// Check for Session ID to make sure we've logged in
 			for (Cookie cookie : context.getCookieStore().getCookies()) {
 				if (cookie.getName().equalsIgnoreCase("JSESSIONID")) {
-					System.out.println("JSESSIONID: " + cookie.getValue());
 					return true;
 				}
 			}
