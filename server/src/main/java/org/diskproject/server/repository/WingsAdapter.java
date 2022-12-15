@@ -315,6 +315,7 @@ public class WingsAdapter extends MethodAdapter {
 			// Check for Session ID to make sure we've logged in
 			for (Cookie cookie : context.getCookieStore().getCookies()) {
 				if (cookie.getName().equalsIgnoreCase("JSESSIONID")) {
+					System.out.println("JSESSIONID: " + cookie.getValue());
 					return true;
 				}
 			}
@@ -670,8 +671,10 @@ public class WingsAdapter extends MethodAdapter {
 		formdata.add(new BasicNameValuePair("data_id", dataid));
 		url += "?" + URLEncodedUtils.format(formdata, "UTF-8");
 
-		this.login();
-		CloseableHttpClient client = HttpClientBuilder.create().build();
+		if (!this.login()) {
+			return null;
+		}
+		CloseableHttpClient client = HttpClientBuilder.create().setDefaultCookieStore(this.cookieStore).build();
 		byte[] bytes = null;
 		try {
 			HttpGet securedResource = new HttpGet(url);
@@ -860,7 +863,7 @@ public class WingsAdapter extends MethodAdapter {
 		/* FIXME: Wings rename does not rename the file, only the id
 		 * thus we cannot upload two files with the same name and then rename them. */
 		// Get the file.
-		CloseableHttpClient client = HttpClientBuilder.create().build();
+		CloseableHttpClient client = HttpClientBuilder.create().setDefaultCookieStore(this.cookieStore).build();
 		byte[] bytes = null;
 		try {
 			HttpGet securedResource = new HttpGet(url);
