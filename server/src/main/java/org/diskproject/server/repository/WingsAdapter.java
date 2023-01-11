@@ -547,6 +547,7 @@ public class WingsAdapter extends MethodAdapter {
 		String toPost = null, getData = null, getParams = null, getExpansions = null;
 		JsonObject response = null;
 		try {
+			// GET DATA is suggest data on WINGS, this can add inputs, I'm not sure is necessary.
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
 			getData = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/plan/getData",
 					toPost, "application/json", "application/json");
@@ -571,6 +572,7 @@ public class WingsAdapter extends MethodAdapter {
 		}
 		
 		try {
+			// GET PARAMETERS is suggest parameters in WINGS, this adds the default parameters.
 			vbindings = addDataBindings(inputVariables, vbindings, getData, false);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
 			getParams = postWithSpecifiedMediaType(
@@ -633,6 +635,7 @@ public class WingsAdapter extends MethodAdapter {
 				System.err.println("No templates found");
 				return null;
 			}
+			System.out.println(templatesobj.size());
 			JsonObject templateobj = templatesobj.get(0).getAsJsonObject();
 			jsonTemplate = templateobj.get("template") .toString();
 			jsonConstraints = templateobj.get("constraints").toString();
@@ -654,8 +657,8 @@ public class WingsAdapter extends MethodAdapter {
 		formdata.add(new BasicNameValuePair("seed_json", jsonSeed));
 		formdata.add(new BasicNameValuePair("seed_constraints_json", jsonSeedConstraints));
 		String pageid = "users/" + getUsername() + "/" + domain + "/executions/runWorkflow";
-		System.out.println(pageid);
-		System.out.println(formdata);
+		//System.out.println(pageid);
+		//System.out.println(formdata);
 		return post(pageid, formdata);
 		//} catch (Exception e) {
 		//	e.printStackTrace();
@@ -1126,6 +1129,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	private String toPlanAcceptableFormat(String wfname, List<VariableBinding> vbl, Map<String, Variable> ivm) {
+		// We are creating a json here, should be a better way to do it.
 		String output = "";
 
 		// Set Template ID first
@@ -1146,7 +1150,7 @@ public class WingsAdapter extends MethodAdapter {
 			}
 		}
 		if (paramTypes.length() > 0)
-			paramTypes = paramTypes.substring(0, paramTypes.length() - 1);
+			paramTypes = paramTypes.substring(0, paramTypes.length() - 1); // Removing comma
 		output += "\"parameterTypes\": {" + paramTypes + "},";
 
 		// Set Inputs (Parameters and Data)
@@ -1155,52 +1159,39 @@ public class WingsAdapter extends MethodAdapter {
 		String dataBindings = "\"dataBindings\": {";
 		boolean dataAdded = false;
 		String dataID = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/library.owl#";
+
 		for (String key : ivm.keySet()) {
 			Variable v = ivm.get(key);
-			if (v.isParam()) {
-				for (int i = 0; i < vbl.size(); i++) {
-					VariableBinding vb = vbl.get(i);
-					if (vb.getVariable().equals(v.getName())) {
-						paramBindings += "\"" + wfname + v.getName() + "\":" ;
-						// If theres no version, or the version if 5 or later, add as array
-						if (this.getVersion() == null || this.getVersion() > 5)
-							paramBindings += "[";
-						paramBindings += "\"" + vb.getBinding() + "\"";
-						if (this.getVersion() == null || this.getVersion() > 5)
-							paramBindings += "]";
-						paramBindings += ",";
-						paramAdded = true;
-					}
-				}
-			} else {
-				for (int i = 0; i < vbl.size(); i++) {
-					VariableBinding vb = vbl.get(i);
-					if (vb.getVariable().equals(v.getName())) {
-						dataBindings += "\"" + wfname + v.getName() + "\":[";
-						String[] dBs = vb.getBinding()
-								.replaceFirst("^\\[", "")
-								.replaceFirst("\\]$", "").split("\\s*,\\s*");
-						for (int j = 0; j < dBs.length; j++) {
-							if (dBs[j].length() > 0)
-								dataBindings += "\"" + dataID + dBs[j] + "\",";
+			for (int i = 0; i < vbl.size(); i++) {
+				VariableBinding vb = vbl.get(i);
+				if (vb.getVariable().equals(v.getName())) {
+					String curBinding = "\"" + wfname + v.getName() + "\":[";
+					String[] dBs = vb.getBinding()
+							.replaceFirst("^\\[", "")
+							.replaceFirst("\\]$", "")
+							.split("\\s*,\\s*");
+					for (int j = 0; j < dBs.length; j++) {
+						if (dBs[j].length() > 0) {
+							curBinding += "\"" + (v.isParam() ? "" : dataID) + dBs[j] + "\",";
 						}
-						dataBindings = dataBindings.substring(0,
-								dataBindings.length() - 1);
-						dataBindings += "],";
+					}
+					curBinding = curBinding.substring(0, curBinding.length() - 1); //rm comma
+					if (v.isParam()) {
+						paramBindings += curBinding + "],";
+						paramAdded = true;
+					} else {
+						dataBindings += curBinding + "],";
 						dataAdded = true;
+
 					}
 				}
 			}
-
 		}
-		if (paramAdded)
-			paramBindings = paramBindings.substring(0,
-					paramBindings.length() - 1);
-		if (dataAdded)
-			dataBindings = dataBindings.substring(0, dataBindings.length() - 1);
+		//Removing commas again
+		if (paramAdded) paramBindings = paramBindings.substring(0, paramBindings.length() - 1);
+		if (dataAdded)  dataBindings = dataBindings.substring(0, dataBindings.length() - 1);
 
 		output += paramBindings + "}," + dataBindings + "}}";
-
 		return output;
 	}
 
