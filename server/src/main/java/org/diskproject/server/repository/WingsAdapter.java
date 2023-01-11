@@ -593,6 +593,21 @@ public class WingsAdapter extends MethodAdapter {
 			return null;
 		}
 
+		//At this point we could use /expandAndRunWorkflow
+		try {
+			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
+			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+
+			String expandAndRun = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/executions/expandAndRunWorkflow",
+					toPost, "application/json", "application/json");
+			if (expandAndRun != null && expandAndRun.length() > 0) {
+				return expandAndRun;
+			}
+		} catch (Exception e) {
+			System.err.println("Error expanding and running " + e.getMessage());
+			System.err.println("REQUEST: " + toPost);
+		}
+
 		try {
 			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
