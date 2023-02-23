@@ -6,19 +6,22 @@ import java.util.List;
 import java.util.Set;
 
 public class LineOfInquiry {
-  String id, name, description;
-  String hypothesisQuery, dataQuery;
-  List<WorkflowBindings> workflows, metaWorkflows;
-  String notes;
-  String author;
-  String dateCreated, dateModified;
+  public static enum UpdateStatus {
+    ON_DATA_UPDATE, ON_METHOD_UPDATE, BOTH, DISABLED
+  };
 
+  // Metadata
+  String id, name, description, notes;
+  // PROV
+  String author, dateCreated, dateModified;
+  // Data query
+  String dataSource, dataQuery, dataQueryExplanation;
   String tableVariables, tableDescription;
-  String dataQueryExplanation;
-  String dataSource;
-  String question;
-
-  Boolean active;
+  // Methods
+  List<WorkflowBindings> workflows, metaWorkflows;
+  // Linking with the hypothesis (question)
+  String hypothesisQuery, questionId;
+  UpdateStatus active;
 
   public LineOfInquiry() {
     this.workflows = new ArrayList<WorkflowBindings>();
@@ -29,7 +32,7 @@ public class LineOfInquiry {
 	  this.id = id;
 	  this.name = name;
 	  this.description = description;
-    this.active = true;
+    this.active = UpdateStatus.ON_DATA_UPDATE;
   }
 
   public LineOfInquiry(String id,
@@ -48,23 +51,23 @@ public class LineOfInquiry {
 	  this.dataQuery = dataQuery;
 	  this.workflows = workflows;
 	  this.metaWorkflows = metaWorkflows;
-    this.active = true;
+    this.active = UpdateStatus.ON_DATA_UPDATE;
   }
-  
+
   public void setDataSource (String ds) {
 	  this.dataSource = ds;
   }
-  
+
   public String getDataSource () {
 	  return this.dataSource;
   }
 
-  public void setQuestion (String q) {
-    this.question = q;
+  public void setQuestionId (String q) {
+    this.questionId = q;
   }
   
-  public String getQuestion () {
-    return this.question;
+  public String getQuestionId () {
+    return this.questionId;
   }
 
   public String getExplanation () {
@@ -222,11 +225,11 @@ public class LineOfInquiry {
 	  this.dataQueryExplanation = v;
   }
 
-  public void setActive (Boolean b) {
+  public void setActive (UpdateStatus b) {
     this.active = b;
   }
 
-  public Boolean getActive () {
+  public UpdateStatus getActive () {
     return this.active;
   }
 }

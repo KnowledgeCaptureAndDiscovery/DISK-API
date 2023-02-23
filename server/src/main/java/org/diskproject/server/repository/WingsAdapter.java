@@ -205,7 +205,14 @@ public class WingsAdapter extends MethodAdapter {
 		formdata.add(new BasicNameValuePair("format", "json"));
 		String resultjson = get(pageid, formdata);
 		if (resultjson != null && !resultjson.equals("")) {
-			JsonObject result = jsonParser.parse(resultjson).getAsJsonObject();
+			JsonObject result = null;
+			try {
+				result = jsonParser.parse(resultjson).getAsJsonObject();
+			} catch (Exception e) {
+				System.out.println("Could not decode: " + resultjson);
+				return subClasses;
+			}			 
+
 			JsonArray bindings = result.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
 
 			for (JsonElement binding : bindings) {
@@ -594,19 +601,25 @@ public class WingsAdapter extends MethodAdapter {
 		}
 
 		//At this point we could use /expandAndRunWorkflow
-		try {
+		/*try {
 			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
 
 			String expandAndRun = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/executions/expandAndRunWorkflow",
 					toPost, "application/json", "application/json");
+
+			System.out.println("\n");
+			System.out.println(toPost);
+			System.out.println(expandAndRun);
+			System.out.println("##########");
+
 			if (expandAndRun != null && expandAndRun.length() > 0) {
 				return expandAndRun;
 			}
 		} catch (Exception e) {
 			System.err.println("Error expanding and running " + e.getMessage());
 			System.err.println("REQUEST: " + toPost);
-		}
+		}*/
 
 		try {
 			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
@@ -650,7 +663,7 @@ public class WingsAdapter extends MethodAdapter {
 				System.err.println("No templates found");
 				return null;
 			}
-			System.out.println(templatesobj.size());
+			//System.out.println(templatesobj.size());
 			JsonObject templateobj = templatesobj.get(0).getAsJsonObject();
 			jsonTemplate = templateobj.get("template") .toString();
 			jsonConstraints = templateobj.get("constraints").toString();
@@ -664,7 +677,7 @@ public class WingsAdapter extends MethodAdapter {
 			return null;
 		}
 
-			// Run the first Expanded workflow
+		// Run the first Expanded workflow
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 		formdata.add(new BasicNameValuePair("template_id", wflowname));
 		formdata.add(new BasicNameValuePair("json", jsonTemplate));
@@ -1181,23 +1194,27 @@ public class WingsAdapter extends MethodAdapter {
 				VariableBinding vb = vbl.get(i);
 				if (vb.getVariable().equals(v.getName())) {
 					String curBinding = "\"" + wfname + v.getName() + "\":[";
-					String[] dBs = vb.getBinding()
-							.replaceFirst("^\\[", "")
-							.replaceFirst("\\]$", "")
-							.split("\\s*,\\s*");
-					for (int j = 0; j < dBs.length; j++) {
-						if (dBs[j].length() > 0) {
-							curBinding += "\"" + (v.isParam() ? "" : dataID) + dBs[j] + "\",";
+					if (v.getDimensionality() ==  0) {
+						curBinding += "\"" + vb.getBinding() + "\"";
+					} else {
+						String[] dBs = vb.getBinding()
+								.replaceFirst("^\\[", "")
+								.replaceFirst("\\]$", "")
+								.split("\\s*,\\s*");
+						for (int j = 0; j < dBs.length; j++) {
+							if (dBs[j].length() > 0) {
+								curBinding += "\"" + (v.isParam() ? "" : dataID) + dBs[j] + "\",";
+							}
 						}
+						curBinding = curBinding.substring(0, curBinding.length() - 1); //rm extra comma
 					}
-					curBinding = curBinding.substring(0, curBinding.length() - 1); //rm comma
+
 					if (v.isParam()) {
 						paramBindings += curBinding + "],";
 						paramAdded = true;
 					} else {
 						dataBindings += curBinding + "],";
 						dataAdded = true;
-
 					}
 				}
 			}

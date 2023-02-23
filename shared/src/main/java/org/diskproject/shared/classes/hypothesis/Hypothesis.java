@@ -13,18 +13,18 @@ public class Hypothesis {
   String dateModified;
   String author;
   String notes;
-  String question;
+  String questionId;
   List<VariableBinding> questionBindings;
   Graph graph; // The actual hypothesis.
   //For revised hypotheses
   String parentId;
   
-  public void setQuestion (String q) {
-    this.question = q;
+  public void setQuestionId (String q) {
+    this.questionId = q;
   }
   
-  public String getQuestion () {
-    return this.question;
+  public String getQuestionId () {
+    return this.questionId;
   }
 
   public Hypothesis (String id, String name, String description, String parentId, Graph graph){

@@ -245,9 +245,9 @@ public class WriteKBRepository extends KBRepository {
         }
 
         // Adding question template details
-        if (hypothesis.getQuestion() != null)
+        if (hypothesis.getQuestionId() != null)
             userKB.setPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_QUESTION),
-                    userKB.createLiteral(hypothesis.getQuestion()));
+                    userKB.createLiteral(hypothesis.getQuestionId()));
         List<VariableBinding> questionBindings = hypothesis.getQuestionBindings();
         if (questionBindings != null) {
             for (VariableBinding vb : questionBindings) {
@@ -348,7 +348,7 @@ public class WriteKBRepository extends KBRepository {
         // Question template info
         KBObject questionobj = userKB.getPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_QUESTION));
         if (questionobj != null)
-            hypothesis.setQuestion(questionobj.getValueAsString());
+            hypothesis.setQuestionId(questionobj.getValueAsString());
 
         ArrayList<KBObject> questionBindings = userKB.getPropertyValues(hypitem,
                 DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING));
@@ -484,7 +484,7 @@ public class WriteKBRepository extends KBRepository {
                 if (author != null)
                     item.setAuthor(author);
                 if (question != null)
-                    item.setQuestion(question);
+                    item.setQuestionId(question);
 
                 if (variableBindings.size() > 0)
                     item.setQuestionBindings(variableBindings);
@@ -545,9 +545,9 @@ public class WriteKBRepository extends KBRepository {
         if (loi.getTableDescription() != null)
             userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION),
                     userKB.createLiteral(loi.getTableDescription()));
-        if (loi.getQuestion() != null)
+        if (loi.getQuestionId() != null)
             userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION),
-                    userKB.createLiteral(loi.getQuestion()));
+                    userKB.createLiteral(loi.getQuestionId()));
         if (loi.getExplanation() != null)
             userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION),
                     userKB.createLiteral(loi.getExplanation()));
@@ -637,7 +637,7 @@ public class WriteKBRepository extends KBRepository {
 
         KBObject questionobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION));
         if (questionobj != null)
-            loi.setQuestion(questionobj.getValueAsString());
+            loi.setQuestionId(questionobj.getValueAsString());
 
         KBObject explobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION));
         if (explobj != null) {
@@ -710,7 +710,7 @@ public class WriteKBRepository extends KBRepository {
                 if (hypothesisQuery != null)
                     item.setHypothesisQuery(hypothesisQuery);
                 if (questionId != null)
-                    item.setQuestion(questionId);
+                    item.setQuestionId(questionId);
 
                 list.add(item);
             }

@@ -659,9 +659,8 @@ public class DiskRepository extends WriteKBRepository {
         // Check required inputs and set ID if necessary
         String name = hypothesis.getName();
         String desc = hypothesis.getDescription();
-        String question = hypothesis.getQuestion();
+        String question = hypothesis.getQuestionId();
         String dateCreated = hypothesis.getDateCreated();
-        System.out.println(dateCreated);
         if (dateCreated == null || dateCreated.equals("")) {
             // SET DATE
             hypothesis.setDateCreated(dateformatter.format(new Date()));
@@ -694,7 +693,7 @@ public class DiskRepository extends WriteKBRepository {
     public Hypothesis updateHypothesis(String username, String id, Hypothesis hypothesis) {
         String name = hypothesis.getName();
         String desc = hypothesis.getDescription();
-        String question = hypothesis.getQuestion();
+        String question = hypothesis.getQuestionId();
         if (name != null && desc != null && question != null && !name.equals("") && !desc.equals("")
                 && !question.equals("") &&
                 hypothesis.getId().equals(id) && this.deleteHypothesis(username, id))
@@ -713,7 +712,7 @@ public class DiskRepository extends WriteKBRepository {
     public LineOfInquiry addLOI(String username, LineOfInquiry loi) {
         String name = loi.getName();
         String desc = loi.getDescription();
-        String question = loi.getQuestion();
+        String question = loi.getQuestionId();
         String dateCreated = loi.getDateCreated();
         if (dateCreated == null || dateCreated.equals("")) {
             // SET DATE
@@ -753,8 +752,8 @@ public class DiskRepository extends WriteKBRepository {
                     null, l.getDateCreated(), l.getAuthor());
             if (l.getDateModified() != null)
                 item.setDateModified(l.getDateModified());
-            if (l.getQuestion() != null)
-                item.setQuestion(l.getQuestion());
+            if (l.getQuestionId() != null)
+                item.setQuestion(l.getQuestionId());
             list.add(item);
         }
         return list;
@@ -998,7 +997,6 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     private List<VariableOption> loadVariableOptions(String sid) throws Exception {
-        System.out.println("ID: " + sid);
         QuestionVariable variable = null;
         // FIXME: Find a better way to handle url prefix or change the request to
         // include the full URI
@@ -1116,6 +1114,7 @@ public class DiskRepository extends WriteKBRepository {
         }
 
         for (QuestionVariable qv: q.getVariables()) {
+            //System.out.println(qv.getId());
             if (qv.getSubType() == null) {
                 String varName = qv.getVariableName();
                 String curQuery = query;
@@ -1126,7 +1125,7 @@ public class DiskRepository extends WriteKBRepository {
                         }
                     }
                 }
-                //System.out.println("Variable " + varName + ":\n" + curQuery);
+                //System.out.println(query);
                 List<VariableOption> options = curQuery != null ?
                     queryForOptions(varName, curQuery)
                     : listVariableOptions(qv.getId().replaceAll("^.*\\/", ""));
@@ -1435,7 +1434,6 @@ public class DiskRepository extends WriteKBRepository {
             // One hypothesis can match the same LOI in more than one way, the following
             // for-loop handles that
             for (Map<String, String> values : matchingBindings.get(loi)) {
-
                 // Creating query
                 String dq = getQueryBindings(loi.getDataQuery(), varPattern, values);
                 String query = this.getAllPrefixes() + "SELECT DISTINCT ";
@@ -1505,9 +1503,8 @@ public class DiskRepository extends WriteKBRepository {
                     tloi.setDataQuery(dq); // Updated data query
                     tloi.setDateCreated(dateformatter.format(new Date()));
                     tlois.add(tloi);
-                }
-                else {
-                    System.out.println("LOI " + loi.getId() + " got no results");
+                } else {
+                    System.out.println("LOI " + loi.getId() + " got no results. " + values);
                 }
             }
         }
@@ -2072,7 +2069,7 @@ public class DiskRepository extends WriteKBRepository {
                 // Start monitoring
                 if (allok) {
                     TLOIMonitoringThread monitorThread = new TLOIMonitoringThread(username, tloi, metamode);
-                    monitor.schedule(monitorThread, 10, TimeUnit.SECONDS);
+                    monitor.schedule(monitorThread, 15, TimeUnit.SECONDS);
                 } else {
                     System.out.println("[E] Finished: Something when wrong.");
                 }
@@ -2115,7 +2112,9 @@ public class DiskRepository extends WriteKBRepository {
                     WorkflowRun wstatus = methodAdapter.getRunStatus(rname);
                     bindings.setRun(wstatus);
 
-                    if (wstatus.getStatus().equals("FAILURE")) {
+                    if (wstatus.getStatus() == null || wstatus.getStatus().equals("FAILURE")) {
+                        if (wstatus.getStatus() == null)
+                            System.out.println("[E] Cannot get status for " + tloi.getId() + " - RUN " + rname);
                         overallStatus = Status.FAILED;
                         numFinished++;
                         continue;
@@ -2139,9 +2138,10 @@ public class DiskRepository extends WriteKBRepository {
                                     String wingsP = byteConf != null ? new String(byteConf, StandardCharsets.UTF_8) : null;
                                     Double pval = null;
                                     try {
-                                        pval = Double.valueOf(wingsP);
+                                        String strPVal = wingsP != null ? wingsP.split("\n",2)[0] : "";
+                                        pval = Double.valueOf(strPVal);
                                     } catch (Exception e) {
-                                        System.err.println("[M] Error: " + dataid + " is a non valid p-value");
+                                        System.err.println("[M] Error: " + dataid + " is a non valid p-value: " + wingsP);
                                     }
                                     if (pval != null) {
                                         System.out.println("[M] Detected p-value: " + pval);

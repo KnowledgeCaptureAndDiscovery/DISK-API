@@ -133,7 +133,7 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
   public String toString() {
     Collections.sort(bindings);
     int i=0;
-    String description = "{";
+    String description = "["+source+"]{";
     for (VariableBinding vBinding : bindings) {
       if (i > 0) description += ", ";
       description += vBinding.getVariable() + " = " + vBinding.getBinding();

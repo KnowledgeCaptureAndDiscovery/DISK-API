@@ -65,7 +65,7 @@ public class SparqlAdapter extends DataAdapter {
 
     @Override
     public List<DataResult> query(String queryString) throws Exception, QueryParseException, QueryExceptionHTTP {
-        System.out.println("SparqlAdapter.query: " + queryString);
+        //System.out.println("SparqlAdapter.query: " + queryString);
         ArrayList<ArrayList<SparqlQuerySolution>> solutions = null;
         try {
             String user = this.getUsername(), pass = this.getPassword();
