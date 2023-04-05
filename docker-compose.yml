@@ -1,11 +1,13 @@
-version: '3.9'
+version: "3.9"
 
 services:
   frontend:
-    image: ikcap/disk_frontend_react
+    image: ikcap/disk_frontend
     ports:
       - 8000:80
     restart: on-failure:5
+    volumes:
+      - ./config.js:/usr/share/nginx/html/config.js
   backend:
     image: ikcap/disk_backend
     ports:
