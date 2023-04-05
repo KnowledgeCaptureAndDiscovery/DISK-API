@@ -10,7 +10,7 @@
 	<packaging>war</packaging>
 	<parent>
 		<groupId>org.disk-project</groupId>
-		<version>3.0.0</version>
+		<version>3.0.1</version>
 		<artifactId>disk-project</artifactId>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
