@@ -1,4 +1,4 @@
-package org.diskproject.server.repository;
+package edu.isi.kcap.diskproject.server.repository;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -7,22 +7,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.diskproject.shared.classes.adapters.MethodAdapter;
-import org.diskproject.shared.classes.common.Graph;
-import org.diskproject.shared.classes.common.Triple;
-import org.diskproject.shared.classes.common.TripleDetails;
-import org.diskproject.shared.classes.common.Value;
-import org.diskproject.shared.classes.hypothesis.Hypothesis;
-import org.diskproject.shared.classes.loi.LineOfInquiry;
-import org.diskproject.shared.classes.loi.TriggeredLOI;
-import org.diskproject.shared.classes.loi.TriggeredLOI.Status;
-import org.diskproject.shared.classes.loi.WorkflowBindings;
-import org.diskproject.shared.classes.util.GUID;
-import org.diskproject.shared.classes.util.KBConstants;
-import org.diskproject.shared.classes.workflow.VariableBinding;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
-import org.diskproject.shared.ontologies.DISK;
-
+import edu.diskproject.shared.classes.adapters.MethodAdapter;
+import edu.diskproject.shared.classes.common.Graph;
+import edu.diskproject.shared.classes.common.Triple;
+import edu.diskproject.shared.classes.common.TripleDetails;
+import edu.diskproject.shared.classes.common.Value;
+import edu.diskproject.shared.classes.hypothesis.Hypothesis;
+import edu.diskproject.shared.classes.loi.LineOfInquiry;
+import edu.diskproject.shared.classes.loi.TriggeredLOI;
+import edu.diskproject.shared.classes.loi.WorkflowBindings;
+import edu.diskproject.shared.classes.loi.TriggeredLOI.Status;
+import edu.diskproject.shared.classes.util.GUID;
+import edu.diskproject.shared.classes.util.KBConstants;
+import edu.diskproject.shared.classes.workflow.VariableBinding;
+import edu.diskproject.shared.classes.workflow.WorkflowRun;
+import edu.diskproject.shared.ontologies.DISK;
 import edu.isi.kcap.ontapi.KBAPI;
 import edu.isi.kcap.ontapi.KBObject;
 import edu.isi.kcap.ontapi.KBTriple;
@@ -83,9 +82,9 @@ public class WriteKBRepository extends KBRepository {
                 return kb.createLiteral(value.toString());
         } else {
             if (dataType != null) {
-                //FIXME: if we assing a new datatype to V we must ensure is an URI
-                //KBObject cls = kb.createClass(dataType);
-                //return kb.createObjectOfClass(value.toString(), cls);
+                // FIXME: if we assing a new datatype to V we must ensure is an URI
+                // KBObject cls = kb.createClass(dataType);
+                // return kb.createObjectOfClass(value.toString(), cls);
                 return kb.getResource(value.toString());
             } else {
                 return kb.getResource(value.toString());
@@ -156,7 +155,7 @@ public class WriteKBRepository extends KBRepository {
                 TripleDetails details = new TripleDetails();
                 if (conf != null && conf.getValue() != null)
                     details.setConfidenceValue((Double) conf.getValue());
-                if (confidenceType != null && confidenceType.getValue() != null){
+                if (confidenceType != null && confidenceType.getValue() != null) {
                     details.setConfidenceType((String) confidenceType.getValue());
                 }
                 if (tloi != null)
@@ -571,22 +570,24 @@ public class WriteKBRepository extends KBRepository {
 
         this.start_read();
         /*
-        KBObject typeprop = userKB.getProperty(KBConstants.RDF_NS + "type");
-        for (KBTriple t : userKB.genericTripleQuery(null, typeprop, null)) {
-            KBObject s = t.getSubject();
-            KBObject o = t.getObject();
-            if (o != null && !o.getValueAsString().startsWith("http://disk-project.org/ontology/disk#")) {
-                System.out.println("> " + s + " = " + o);
-                if (s!= null) {
-                    this.end();
-                    this.start_write();
-                    userKB.removeTriple(t);
-                    this.save(userKB);
-                    this.end();
-                    this.start_read();
-                }
-            }
-        } */
+         * KBObject typeprop = userKB.getProperty(KBConstants.RDF_NS + "type");
+         * for (KBTriple t : userKB.genericTripleQuery(null, typeprop, null)) {
+         * KBObject s = t.getSubject();
+         * KBObject o = t.getObject();
+         * if (o != null &&
+         * !o.getValueAsString().startsWith("http://disk-project.org/ontology/disk#")) {
+         * System.out.println("> " + s + " = " + o);
+         * if (s!= null) {
+         * this.end();
+         * this.start_write();
+         * userKB.removeTriple(t);
+         * this.save(userKB);
+         * this.end();
+         * this.start_read();
+         * }
+         * }
+         * }
+         */
 
         KBObject loiItem = userKB.getIndividual(loiId);
         if (loiItem == null) {
@@ -695,7 +696,7 @@ public class WriteKBRepository extends KBRepository {
                 String author = (authorobj != null) ? authorobj.getValueAsString() : null;
 
                 KBObject questionobj = userKB.getPropertyValue(loiobj, DISKOnt.getProperty(DISK.HAS_QUESTION));
-                String questionId =  (questionobj != null) ? questionobj.getValueAsString() : null;
+                String questionId = (questionobj != null) ? questionobj.getValueAsString() : null;
 
                 KBObject hqueryobj = userKB.getPropertyValue(loiobj, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_QUERY));
                 String hypothesisQuery = (hqueryobj != null) ? hqueryobj.getValueAsString() : null;
@@ -1035,7 +1036,7 @@ public class WriteKBRepository extends KBRepository {
                     String binding = vBinding.getBinding();
                     String cType = vBinding.getType();
 
-                    String type = cType != null ? cType :  KBConstants.XSD_NS + "string"; // default type
+                    String type = cType != null ? cType : KBConstants.XSD_NS + "string"; // default type
                     Value bindingValue = new Value(binding, type);
                     if (cType != null && !cType.startsWith(KBConstants.XSD_NS)) {
                         bindingValue.setType(Value.Type.URI);
@@ -1043,11 +1044,12 @@ public class WriteKBRepository extends KBRepository {
 
                     KBObject varbindingobj = userKB.createObjectOfClass(null, DISKOnt.getClass(DISK.VARIABLE_BINDING));
                     if (bindingValue.getType() == Value.Type.URI) {
-                        // We store the type of the binding on the binding object. We should store it on the binding itself
+                        // We store the type of the binding on the binding object. We should store it on
+                        // the binding itself
                         // but most of the time the binding is a rdf-literal value.
                         KBObject typeProp = userKB.getProperty(KBConstants.RDF_NS + "type");
                         userKB.addTriple(varbindingobj, typeProp, userKB.getResource(type));
-                        //userKB.addClassForInstance(varbindingobj, userKB.getResource(type));
+                        // userKB.addClassForInstance(varbindingobj, userKB.getResource(type));
                     }
                     userKB.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_VARIABLE),
                             userKB.getResource(workflowuri + "#" + varId));
@@ -1155,7 +1157,8 @@ public class WriteKBRepository extends KBRepository {
                         KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
                         for (KBTriple tr : kb.genericTripleQuery(vbobj, typeprop, null)) {
                             KBObject o = tr.getObject();
-                            if (o != null && !o.getValueAsString().startsWith("http://disk-project.org/ontology/disk#")) {
+                            if (o != null
+                                    && !o.getValueAsString().startsWith("http://disk-project.org/ontology/disk#")) {
                                 cls = o.getValueAsString();
                             }
                         }

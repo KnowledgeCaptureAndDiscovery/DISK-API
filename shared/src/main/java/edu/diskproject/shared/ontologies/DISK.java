@@ -1,13 +1,13 @@
-package org.diskproject.shared.ontologies;
+package edu.diskproject.shared.ontologies;
 
 public class DISK {
-    //DISK classes
+    // DISK classes
     public static final String HYPOTHESIS = "Hypothesis";
     public static final String LOI = "LineOfInquiry";
     public static final String TLOI = "TriggeredLineOfInquiry";
     public static final String VARIABLE_BINDING = "VariableBinding";
     public static final String WORKFLOW_BINDING = "WorkflowBinding";
-    //Properties
+    // Properties
     public static final String HAS_CONFIDENCE_VALUE = "hasConfidenceValue";
     public static final String HAS_CONFIDENCE_TYPE = "hasConfidenceType";
     public static final String HAS_TLOI = "hasTriggeredLineOfInquiry";
@@ -31,13 +31,14 @@ public class DISK {
 
     public static final String HAS_TLOI_STATUS = "hasTriggeredLineOfInquiryStatus";
     public static final String HAS_LOI = "hasLineOfInquiry";
-    //public static final String HAS_RESULTING_HYPOTHESIS = "hasResultingHypothesis";
+    // public static final String HAS_RESULTING_HYPOTHESIS =
+    // "hasResultingHypothesis";
 
     public static final String HAS_WORKFLOW_BINDING = "hasWorkflowBinding";
     public static final String HAS_METAWORKFLOW_BINDING = "hasMetaWorkflowBinding";
 
     public static final String HAS_WORKFLOW = "hasWorkflow";
-    public static final String HAS_ID = "hasId"; //Has run ID
+    public static final String HAS_ID = "hasId"; // Has run ID
     public static final String HAS_STATUS = "hasRunStatus";
     public static final String HAS_RUN_LINK = "hasRunLink";
     public static final String HAS_RUN_START_DATE = "hasRunStartDate";

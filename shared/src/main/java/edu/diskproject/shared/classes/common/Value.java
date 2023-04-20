@@ -1,4 +1,4 @@
-package org.diskproject.shared.classes.common;
+package edu.diskproject.shared.classes.common;
 
 public class Value {
   public static enum Type {
@@ -9,25 +9,26 @@ public class Value {
   Object value;
   String datatype;
 
-  public Value() {}
-  
+  public Value() {
+  }
+
   public Value(String id) {
     this.value = id;
     this.type = Type.URI;
   }
-  
+
   public Value(Object value, String datatype) {
     this.value = value;
     this.datatype = datatype;
     this.type = Type.LITERAL;
   }
-  
+
   public Value(Type type, Object value, String datatype) {
-	    this.value = value;
-	    this.datatype = datatype;
-	    this.type = type;
-	  }
-  
+    this.value = value;
+    this.datatype = datatype;
+    this.type = type;
+  }
+
   public Type getType() {
     return type;
   }
@@ -51,12 +52,12 @@ public class Value {
   public void setDatatype(String datatype) {
     this.datatype = datatype;
   }
-  
+
   public String toString() {
-    if(this.type == Type.URI)
+    if (this.type == Type.URI)
       return "<" + this.value.toString() + ">";
     else {
-      return "\"" + this.value.toString() + "\"^^<" + this.getDatatype() +">";
+      return "\"" + this.value.toString() + "\"^^<" + this.getDatatype() + ">";
     }
   }
 }

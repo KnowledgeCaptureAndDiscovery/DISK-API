@@ -1,17 +1,17 @@
-package org.diskproject.shared.classes.loi;
+package edu.diskproject.shared.classes.loi;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.diskproject.shared.classes.util.GUID;
-import org.diskproject.shared.classes.workflow.VariableBinding;
+import edu.diskproject.shared.classes.util.GUID;
+import edu.diskproject.shared.classes.workflow.VariableBinding;
 
 public class TriggeredLOI implements Comparable<TriggeredLOI> {
   public static enum Status {
     QUEUED, RUNNING, FAILED, SUCCESSFUL
   };
-  
+
   String id, name, description, author;
   String dataSource;
   Status status;
@@ -32,24 +32,24 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
   }
 
   public TriggeredLOI(String id,
-		  String name,
-		  String description,
-		  String dataSource,
-		  Status status,
-		  String loiId,
-		  String parentHypothesisId,
-		  List<WorkflowBindings> workflows,
-		  List<WorkflowBindings> metaWorkflows) {
-	  this.id = id;
-	  this.name = name;
-	  this.description = description;
-	  this.dataSource = dataSource;
-	  this.status = status;
-	  this.parentLoiId = loiId;
-	  this.parentHypothesisId = parentHypothesisId;
-	  this.workflows = workflows;
-	  this.metaWorkflows = metaWorkflows;
-	}
+      String name,
+      String description,
+      String dataSource,
+      Status status,
+      String loiId,
+      String parentHypothesisId,
+      List<WorkflowBindings> workflows,
+      List<WorkflowBindings> metaWorkflows) {
+    this.id = id;
+    this.name = name;
+    this.description = description;
+    this.dataSource = dataSource;
+    this.status = status;
+    this.parentLoiId = loiId;
+    this.parentHypothesisId = parentHypothesisId;
+    this.workflows = workflows;
+    this.metaWorkflows = metaWorkflows;
+  }
 
   public TriggeredLOI(LineOfInquiry loi, String hypothesisId) {
     this.id = GUID.randomId("TriggeredLOI");
@@ -61,16 +61,19 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
     String tableVariables = loi.getTableVariables();
     String tableExplanation = loi.getTableDescription();
     String dataQueryExplanation = loi.getDataQueryExplanation();
-    if (tableVariables != null) this.tableVariables = tableVariables;
-    if (tableExplanation != null) this.tableDescription = tableExplanation;
-    if (dataQueryExplanation != null) this.dataQueryExplanation = dataQueryExplanation;
+    if (tableVariables != null)
+      this.tableVariables = tableVariables;
+    if (tableExplanation != null)
+      this.tableDescription = tableExplanation;
+    if (dataQueryExplanation != null)
+      this.dataQueryExplanation = dataQueryExplanation;
     workflows = new ArrayList<WorkflowBindings>();
     metaWorkflows = new ArrayList<WorkflowBindings>();
   }
 
   public void copyWorkflowBindings(List<WorkflowBindings> fromlist,
       List<WorkflowBindings> tolist) {
-    for(WorkflowBindings from : fromlist) {
+    for (WorkflowBindings from : fromlist) {
       WorkflowBindings to = new WorkflowBindings();
       to.setWorkflow(from.getWorkflow());
       to.setMeta(from.getMeta());
@@ -78,21 +81,21 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
       tolist.add(to);
     }
   }
-  
-  public void setConfidenceValue (double cv) {
-	  this.confidenceValue = cv;
-  }
-  
-  public double getConfidenceValue () {
-	  return this.confidenceValue;
+
+  public void setConfidenceValue(double cv) {
+    this.confidenceValue = cv;
   }
 
-  public void setDataSource (String ds) {
-	  this.dataSource = ds;
+  public double getConfidenceValue() {
+    return this.confidenceValue;
   }
 
-  public String getDataSource () {
-	  return this.dataSource;
+  public void setDataSource(String ds) {
+    this.dataSource = ds;
+  }
+
+  public String getDataSource() {
+    return this.dataSource;
   }
 
   public String getId() {
@@ -103,28 +106,28 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
     this.id = id;
   }
 
-  public void setDataQuery (String dq) {
+  public void setDataQuery(String dq) {
     this.dataQuery = dq;
   }
 
-  public String getDataQuery () {
+  public String getDataQuery() {
     return this.dataQuery;
   }
 
-  public String getTableDescription () {
-	  return this.tableDescription;
+  public String getTableDescription() {
+    return this.tableDescription;
   }
 
-  public void setTableDescription (String explanation) {
-	  this.tableDescription = explanation;
+  public void setTableDescription(String explanation) {
+    this.tableDescription = explanation;
   }
 
-  public String getDataQueryExplanation () {
-	  return this.dataQueryExplanation;
+  public String getDataQueryExplanation() {
+    return this.dataQueryExplanation;
   }
 
-  public void setDataQueryExplanation (String explanation) {
-	  this.dataQueryExplanation = explanation;
+  public void setDataQueryExplanation(String explanation) {
+    this.dataQueryExplanation = explanation;
   }
 
   public String getName() {
@@ -154,13 +157,13 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
   public Status getStatus() {
     return status;
   }
-  
-  public String getNotes () {
-	  return this.notes;
+
+  public String getNotes() {
+    return this.notes;
   }
-  
-  public void setNotes (String notes) {
-	  this.notes = notes;
+
+  public void setNotes(String notes) {
+    this.notes = notes;
   }
 
   public void setStatus(Status status) {
@@ -202,38 +205,38 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
   public String toString() {
     Collections.sort(this.workflows);
     Collections.sort(this.metaWorkflows);
-    return this.getParentLoiId() + "-" 
-        + this.getParentHypothesisId() + "-" 
-        + this.getWorkflows() + "-" 
+    return this.getParentLoiId() + "-"
+        + this.getParentHypothesisId() + "-"
+        + this.getWorkflows() + "-"
         + this.getMetaWorkflows();
   }
 
   public int compareTo(TriggeredLOI o) {
     return this.toString().compareTo(o.toString());
   }
- 
+
   public void setDateCreated(String date) {
-	  this.dateCreated = date;
+    this.dateCreated = date;
   }
- 
-  public void setAuthor (String author) {
-	  this.author = author;
+
+  public void setAuthor(String author) {
+    this.author = author;
   }
- 
-  public String getDateCreated () {
-	  return this.dateCreated;
+
+  public String getDateCreated() {
+    return this.dateCreated;
   }
- 
-  public String getAuthor () {
-	  return this.author;
+
+  public String getAuthor() {
+    return this.author;
   }
 
   public void setDateModified(String date) {
-	  this.dateModified = date;
+    this.dateModified = date;
   }
- 
-  public String getDateModified () {
-	  return dateModified;
+
+  public String getDateModified() {
+    return dateModified;
   }
 
   public void setConfidenceType(String type) {

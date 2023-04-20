@@ -1,4 +1,4 @@
-package org.diskproject.server.util;
+package edu.isi.kcap.diskproject.server.util;
 
 public class ConfigKeys {
     // File destination

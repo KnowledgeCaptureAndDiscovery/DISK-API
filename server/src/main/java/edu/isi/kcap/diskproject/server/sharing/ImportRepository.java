@@ -1,4 +1,4 @@
-package org.diskproject.server.sharing;
+package edu.isi.kcap.diskproject.server.sharing;
 
 public class ImportRepository {
   public String serverURL;

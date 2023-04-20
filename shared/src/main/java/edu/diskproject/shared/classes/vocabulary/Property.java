@@ -1,4 +1,4 @@
-package org.diskproject.shared.classes.vocabulary;
+package edu.diskproject.shared.classes.vocabulary;
 
 public class Property extends Entity {
   String domain;

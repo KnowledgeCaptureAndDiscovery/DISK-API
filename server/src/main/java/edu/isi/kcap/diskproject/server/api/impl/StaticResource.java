@@ -1,4 +1,4 @@
-package org.diskproject.server.api.impl;
+package edu.isi.kcap.diskproject.server.api.impl;
 
 import java.io.InputStream;
 import java.util.Objects;
@@ -11,7 +11,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.diskproject.shared.api.StaticService;
+import edu.diskproject.shared.api.StaticService;
 
 @Path("public")
 public class StaticResource implements StaticService {

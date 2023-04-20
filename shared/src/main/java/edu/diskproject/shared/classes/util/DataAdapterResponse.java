@@ -1,11 +1,11 @@
-package org.diskproject.shared.classes.util;
+package edu.diskproject.shared.classes.util;
 
-import org.diskproject.shared.classes.adapters.DataAdapter;
+import edu.diskproject.shared.classes.adapters.DataAdapter;
 
 public class DataAdapterResponse {
     public String url, name, prefix, namespace, description, prefixResolution;
 
-    public DataAdapterResponse (DataAdapter dataAdapter) {
+    public DataAdapterResponse(DataAdapter dataAdapter) {
         this.url = dataAdapter.getEndpointUrl();
         this.name = dataAdapter.getName();
         if (dataAdapter.getNamespace() != null)

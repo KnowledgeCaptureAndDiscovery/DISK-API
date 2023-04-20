@@ -1,4 +1,4 @@
-package org.diskproject.shared.classes.common;
+package edu.diskproject.shared.classes.common;
 
 public class TripleDetails {
   double confidenceValue;

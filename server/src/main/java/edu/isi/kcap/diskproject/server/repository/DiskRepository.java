@@ -1,4 +1,4 @@
-package org.diskproject.server.repository;
+package edu.isi.kcap.diskproject.server.repository;
 
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
@@ -25,43 +25,43 @@ import java.util.regex.Pattern;
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.jena.query.QueryParseException;
-import org.diskproject.server.adapters.AirFlowAdapter;
-import org.diskproject.server.adapters.GraphDBAdapter;
-import org.diskproject.server.adapters.SparqlAdapter;
-import org.diskproject.server.util.Config;
-import org.diskproject.server.util.ConfigKeys;
-import org.diskproject.server.util.KBCache;
-import org.diskproject.server.util.VocabularyConfiguration;
-import org.diskproject.shared.classes.adapters.DataAdapter;
-import org.diskproject.shared.classes.adapters.DataResult;
-import org.diskproject.shared.classes.adapters.MethodAdapter;
-import org.diskproject.shared.classes.common.Graph;
-import org.diskproject.shared.classes.common.TreeItem;
-import org.diskproject.shared.classes.common.Triple;
-import org.diskproject.shared.classes.hypothesis.Hypothesis;
-import org.diskproject.shared.classes.loi.LineOfInquiry;
-import org.diskproject.shared.classes.loi.WorkflowBindings;
-import org.diskproject.shared.classes.loi.TriggeredLOI;
-import org.diskproject.shared.classes.loi.TriggeredLOI.Status;
-import org.diskproject.shared.classes.question.Question;
-import org.diskproject.shared.classes.question.QuestionCategory;
-import org.diskproject.shared.classes.question.QuestionVariable;
-import org.diskproject.shared.classes.question.VariableOption;
-import org.diskproject.shared.classes.util.DataAdapterResponse;
-import org.diskproject.shared.classes.util.GUID;
-import org.diskproject.shared.classes.util.KBConstants;
-import org.diskproject.shared.classes.util.QuestionOptionsRequest;
-import org.diskproject.shared.classes.vocabulary.Individual;
-import org.diskproject.shared.classes.vocabulary.Property;
-import org.diskproject.shared.classes.vocabulary.Vocabulary;
-import org.diskproject.shared.classes.vocabulary.Type;
-import org.diskproject.shared.classes.workflow.Variable;
-import org.diskproject.shared.classes.workflow.VariableBinding;
-import org.diskproject.shared.classes.workflow.Workflow;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
-import org.diskproject.shared.ontologies.DISK;
-import org.diskproject.shared.ontologies.SQO;
 
+import edu.diskproject.shared.classes.adapters.DataAdapter;
+import edu.diskproject.shared.classes.adapters.DataResult;
+import edu.diskproject.shared.classes.adapters.MethodAdapter;
+import edu.diskproject.shared.classes.common.Graph;
+import edu.diskproject.shared.classes.common.TreeItem;
+import edu.diskproject.shared.classes.common.Triple;
+import edu.diskproject.shared.classes.hypothesis.Hypothesis;
+import edu.diskproject.shared.classes.loi.LineOfInquiry;
+import edu.diskproject.shared.classes.loi.TriggeredLOI;
+import edu.diskproject.shared.classes.loi.WorkflowBindings;
+import edu.diskproject.shared.classes.loi.TriggeredLOI.Status;
+import edu.diskproject.shared.classes.question.Question;
+import edu.diskproject.shared.classes.question.QuestionCategory;
+import edu.diskproject.shared.classes.question.QuestionVariable;
+import edu.diskproject.shared.classes.question.VariableOption;
+import edu.diskproject.shared.classes.util.DataAdapterResponse;
+import edu.diskproject.shared.classes.util.GUID;
+import edu.diskproject.shared.classes.util.KBConstants;
+import edu.diskproject.shared.classes.util.QuestionOptionsRequest;
+import edu.diskproject.shared.classes.vocabulary.Individual;
+import edu.diskproject.shared.classes.vocabulary.Property;
+import edu.diskproject.shared.classes.vocabulary.Type;
+import edu.diskproject.shared.classes.vocabulary.Vocabulary;
+import edu.diskproject.shared.classes.workflow.Variable;
+import edu.diskproject.shared.classes.workflow.VariableBinding;
+import edu.diskproject.shared.classes.workflow.Workflow;
+import edu.diskproject.shared.classes.workflow.WorkflowRun;
+import edu.diskproject.shared.ontologies.DISK;
+import edu.diskproject.shared.ontologies.SQO;
+import edu.isi.kcap.diskproject.server.adapters.AirFlowAdapter;
+import edu.isi.kcap.diskproject.server.adapters.GraphDBAdapter;
+import edu.isi.kcap.diskproject.server.adapters.SparqlAdapter;
+import edu.isi.kcap.diskproject.server.util.Config;
+import edu.isi.kcap.diskproject.server.util.ConfigKeys;
+import edu.isi.kcap.diskproject.server.util.KBCache;
+import edu.isi.kcap.diskproject.server.util.VocabularyConfiguration;
 import edu.isi.kcap.ontapi.KBAPI;
 import edu.isi.kcap.ontapi.KBObject;
 import edu.isi.kcap.ontapi.KBTriple;
@@ -306,7 +306,7 @@ public class DiskRepository extends WriteKBRepository {
                     curAdapter = new SparqlAdapter(curURI, name, curUser, curPass);
                     break;
                 case ConfigKeys.DATA_TYPE_GRAPH_DB:
-                    //curAdapter = new GraphDBAdapter(curURI, name, curUser, curPass);
+                    // curAdapter = new GraphDBAdapter(curURI, name, curUser, curPass);
                     GraphDBAdapter ga = new GraphDBAdapter(curURI, name, curUser, curPass);
                     if (cur.containsKey(ConfigKeys.REPOSITORY))
                         ga.setRepository(cur.get(ConfigKeys.REPOSITORY));
@@ -799,7 +799,8 @@ public class DiskRepository extends WriteKBRepository {
             if (this.deleteTLOI(username, id) && this.writeTLOI(username, updatedTLOI))
                 return tloi;
         }
-        //TODO: We return the request as default, check what when wrong and send apropiate error.
+        // TODO: We return the request as default, check what when wrong and send
+        // apropiate error.
         return tloi;
     }
 
@@ -868,7 +869,8 @@ public class DiskRepository extends WriteKBRepository {
                 KBObject name = kb.getPropertyValue(question, labelprop);
                 KBObject template = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_TEMPLATE));
                 KBObject pattern = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_PATTERN));
-                KBObject constraint = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_QUESTION_CONSTRAINT_QUERY));
+                KBObject constraint = kb.getPropertyValue(question,
+                        SQOnt.getProperty(SQO.HAS_QUESTION_CONSTRAINT_QUERY));
                 KBObject category = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_QUESTION_CATEGORY));
                 ArrayList<KBObject> variables = kb.getPropertyValues(question, SQOnt.getProperty(SQO.HAS_VARIABLE));
 
@@ -887,10 +889,11 @@ public class DiskRepository extends WriteKBRepository {
 
                     Question q = new Question(question.getID(), name.getValueAsString(), template.getValueAsString(),
                             pattern.getValueAsString(), vars);
-                    if (constraint != null) q.setConstraint(constraint.getValueAsString());
+                    if (constraint != null)
+                        q.setConstraint(constraint.getValueAsString());
                     if (category != null) {
                         KBObject catName = kb.getPropertyValue(category, labelprop);
-                        q.setCategory( new QuestionCategory(category.getID(), catName.getValueAsString()) );
+                        q.setCategory(new QuestionCategory(category.getID(), catName.getValueAsString()));
                     }
                     questions.add(q);
                 }
@@ -906,7 +909,7 @@ public class DiskRepository extends WriteKBRepository {
         return null;
     }
 
-    public QuestionVariable LoadQuestionVariableFromKB (KBObject var, KBAPI kb) {
+    public QuestionVariable LoadQuestionVariableFromKB(KBObject var, KBAPI kb) {
         KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
         KBObject variableName = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_VARIABLE_NAME));
         KBObject representation = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_REPRESENTATION));
@@ -972,11 +975,10 @@ public class DiskRepository extends WriteKBRepository {
                     KBObject maxLngVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MAX_LNG));
                     if (minLatVar != null && minLngVar != null && maxLatVar != null && maxLngVar != null) {
                         q.setBoundingBoxVariables(
-                            LoadQuestionVariableFromKB(minLatVar, kb),
-                            LoadQuestionVariableFromKB(maxLatVar, kb),
-                            LoadQuestionVariableFromKB(minLngVar, kb),
-                            LoadQuestionVariableFromKB(maxLngVar, kb)
-                        );
+                                LoadQuestionVariableFromKB(minLatVar, kb),
+                                LoadQuestionVariableFromKB(maxLatVar, kb),
+                                LoadQuestionVariableFromKB(minLngVar, kb),
+                                LoadQuestionVariableFromKB(maxLngVar, kb));
                     }
                 }
             }
@@ -1008,7 +1010,8 @@ public class DiskRepository extends WriteKBRepository {
             variable = allVariables.get("https://w3id.org/sqo/resource/" + sid);
         }
         // -----
-        //QuestionVariable variable = allVariables.containsKey(sid) ? allVariables.get(sid) : null;
+        // QuestionVariable variable = allVariables.containsKey(sid) ?
+        // allVariables.get(sid) : null;
         if (variable == null)
             return null;
 
@@ -1022,7 +1025,7 @@ public class DiskRepository extends WriteKBRepository {
         return null;
     }
 
-    private List<VariableOption> queryForOptions (String varName, String query) throws Exception {
+    private List<VariableOption> queryForOptions(String varName, String query) throws Exception {
         List<VariableOption> options = new ArrayList<VariableOption>();
         // If there is a constraint query, send it to all data providers;
         Map<String, List<DataResult>> solutions = new HashMap<String, List<DataResult>>();
@@ -1089,18 +1092,19 @@ public class DiskRepository extends WriteKBRepository {
         return options;
     }
 
-    public Map<String,List<VariableOption>> listDynamicOptions (QuestionOptionsRequest cfg) throws Exception {
+    public Map<String, List<VariableOption>> listDynamicOptions(QuestionOptionsRequest cfg) throws Exception {
         Map<String, List<VariableOption>> all = new HashMap<String, List<VariableOption>>();
 
         Map<String, String> bindings = cfg.getBindings();
         Question q = allQuestions.get(cfg.getId());
         String query = (q != null) ? q.getConstraint() : null;
-        if (q == null) return null; // TODO: If no query constraint should go to variable queries.
+        if (q == null)
+            return null; // TODO: If no query constraint should go to variable queries.
 
         // Create map variableName -> filter
         Map<String, String> filters = new HashMap<String, String>();
         if (bindings != null && query != null) {
-            for (String varUrl: bindings.keySet()) {
+            for (String varUrl : bindings.keySet()) {
                 QuestionVariable curVar = allVariables.get(varUrl);
                 if (curVar != null) {
                     String value = bindings.get(varUrl);
@@ -1113,22 +1117,21 @@ public class DiskRepository extends WriteKBRepository {
             }
         }
 
-        for (QuestionVariable qv: q.getVariables()) {
-            //System.out.println(qv.getId());
+        for (QuestionVariable qv : q.getVariables()) {
+            // System.out.println(qv.getId());
             if (qv.getSubType() == null) {
                 String varName = qv.getVariableName();
                 String curQuery = query;
                 if (filters != null && query != null) {
-                    for (String diffVar: filters.keySet()) {
+                    for (String diffVar : filters.keySet()) {
                         if (!diffVar.equals(varName)) {
                             curQuery += "\n" + filters.get(diffVar);
                         }
                     }
                 }
-                //System.out.println(query);
-                List<VariableOption> options = curQuery != null ?
-                    queryForOptions(varName, curQuery)
-                    : listVariableOptions(qv.getId().replaceAll("^.*\\/", ""));
+                // System.out.println(query);
+                List<VariableOption> options = curQuery != null ? queryForOptions(varName, curQuery)
+                        : listVariableOptions(qv.getId().replaceAll("^.*\\/", ""));
                 all.put(varName, options);
             }
         }
@@ -1319,7 +1322,7 @@ public class DiskRepository extends WriteKBRepository {
                 if (hq != null) {
                     String query = this.getAllPrefixes() + "SELECT DISTINCT * WHERE { \n"
                             + loi.getHypothesisQuery().replaceAll("\n", ".\n") + " }";
-                    //System.out.println("Query: " + query + "\n---------------------------");
+                    // System.out.println("Query: " + query + "\n---------------------------");
                     ArrayList<ArrayList<SparqlQuerySolution>> allSolutions = null;
                     try {
                         allSolutions = hypKB.sparqlQuery(query);
@@ -1331,8 +1334,8 @@ public class DiskRepository extends WriteKBRepository {
                     if (allSolutions != null) {
                         if (allSolutions.size() == 0) {
                             System.out.println("No solutions for " + loi.getId());
-                            //String errorMesString = "No solutions found for the query: \n" + query;
-                            //System.out.println(errorMesString);
+                            // String errorMesString = "No solutions found for the query: \n" + query;
+                            // System.out.println(errorMesString);
                             // throw new NotFoundException(errorMesString);
                         } else
                             for (List<SparqlQuerySolution> row : allSolutions) {
@@ -1409,8 +1412,8 @@ public class DiskRepository extends WriteKBRepository {
                 continue;
             } else {
                 boolean allOk = true;
-                for (WorkflowBindings wb: loi.getWorkflows()) {
-                    String source =  wb.getSource();
+                for (WorkflowBindings wb : loi.getWorkflows()) {
+                    String source = wb.getSource();
                     if (source == null || getMethodAdapterByName(source) == null) {
                         allOk = false;
                         System.out.println("Warning: " + loi.getId() + " uses an unknown method adapter: " + source);
@@ -1418,11 +1421,12 @@ public class DiskRepository extends WriteKBRepository {
                     }
                 }
                 if (allOk)
-                    for (WorkflowBindings wb: loi.getMetaWorkflows()) {
-                        String source =  wb.getSource();
+                    for (WorkflowBindings wb : loi.getMetaWorkflows()) {
+                        String source = wb.getSource();
                         if (source == null || getMethodAdapterByName(source) == null) {
                             allOk = false;
-                            System.out.println("Warning: " + loi.getId() + " uses an unknown method adapter: " + source);
+                            System.out
+                                    .println("Warning: " + loi.getId() + " uses an unknown method adapter: " + source);
                             break;
                         }
                     }
@@ -1598,7 +1602,7 @@ public class DiskRepository extends WriteKBRepository {
                 if (bindingsAreFiles) {
                     String varName = vbinding.getVariable();
                     String dType = null;
-                    for (Variable v: allVars) {
+                    for (Variable v : allVars) {
                         if (varName.equals(v.getName())) {
                             List<String> classes = v.getType();
                             if (classes != null && classes.size() > 0) {
@@ -1662,17 +1666,19 @@ public class DiskRepository extends WriteKBRepository {
         return tloiBindings;
     }
 
-    //This adds dsUrls to the data-repository, returns filename -> URL
-    private Map<String, String> addData(List<String> dsurls, MethodAdapter methodAdapter, DataAdapter dataAdapter, String dType)
+    // This adds dsUrls to the data-repository, returns filename -> URL
+    private Map<String, String> addData(List<String> dsurls, MethodAdapter methodAdapter, DataAdapter dataAdapter,
+            String dType)
             throws Exception {
-        // To add files to wings and not replace anything, we need to get the hash from the wiki.
+        // To add files to wings and not replace anything, we need to get the hash from
+        // the wiki.
         // TODO: here connect with minio.
         Map<String, String> nameToUrl = new HashMap<String, String>();
         Map<String, String> urlToName = new HashMap<String, String>();
-        Map<String, String> filesETag = dataAdapter.getFileHashesByETag(dsurls);  // File -> ETag
+        Map<String, String> filesETag = dataAdapter.getFileHashesByETag(dsurls); // File -> ETag
         boolean allOk = true; // All is OK if we have all file ETags.
 
-        for (String fileUrl: dsurls) {
+        for (String fileUrl : dsurls) {
             if (filesETag.containsKey(fileUrl)) {
                 String eTag = filesETag.get(fileUrl);
                 // This name should be different now, this is not the SHA
@@ -1704,7 +1710,7 @@ public class DiskRepository extends WriteKBRepository {
         // Show files with no hash and throw a exception.
         for (String file : dsurls) {
             if (!urlToName.containsKey(file)) {
-                //TODO: hadnle exception
+                // TODO: hadnle exception
                 System.err.println("Warning: file " + file + " does not contain any hash on " + dataAdapter.getName());
             }
         }
@@ -1717,7 +1723,8 @@ public class DiskRepository extends WriteKBRepository {
         // upload the files
         for (String newFilename : names) {
             String newFile = nameToUrl.get(newFilename);
-            System.out.println("Uploading to " + methodAdapter.getName() + ": " + newFile + " as " + newFilename + "(" + dType + ")");
+            System.out.println("Uploading to " + methodAdapter.getName() + ": " + newFile + " as " + newFilename + "("
+                    + dType + ")");
             methodAdapter.addData(newFile, newFilename, dType);
         }
 
@@ -2135,13 +2142,15 @@ public class DiskRepository extends WriteKBRepository {
                                 if (outname.equals("p_value") || outname.equals("pval") || outname.equals("p_val")) {
                                     String dataid = outputs.get(outname);
                                     byte[] byteConf = methodAdapter.fetchData(dataid);
-                                    String wingsP = byteConf != null ? new String(byteConf, StandardCharsets.UTF_8) : null;
+                                    String wingsP = byteConf != null ? new String(byteConf, StandardCharsets.UTF_8)
+                                            : null;
                                     Double pval = null;
                                     try {
-                                        String strPVal = wingsP != null ? wingsP.split("\n",2)[0] : "";
+                                        String strPVal = wingsP != null ? wingsP.split("\n", 2)[0] : "";
                                         pval = Double.valueOf(strPVal);
                                     } catch (Exception e) {
-                                        System.err.println("[M] Error: " + dataid + " is a non valid p-value: " + wingsP);
+                                        System.err
+                                                .println("[M] Error: " + dataid + " is a non valid p-value: " + wingsP);
                                     }
                                     if (pval != null) {
                                         System.out.println("[M] Detected p-value: " + pval);

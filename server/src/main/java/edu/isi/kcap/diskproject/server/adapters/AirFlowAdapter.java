@@ -1,4 +1,4 @@
-package org.diskproject.server.adapters;
+package edu.isi.kcap.diskproject.server.adapters;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,11 +17,12 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
-import org.diskproject.shared.classes.adapters.MethodAdapter;
-import org.diskproject.shared.classes.workflow.Variable;
-import org.diskproject.shared.classes.workflow.VariableBinding;
-import org.diskproject.shared.classes.workflow.Workflow;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
+
+import edu.diskproject.shared.classes.adapters.MethodAdapter;
+import edu.diskproject.shared.classes.workflow.Variable;
+import edu.diskproject.shared.classes.workflow.VariableBinding;
+import edu.diskproject.shared.classes.workflow.Workflow;
+import edu.diskproject.shared.classes.workflow.WorkflowRun;
 
 public class AirFlowAdapter extends MethodAdapter {
     private PoolingHttpClientConnectionManager connectionManager;

@@ -1,4 +1,4 @@
-package org.diskproject.shared.ontologies;
+package edu.diskproject.shared.ontologies;
 
 //V1.3.0
 public class SQO {

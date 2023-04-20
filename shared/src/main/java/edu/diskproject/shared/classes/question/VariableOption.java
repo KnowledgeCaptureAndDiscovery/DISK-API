@@ -1,9 +1,9 @@
-package org.diskproject.shared.classes.question;
+package edu.diskproject.shared.classes.question;
 
 public class VariableOption {
     String value, label;
 
-    public VariableOption (String value, String label) {
+    public VariableOption(String value, String label) {
         this.value = value;
         this.label = label;
     }
@@ -16,11 +16,11 @@ public class VariableOption {
         return label;
     }
 
-    public void setValue (String value) {
+    public void setValue(String value) {
         this.value = value;
     }
 
-    public String getValue () {
+    public String getValue() {
         return this.value;
     }
 }

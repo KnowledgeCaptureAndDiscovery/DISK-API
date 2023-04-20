@@ -1,4 +1,4 @@
-package org.diskproject.server.filters;
+package edu.isi.kcap.diskproject.server.filters;
 
 import java.io.IOException;
 import java.security.interfaces.RSAPublicKey;
@@ -71,7 +71,7 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
 
     /**
      * Validate a JWT token
-     * 
+     *
      * @param token
      * @return decoded token
      */

@@ -1,4 +1,4 @@
-package org.diskproject.shared.api;
+package edu.diskproject.shared.api;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

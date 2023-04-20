@@ -1,4 +1,4 @@
-package org.diskproject.shared.classes.vocabulary;
+package edu.diskproject.shared.classes.vocabulary;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,7 +6,7 @@ import java.util.List;
 public class Type extends Entity {
   String parent;
   List<String> children;
-  
+
   public Type() {
     this.children = new ArrayList<String>();
   }

@@ -1,16 +1,16 @@
-package org.diskproject.server.repository;
+package edu.isi.kcap.diskproject.server.repository;
 
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
-import org.diskproject.server.util.Config;
-import org.diskproject.server.util.KBCache;
-import org.diskproject.shared.classes.adapters.DataAdapter;
-import org.diskproject.shared.classes.adapters.MethodAdapter;
-import org.diskproject.shared.classes.util.KBConstants;
 
+import edu.diskproject.shared.classes.adapters.DataAdapter;
+import edu.diskproject.shared.classes.adapters.MethodAdapter;
+import edu.diskproject.shared.classes.util.KBConstants;
+import edu.isi.kcap.diskproject.server.util.Config;
+import edu.isi.kcap.diskproject.server.util.KBCache;
 import edu.isi.kcap.ontapi.KBAPI;
 import edu.isi.kcap.ontapi.OntFactory;
 import edu.isi.kcap.ontapi.OntSpec;

@@ -1,4 +1,4 @@
-package org.diskproject.server.adapters;
+package edu.isi.kcap.diskproject.server.adapters;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,10 +19,10 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.jena.query.QueryParseException;
 import org.apache.jena.sparql.engine.http.QueryExceptionHTTP;
-import org.diskproject.shared.classes.adapters.DataAdapter;
-import org.diskproject.shared.classes.adapters.DataResult;
-import org.diskproject.shared.classes.util.KBConstants;
 
+import edu.diskproject.shared.classes.adapters.DataAdapter;
+import edu.diskproject.shared.classes.adapters.DataResult;
+import edu.diskproject.shared.classes.util.KBConstants;
 import edu.isi.kcap.ontapi.KBAPI;
 import edu.isi.kcap.ontapi.KBObject;
 import edu.isi.kcap.ontapi.OntSpec;
@@ -37,7 +37,7 @@ public class SparqlAdapter extends DataAdapter {
 
     public SparqlAdapter(String endpoint, String name, String username, String password) {
         super(endpoint, name, username, password);
-        
+
         connectionManager = new PoolingHttpClientConnectionManager();
         httpClient = HttpClients.custom()
                 .setConnectionManager(connectionManager)
@@ -65,7 +65,7 @@ public class SparqlAdapter extends DataAdapter {
 
     @Override
     public List<DataResult> query(String queryString) throws Exception, QueryParseException, QueryExceptionHTTP {
-        //System.out.println("SparqlAdapter.query: " + queryString);
+        // System.out.println("SparqlAdapter.query: " + queryString);
         ArrayList<ArrayList<SparqlQuerySolution>> solutions = null;
         try {
             String user = this.getUsername(), pass = this.getPassword();
@@ -101,7 +101,7 @@ public class SparqlAdapter extends DataAdapter {
                 }
                 results.add(curResult);
             }
-            }
+        }
         return results;
     }
 
@@ -182,9 +182,9 @@ public class SparqlAdapter extends DataAdapter {
         return result;
     }
 
-    public String getFileETag(String url){
+    public String getFileETag(String url) {
         try {
-            HttpHead request = new HttpHead(url); 
+            HttpHead request = new HttpHead(url);
             HttpResponse response = httpClient.execute(request);
             if (response.containsHeader(HttpHeaders.ETAG)) {
                 Header[] eHeaders = response.getHeaders(HttpHeaders.ETAG);

@@ -1,4 +1,4 @@
-package org.diskproject.shared.classes.common;
+package edu.diskproject.shared.classes.common;
 
 public class TreeItem {
   String id;
@@ -10,8 +10,9 @@ public class TreeItem {
   String parentId;
   String question;
 
-  public TreeItem() { }
-  
+  public TreeItem() {
+  }
+
   public TreeItem(String id, String name, String description, String parentId, String creationDate, String author) {
     this.id = id;
     this.name = name;
@@ -20,7 +21,7 @@ public class TreeItem {
     this.dateCreated = creationDate;
     this.author = author;
   }
-  
+
   public String getId() {
     return id;
   }
@@ -52,36 +53,36 @@ public class TreeItem {
   public void setParentId(String parentId) {
     this.parentId = parentId;
   }
-  
-  public void setCreationDate (String date ) {
-	  this.dateCreated = date;
-  }
-  
-  public String getCreationDate () {
-	  return dateCreated;
-  }
-  
-  public void setDateModified (String date) {
-	  this.dateModified = date;
-  }
-  
-  public String getDateModified () {
-	  return dateModified;
-  }
-  
-  public void setAuthor (String author) {
-	  this.author = author;
-  }
-  
-  public String getAuthor () {
-	  return this.author;
+
+  public void setCreationDate(String date) {
+    this.dateCreated = date;
   }
 
-  public String getQuestion () {
+  public String getCreationDate() {
+    return dateCreated;
+  }
+
+  public void setDateModified(String date) {
+    this.dateModified = date;
+  }
+
+  public String getDateModified() {
+    return dateModified;
+  }
+
+  public void setAuthor(String author) {
+    this.author = author;
+  }
+
+  public String getAuthor() {
+    return this.author;
+  }
+
+  public String getQuestion() {
     return this.question;
   }
 
-  public void setQuestion (String id) {
+  public void setQuestion(String id) {
     this.question = id;
   }
 }

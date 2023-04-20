@@ -1,13 +1,13 @@
-package org.diskproject.shared.classes.vocabulary;
+package edu.diskproject.shared.classes.vocabulary;
 
 public class Entity {
   String id;
   String name;
   String label;
   String description;
-  
+
   String parent;
-  
+
   public String getId() {
     return id;
   }
@@ -15,11 +15,11 @@ public class Entity {
   public void setId(String id) {
     this.id = id;
   }
-  
+
   public String getName() {
     return this.name;
   }
-  
+
   public void setName(String name) {
     this.name = name;
   }
@@ -39,7 +39,7 @@ public class Entity {
   public void setDescription(String desc) {
     this.description = desc;
   }
-  
+
   @Override
   public int hashCode() {
     return (id + "_" + label).hashCode();

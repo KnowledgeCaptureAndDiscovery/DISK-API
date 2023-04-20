@@ -1,4 +1,4 @@
-package org.diskproject.server.api.impl;
+package edu.isi.kcap.diskproject.server.api.impl;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,24 +22,25 @@ import javax.ws.rs.core.SecurityContext;
 
 import org.apache.http.HttpStatus;
 import org.apache.jena.query.QueryException;
-import org.diskproject.server.repository.DiskRepository;
-import org.diskproject.shared.api.DiskService;
-import org.diskproject.shared.classes.common.TreeItem;
-import org.diskproject.shared.classes.hypothesis.Hypothesis;
-import org.diskproject.shared.classes.loi.LineOfInquiry;
-import org.diskproject.shared.classes.loi.TriggeredLOI;
-import org.diskproject.shared.classes.question.Question;
-import org.diskproject.shared.classes.question.VariableOption;
-import org.diskproject.shared.classes.util.DataAdapterResponse;
-import org.diskproject.shared.classes.util.ExternalDataRequest;
-import org.diskproject.shared.classes.util.QuestionOptionsRequest;
-import org.diskproject.shared.classes.vocabulary.Vocabulary;
-import org.diskproject.shared.classes.workflow.Variable;
-import org.diskproject.shared.classes.workflow.Workflow;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.Gson;
+
+import edu.diskproject.shared.api.DiskService;
+import edu.diskproject.shared.classes.common.TreeItem;
+import edu.diskproject.shared.classes.hypothesis.Hypothesis;
+import edu.diskproject.shared.classes.loi.LineOfInquiry;
+import edu.diskproject.shared.classes.loi.TriggeredLOI;
+import edu.diskproject.shared.classes.question.Question;
+import edu.diskproject.shared.classes.question.VariableOption;
+import edu.diskproject.shared.classes.util.DataAdapterResponse;
+import edu.diskproject.shared.classes.util.ExternalDataRequest;
+import edu.diskproject.shared.classes.util.QuestionOptionsRequest;
+import edu.diskproject.shared.classes.vocabulary.Vocabulary;
+import edu.diskproject.shared.classes.workflow.Variable;
+import edu.diskproject.shared.classes.workflow.Workflow;
+import edu.diskproject.shared.classes.workflow.WorkflowRun;
+import edu.isi.kcap.diskproject.server.repository.DiskRepository;
 
 class ErrorMessage {
   // constructor
@@ -209,7 +210,7 @@ public class DiskResource implements DiskService {
 
   /**
    * Assertions LATER!
-   * 
+   *
    * @POST
    *       @Path("assertions")
    * @Override
@@ -217,14 +218,14 @@ public class DiskResource implements DiskService {
    *           @JsonProperty("assertions") Graph assertions) {
    *           this.repo.addAssertion(USERNAME, assertions);
    *           }
-   * 
+   *
    * @GET
    *      @Path("assertions")
    * @Override
    *           public Graph listAssertions() {
    *           return this.repo.listAssertions(USERNAME, DOMAIN);
    *           }
-   * 
+   *
    * @DELETE
    *         @Path("assertions")
    * @Override
@@ -232,7 +233,7 @@ public class DiskResource implements DiskService {
    *           @JsonProperty("assertions") Graph assertions) {
    *           this.repo.deleteAssertion(USERNAME, assertions);
    *           }
-   * 
+   *
    * @PUT
    *      @Path("assertions")
    * @Override
@@ -489,8 +490,8 @@ public class DiskResource implements DiskService {
       }
     }
     return null;
-      };
-  
+  };
+
   /*
    * CUSTOM
    */

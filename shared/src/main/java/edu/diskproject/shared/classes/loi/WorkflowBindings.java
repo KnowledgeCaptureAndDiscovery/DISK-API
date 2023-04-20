@@ -1,14 +1,14 @@
-package org.diskproject.shared.classes.loi;
+package edu.diskproject.shared.classes.loi;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.diskproject.shared.classes.workflow.VariableBinding;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
+import edu.diskproject.shared.classes.workflow.VariableBinding;
+import edu.diskproject.shared.classes.workflow.WorkflowRun;
 
-public class WorkflowBindings implements Comparable<WorkflowBindings>{
-  String source;          // This is the ID of the method source
+public class WorkflowBindings implements Comparable<WorkflowBindings> {
+  String source; // This is the ID of the method source
   String workflow;
   String workflowLink;
   String description;
@@ -38,19 +38,19 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
     meta = new MetaWorkflowDetails();
   }
 
-  public String getSource () {
+  public String getSource() {
     return this.source;
   }
 
-  public void setSource (String source) {
+  public void setSource(String source) {
     this.source = source;
   }
 
-  public String getDescription () {
+  public String getDescription() {
     return this.description;
   }
 
-  public void setDescription (String description) {
+  public void setDescription(String description) {
     this.description = description;
   }
 
@@ -85,26 +85,26 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
   public void setBindings(List<VariableBinding> bindings) {
     this.bindings = bindings;
   }
-  
+
   public void addBinding(VariableBinding binding) {
     this.bindings.add(binding);
   }
-  
-  public List<String> getAllVariables () {
+
+  public List<String> getAllVariables() {
     List<String> vars = new ArrayList<String>();
-    for (VariableBinding b: bindings) {
-      for (String v: b.getBindingAsArray()) {
+    for (VariableBinding b : bindings) {
+      for (String v : b.getBindingAsArray()) {
         vars.add(v);
       }
     }
     return vars;
   }
 
-  public List<String> getNonCollectionVariables () {
+  public List<String> getNonCollectionVariables() {
     List<String> vars = new ArrayList<String>();
-    for (VariableBinding b: bindings) {
+    for (VariableBinding b : bindings) {
       if (!b.isCollection()) {
-        for (String v: b.getBindingAsArray()) {
+        for (String v : b.getBindingAsArray()) {
           vars.add(v);
         }
       }
@@ -114,17 +114,17 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
 
   public List<String> getVariableBindings(String variable) {
     List<String> bindings = new ArrayList<String>();
-    for(VariableBinding vb : this.bindings) {
-      if(vb.getVariable().equals(variable))
+    for (VariableBinding vb : this.bindings) {
+      if (vb.getVariable().equals(variable))
         bindings.add(vb.getBinding());
     }
     return bindings;
   }
-  
+
   public List<String> getBindingVariables(String binding) {
     List<String> variables = new ArrayList<String>();
-    for(VariableBinding vb : this.bindings) {
-      if(vb.getVariable().equals(binding))
+    for (VariableBinding vb : this.bindings) {
+      if (vb.getVariable().equals(binding))
         variables.add(vb.getVariable());
     }
     return variables;
@@ -132,27 +132,30 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
 
   public String toString() {
     Collections.sort(bindings);
-    int i=0;
-    String description = "["+source+"]{";
+    int i = 0;
+    String description = "[" + source + "]{";
     for (VariableBinding vBinding : bindings) {
-      if (i > 0) description += ", ";
+      if (i > 0)
+        description += ", ";
       description += vBinding.getVariable() + " = " + vBinding.getBinding();
       i++;
     }
     if (this.meta.getHypothesis() != null) {
-      if (i > 0) description += ", ";
+      if (i > 0)
+        description += ", ";
       description += this.meta.getHypothesis() + " = [Hypothesis]";
       i++;
     }
     if (this.meta.getRevisedHypothesis() != null) {
-      if (i > 0) description += ", ";
+      if (i > 0)
+        description += ", ";
       description += this.meta.getRevisedHypothesis() + " = [Revised Hypothesis]";
       i++;
     }
     description += "}";
     return description;
   }
-  
+
   public MetaWorkflowDetails getMeta() {
     return meta;
   }
@@ -165,4 +168,3 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
     return this.toString().compareTo(o.toString());
   }
 }
- 

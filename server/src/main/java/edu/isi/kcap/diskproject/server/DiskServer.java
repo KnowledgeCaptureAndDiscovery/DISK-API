@@ -1,16 +1,17 @@
-package org.diskproject.server;
+package edu.isi.kcap.diskproject.server;
 
 import javax.annotation.PreDestroy;
 
-import org.diskproject.server.api.impl.DiskResource;
-import org.diskproject.server.api.impl.StaticResource;
-import org.diskproject.server.filters.AcceptHeaderFilter;
-import org.diskproject.server.filters.CORSResponseFilter;
-import org.diskproject.server.filters.KeycloakAuthenticationFilter;
-import org.diskproject.server.repository.DiskRepository;
-import org.diskproject.server.util.Config;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
+
+import edu.isi.kcap.diskproject.server.api.impl.DiskResource;
+import edu.isi.kcap.diskproject.server.api.impl.StaticResource;
+import edu.isi.kcap.diskproject.server.filters.AcceptHeaderFilter;
+import edu.isi.kcap.diskproject.server.filters.CORSResponseFilter;
+import edu.isi.kcap.diskproject.server.filters.KeycloakAuthenticationFilter;
+import edu.isi.kcap.diskproject.server.repository.DiskRepository;
+import edu.isi.kcap.diskproject.server.util.Config;
 
 class DiskServer extends ResourceConfig {
 

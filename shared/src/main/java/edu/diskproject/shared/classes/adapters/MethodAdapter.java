@@ -1,13 +1,13 @@
-package org.diskproject.shared.classes.adapters;
+package edu.diskproject.shared.classes.adapters;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.diskproject.shared.classes.workflow.Variable;
-import org.diskproject.shared.classes.workflow.VariableBinding;
-import org.diskproject.shared.classes.workflow.Workflow;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
+import edu.diskproject.shared.classes.workflow.Variable;
+import edu.diskproject.shared.classes.workflow.VariableBinding;
+import edu.diskproject.shared.classes.workflow.Workflow;
+import edu.diskproject.shared.classes.workflow.WorkflowRun;
 
 public abstract class MethodAdapter {
     private String name;
@@ -15,82 +15,83 @@ public abstract class MethodAdapter {
     private String username;
     private String password;
     private String description;
-    private Float version; 
+    private Float version;
 
-    public MethodAdapter (String adapterName, String url) {
+    public MethodAdapter(String adapterName, String url) {
         this.name = adapterName;
         this.endpointUrl = url;
     }
-    
-    public MethodAdapter (String adapterName, String url, String username, String password) {
+
+    public MethodAdapter(String adapterName, String url, String username, String password) {
         this.name = adapterName;
         this.endpointUrl = url;
         this.username = username;
         this.password = password;
     }
 
-    public Float getVersion () {
+    public Float getVersion() {
         return this.version;
     }
 
-    public void setVersion (Float v) {
+    public void setVersion(Float v) {
         this.version = v;
     }
 
-    public String getDescription () {
+    public String getDescription() {
         return this.description;
     }
 
-    public void setDescription (String desc) {
+    public void setDescription(String desc) {
         this.description = desc;
     }
-    
-    public String getName () {
+
+    public String getName() {
         return this.name;
     }
-    
-    public String getEndpointUrl () {
+
+    public String getEndpointUrl() {
         return this.endpointUrl;
     }
-    
-    protected String getUsername () {
+
+    protected String getUsername() {
         return this.username;
     }
-    
-    protected String getPassword () {
+
+    protected String getPassword() {
         return this.password;
     }
 
-    public String toString () {
+    public String toString() {
         return "[" + this.name + "] " + (this.username != null ? this.username + "@" : "") + this.endpointUrl;
     }
-    
-	public abstract List<Workflow> getWorkflowList();
 
-	public abstract List<Variable> getWorkflowVariables(String id);
+    public abstract List<Workflow> getWorkflowList();
 
-	public abstract String getWorkflowId(String id);
+    public abstract List<Variable> getWorkflowVariables(String id);
 
-	public abstract String getWorkflowUri(String id);
+    public abstract String getWorkflowId(String id);
 
-	public abstract String getWorkflowLink(String id);
+    public abstract String getWorkflowUri(String id);
 
-	public abstract String getDataUri (String id);
+    public abstract String getWorkflowLink(String id);
 
-	public abstract List<String> areFilesAvailable (Set<String> fileList, String dType);
+    public abstract String getDataUri(String id);
 
-	public abstract String addData (String url, String name, String dType) throws Exception;
+    public abstract List<String> areFilesAvailable(Set<String> fileList, String dType);
 
-	public abstract Map<String, Variable> getWorkflowInputs (String id);
+    public abstract String addData(String url, String name, String dType) throws Exception;
 
-	public abstract String runWorkflow (String wfId, List<VariableBinding> vBindings, Map<String, Variable> inputVariables);
+    public abstract Map<String, Variable> getWorkflowInputs(String id);
 
-	public abstract WorkflowRun getRunStatus (String runId);
+    public abstract String runWorkflow(String wfId, List<VariableBinding> vBindings,
+            Map<String, Variable> inputVariables);
 
-	public abstract byte[] fetchData (String dataId);
+    public abstract WorkflowRun getRunStatus(String runId);
 
-	public abstract Map<String, String> getRunVariableBindings (String runId);
+    public abstract byte[] fetchData(String dataId);
+
+    public abstract Map<String, String> getRunVariableBindings(String runId);
 
     // Test connection with source
-    public abstract boolean ping ();
+    public abstract boolean ping();
 }

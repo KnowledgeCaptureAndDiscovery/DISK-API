@@ -1,4 +1,4 @@
-package org.diskproject.shared.classes.common;
+package edu.diskproject.shared.classes.common;
 
 public class Triple {
   String subject;
@@ -6,16 +6,16 @@ public class Triple {
   Value object;
   TripleDetails details;
 
-  public Triple(String subject, String predicate, Value object, TripleDetails details)
-  {
-	  this.subject = subject;
-	  this.predicate = predicate;
-	  this.object = object;
-	  this.details = details;
+  public Triple(String subject, String predicate, Value object, TripleDetails details) {
+    this.subject = subject;
+    this.predicate = predicate;
+    this.object = object;
+    this.details = details;
   }
-  
-  public Triple(){}
-  
+
+  public Triple() {
+  }
+
   public String getSubject() {
     return subject;
   }
@@ -39,7 +39,7 @@ public class Triple {
   public void setObject(Value object) {
     this.object = object;
   }
-  
+
   public TripleDetails getDetails() {
     return details;
   }
@@ -49,6 +49,6 @@ public class Triple {
   }
 
   public String toString() {
-    return "<" + this.subject+"> <"+this.predicate+"> "+this.object;
+    return "<" + this.subject + "> <" + this.predicate + "> " + this.object;
   }
 }

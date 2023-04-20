@@ -1,9 +1,9 @@
-package org.diskproject.shared.classes.question;
+package edu.diskproject.shared.classes.question;
 
 public class QuestionCategory {
     String id, name;
 
-    public QuestionCategory (String id, String name) {
+    public QuestionCategory(String id, String name) {
         this.id = id;
         this.name = name;
 

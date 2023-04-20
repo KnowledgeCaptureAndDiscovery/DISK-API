@@ -1,4 +1,4 @@
-package org.diskproject.shared.classes.adapters;
+package edu.diskproject.shared.classes.adapters;
 
 import java.util.List;
 import java.util.Map;
@@ -33,55 +33,56 @@ public abstract class DataAdapter {
         return this.endpointUrl;
     }
 
-    public String getName ( ) {
+    public String getName() {
         return this.name;
     }
-    
-    protected String getUsername () {
+
+    protected String getUsername() {
         return this.username;
     }
 
-    protected String getPassword () {
+    protected String getPassword() {
         return this.password;
     }
-    
-    public void setPrefix (String prefix, String namespace) {
+
+    public void setPrefix(String prefix, String namespace) {
         this.prefix = prefix;
         this.namespace = namespace;
     }
-    
-    public String getPrefix () {
+
+    public String getPrefix() {
         return this.prefix;
     }
 
-    public void setPrefixResolution (String prefixResolution) {
+    public void setPrefixResolution(String prefixResolution) {
         this.prefixResolution = prefixResolution;
     }
-    
-    public String getPrefixResolution () {
+
+    public String getPrefixResolution() {
         return this.prefixResolution;
     }
-    
-    public String getNamespace () {
+
+    public String getNamespace() {
         return this.namespace;
     }
-    
-    public String toString () {
+
+    public String toString() {
         return "[" + this.name + "] " + (this.username != null ? this.username + "@" : "") + this.endpointUrl;
     }
 
-    public abstract List<DataResult> query (String queryString) throws Exception;
+    public abstract List<DataResult> query(String queryString) throws Exception;
 
-    //This data query must return two variable names:
+    // This data query must return two variable names:
     static public String VARURI = "uri";
     static public String VARLABEL = "label";
-    public abstract List<DataResult> queryOptions (String varname, String constraintQuery) throws Exception;
+
+    public abstract List<DataResult> queryOptions(String varname, String constraintQuery) throws Exception;
 
     // file -> hash
-    public abstract Map<String, String> getFileHashes (List<String> dsurls) throws Exception;
+    public abstract Map<String, String> getFileHashes(List<String> dsurls) throws Exception;
 
     // Test connection with source
-    public abstract boolean ping ();
-    
-    public abstract Map<String,String> getFileHashesByETag(List<String> dsurls) throws Exception;
+    public abstract boolean ping();
+
+    public abstract Map<String, String> getFileHashesByETag(List<String> dsurls) throws Exception;
 }

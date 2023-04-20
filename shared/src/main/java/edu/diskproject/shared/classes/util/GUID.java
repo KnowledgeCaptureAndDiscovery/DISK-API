@@ -1,4 +1,4 @@
-package org.diskproject.shared.classes.util;
+package edu.diskproject.shared.classes.util;
 
 public class GUID {
   private static final char[] CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray();
@@ -10,7 +10,7 @@ public class GUID {
   /**
    * Generate a random uuid of the specified length. Example: uuid(15) returns
    * "VcydxgltxrVZSTV"
-   * 
+   *
    * @param len
    *            the desired number of characters
    */
@@ -25,12 +25,12 @@ public class GUID {
    * <li>uuid(8, 10) returns "47473046" (8 character ID, base=10)
    * <li>uuid(8, 16) returns "098F4D35" (8 character ID, base=16)
    * </ul>
-   * 
+   *
    * @param len
-   *            the desired number of characters
+   *              the desired number of characters
    * @param radix
-   *            the number of allowable values for each character (must be <=
-   *            62)
+   *              the number of allowable values for each character (must be <=
+   *              62)
    */
   public static String get(int len, int radix) {
     if (radix > CHARS.length) {
@@ -43,7 +43,6 @@ public class GUID {
     }
     return new String(uuid);
   }
-
 
   public static String randomId(String prefix) {
     return prefix + "-" + GUID.get(12);

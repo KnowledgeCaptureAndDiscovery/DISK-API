@@ -1,4 +1,4 @@
-package org.diskproject.shared.classes.loi;
+package edu.diskproject.shared.classes.loi;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -28,77 +28,76 @@ public class LineOfInquiry {
     this.metaWorkflows = new ArrayList<WorkflowBindings>();
   }
 
-  public LineOfInquiry(String id, String name, String description){
-	  this.id = id;
-	  this.name = name;
-	  this.description = description;
+  public LineOfInquiry(String id, String name, String description) {
+    this.id = id;
+    this.name = name;
+    this.description = description;
     this.active = UpdateStatus.ON_DATA_UPDATE;
   }
 
   public LineOfInquiry(String id,
-		  String name, 
-		  String description, 
-		  String dataSource,
-		  String hypothesisQuery, 
-		  String dataQuery, 
-		  List<WorkflowBindings> workflows, 
-		  List<WorkflowBindings> metaWorkflows){
-	  this.id = id;
-	  this.name = name;
-	  this.description = description;
-	  this.dataSource = dataSource;
-	  this.hypothesisQuery = hypothesisQuery;
-	  this.dataQuery = dataQuery;
-	  this.workflows = workflows;
-	  this.metaWorkflows = metaWorkflows;
+      String name,
+      String description,
+      String dataSource,
+      String hypothesisQuery,
+      String dataQuery,
+      List<WorkflowBindings> workflows,
+      List<WorkflowBindings> metaWorkflows) {
+    this.id = id;
+    this.name = name;
+    this.description = description;
+    this.dataSource = dataSource;
+    this.hypothesisQuery = hypothesisQuery;
+    this.dataQuery = dataQuery;
+    this.workflows = workflows;
+    this.metaWorkflows = metaWorkflows;
     this.active = UpdateStatus.ON_DATA_UPDATE;
   }
 
-  public void setDataSource (String ds) {
-	  this.dataSource = ds;
+  public void setDataSource(String ds) {
+    this.dataSource = ds;
   }
 
-  public String getDataSource () {
-	  return this.dataSource;
+  public String getDataSource() {
+    return this.dataSource;
   }
 
-  public void setQuestionId (String q) {
+  public void setQuestionId(String q) {
     this.questionId = q;
   }
-  
-  public String getQuestionId () {
+
+  public String getQuestionId() {
     return this.questionId;
   }
 
-  public String getExplanation () {
-	  return this.dataQueryExplanation;
+  public String getExplanation() {
+    return this.dataQueryExplanation;
   }
-  
-  public void setExplanation (String e) {
-	  this.dataQueryExplanation = e;
-  }
-  
 
-  public Set<String> getAllWorkflowVariables () {
+  public void setExplanation(String e) {
+    this.dataQueryExplanation = e;
+  }
+
+  public Set<String> getAllWorkflowVariables() {
     Set<String> allVars = new HashSet<String>();
     List<WorkflowBindings> wfs = new ArrayList<WorkflowBindings>(workflows);
     wfs.addAll(metaWorkflows);
-    for (WorkflowBindings wb: wfs) {
+    for (WorkflowBindings wb : wfs) {
       List<String> vars = wb.getAllVariables();
-      for (String v: vars) {
+      for (String v : vars) {
         allVars.add(v);
       }
     }
     return allVars;
   }
 
-  public Set<String> getAllWorkflowNonCollectionVariables () {
+  public Set<String> getAllWorkflowNonCollectionVariables() {
     Set<String> allVars = new HashSet<String>();
     List<WorkflowBindings> wfs = new ArrayList<WorkflowBindings>(workflows);
     wfs.addAll(metaWorkflows);
-    for (WorkflowBindings wb: wfs) {
+    for (WorkflowBindings wb : wfs) {
       List<String> vars = wb.getNonCollectionVariables();
-      for (String v: vars) {
+      for (String v : vars) {
         allVars.add(v);
       }
     }
@@ -135,7 +134,7 @@ public class LineOfInquiry {
 
   public void setDescription(String description) {
     this.description = description;
-  }  
+  }
 
   public String getHypothesisQuery() {
     return hypothesisQuery;
@@ -152,7 +151,7 @@ public class LineOfInquiry {
   public void setDataQuery(String dataQuery) {
     this.dataQuery = dataQuery;
   }
-  
+
   public List<WorkflowBindings> getWorkflows() {
     return workflows;
   }
@@ -160,11 +159,11 @@ public class LineOfInquiry {
   public void setWorkflows(List<WorkflowBindings> workflows) {
     this.workflows = workflows;
   }
-  
+
   public void addWorkflow(WorkflowBindings workflowId) {
     this.workflows.add(workflowId);
   }
-  
+
   public List<WorkflowBindings> getMetaWorkflows() {
     return metaWorkflows;
   }
@@ -172,64 +171,64 @@ public class LineOfInquiry {
   public void setMetaWorkflows(List<WorkflowBindings> metaWorkflows) {
     this.metaWorkflows = metaWorkflows;
   }
-  
+
   public void addMetaWorkflow(WorkflowBindings metaWorkflowid) {
     this.metaWorkflows.add(metaWorkflowid);
   }
-  
+
   public void setDateCreated(String date) {
-	  this.dateCreated = date;
+    this.dateCreated = date;
   }
-  
-  public void setAuthor (String author) {
-	  this.author = author;
+
+  public void setAuthor(String author) {
+    this.author = author;
   }
-  
-  public String getDateCreated () {
-	  return this.dateCreated;
+
+  public String getDateCreated() {
+    return this.dateCreated;
   }
-  
-  public String getAuthor () {
-	  return this.author;
+
+  public String getAuthor() {
+    return this.author;
   }
-  
+
   public void setDateModified(String date) {
-	  this.dateModified = date;
-  }
-  
-  public String getDateModified () {
-	  return this.dateModified;
-  }
-  
-  public String getTableVariables () {
-	  return this.tableVariables;
-  }
-  
-  public void setTableVariables (String v) {
-	  this.tableVariables = v;
-  }
-  
-  public String getTableDescription () {
-	  return this.tableDescription;
-  }
-  
-  public void setTableDescription (String v) {
-	  this.tableDescription = v;
+    this.dateModified = date;
   }
 
-  public String getDataQueryExplanation () {
-	  return this.dataQueryExplanation;
-  }
-  
-  public void setDataQueryExplanation (String v) {
-	  this.dataQueryExplanation = v;
+  public String getDateModified() {
+    return this.dateModified;
   }
 
-  public void setActive (UpdateStatus b) {
+  public String getTableVariables() {
+    return this.tableVariables;
+  }
+
+  public void setTableVariables(String v) {
+    this.tableVariables = v;
+  }
+
+  public String getTableDescription() {
+    return this.tableDescription;
+  }
+
+  public void setTableDescription(String v) {
+    this.tableDescription = v;
+  }
+
+  public String getDataQueryExplanation() {
+    return this.dataQueryExplanation;
+  }
+
+  public void setDataQueryExplanation(String v) {
+    this.dataQueryExplanation = v;
+  }
+
+  public void setActive(UpdateStatus b) {
     this.active = b;
   }
 
-  public UpdateStatus getActive () {
+  public UpdateStatus getActive() {
     return this.active;
   }
 }

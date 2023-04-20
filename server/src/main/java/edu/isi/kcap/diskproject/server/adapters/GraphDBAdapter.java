@@ -1,4 +1,4 @@
-package org.diskproject.server.adapters;
+package edu.isi.kcap.diskproject.server.adapters;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,37 +19,38 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
-import org.diskproject.shared.classes.adapters.DataAdapter;
-import org.diskproject.shared.classes.adapters.DataResult;
-import org.diskproject.shared.classes.util.KBConstants;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import edu.diskproject.shared.classes.adapters.DataAdapter;
+import edu.diskproject.shared.classes.adapters.DataResult;
+import edu.diskproject.shared.classes.util.KBConstants;
+
 public class GraphDBAdapter extends DataAdapter {
     private CloseableHttpClient httpClient;
     private PoolingHttpClientConnectionManager connectionManager;
     private String token, repository;
 
-	private JsonParser jsonParser;
+    private JsonParser jsonParser;
 
     public GraphDBAdapter(String URI, String name, String username, String password) {
         super(URI, name, username, password);
         token = null;
         connectionManager = new PoolingHttpClientConnectionManager();
-		jsonParser = new JsonParser();
+        jsonParser = new JsonParser();
         httpClient = HttpClients.custom()
                 .setConnectionManager(connectionManager)
                 .build();
     }
 
-    public void setRepository (String id) {
+    public void setRepository(String id) {
         this.repository = id;
     }
 
-    private boolean login () {
+    private boolean login() {
         String loginUrl = getEndpointUrl() + "rest/login/" + getUsername();
         HttpPost request = new HttpPost(loginUrl);
         request.addHeader("X-GraphDB-Password", getPassword());
@@ -68,7 +69,7 @@ public class GraphDBAdapter extends DataAdapter {
         return false;
     }
 
-    public List<DataResult> getDataResultFromJsonString (String jsonString) {
+    public List<DataResult> getDataResultFromJsonString(String jsonString) {
         JsonObject json = (JsonObject) jsonParser.parse(jsonString);
         JsonArray variables = json.get("head").getAsJsonObject().get("vars").getAsJsonArray();
         JsonArray bindings = json.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
@@ -102,8 +103,8 @@ public class GraphDBAdapter extends DataAdapter {
 
         try (CloseableHttpResponse response = httpClient.execute(request)) {
             HttpEntity entity = response.getEntity();
-			String strResponse = EntityUtils.toString(entity);
-		    EntityUtils.consume(entity);
+            String strResponse = EntityUtils.toString(entity);
+            EntityUtils.consume(entity);
 
             if (strResponse.startsWith("MALFORMED QUERY")) {
                 System.out.println(strResponse);
@@ -139,7 +140,7 @@ public class GraphDBAdapter extends DataAdapter {
             DataResult cur = new DataResult();
             String uri = solution.getValue(name);
             String label = solution.getValue(name + "Label");
-            if (label == null) { //Theres no label, create one with the def value or extract it from the URI
+            if (label == null) { // Theres no label, create one with the def value or extract it from the URI
                 String defName = solution.getName(name);
                 label = defName != null ? defName : uri.replaceAll("^.*\\/", "").replaceAll("_", " ");
             }
@@ -179,9 +180,9 @@ public class GraphDBAdapter extends DataAdapter {
         return result;
     }
 
-    public String getFileETag(String url){
+    public String getFileETag(String url) {
         try {
-            HttpHead request = new HttpHead(url); 
+            HttpHead request = new HttpHead(url);
             HttpResponse response = httpClient.execute(request);
             if (response.containsHeader(HttpHeaders.ETAG)) {
                 Header[] eHeaders = response.getHeaders(HttpHeaders.ETAG);
@@ -195,5 +196,5 @@ public class GraphDBAdapter extends DataAdapter {
         }
         return null;
     }
-    
+
 }

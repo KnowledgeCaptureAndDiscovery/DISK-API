@@ -1,7 +1,7 @@
-package org.diskproject.shared.classes.method;
+package edu.diskproject.shared.classes.method;
 
 public class MethodOutput extends MethodParameter {
-    public MethodOutput (String name, String type) {
+    public MethodOutput(String name, String type) {
         super(name, type);
     }
 }

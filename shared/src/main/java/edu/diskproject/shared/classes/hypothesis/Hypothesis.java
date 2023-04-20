@@ -1,9 +1,9 @@
-package org.diskproject.shared.classes.hypothesis;
+package edu.diskproject.shared.classes.hypothesis;
 
 import java.util.List;
 
-import org.diskproject.shared.classes.common.Graph;
-import org.diskproject.shared.classes.workflow.VariableBinding;
+import edu.diskproject.shared.classes.common.Graph;
+import edu.diskproject.shared.classes.workflow.VariableBinding;
 
 public class Hypothesis {
   String id;
@@ -16,35 +16,36 @@ public class Hypothesis {
   String questionId;
   List<VariableBinding> questionBindings;
   Graph graph; // The actual hypothesis.
-  //For revised hypotheses
+  // For revised hypotheses
   String parentId;
-  
-  public void setQuestionId (String q) {
+
+  public void setQuestionId(String q) {
     this.questionId = q;
   }
-  
-  public String getQuestionId () {
+
+  public String getQuestionId() {
     return this.questionId;
   }
 
-  public Hypothesis (String id, String name, String description, String parentId, Graph graph){
-	  this.id = id;
-	  this.name = name;
-	  this.description = description;
-	  this.parentId = parentId;
-	  this.graph = graph;
+  public Hypothesis(String id, String name, String description, String parentId, Graph graph) {
+    this.id = id;
+    this.name = name;
+    this.description = description;
+    this.parentId = parentId;
+    this.graph = graph;
   }
 
-  public Hypothesis(){}
-  
-  public List<VariableBinding> getQuestionBindings () {
-	  return this.questionBindings;
+  public Hypothesis() {
   }
-  
-  public void setQuestionBindings (List<VariableBinding> bindings) {
-	  this.questionBindings = bindings;
+
+  public List<VariableBinding> getQuestionBindings() {
+    return this.questionBindings;
   }
-  
+
+  public void setQuestionBindings(List<VariableBinding> bindings) {
+    this.questionBindings = bindings;
+  }
+
   public String getId() {
     return id;
   }
@@ -94,26 +95,26 @@ public class Hypothesis {
   }
 
   public void setDateCreated(String date) {
-	  this.dateCreated = date;
+    this.dateCreated = date;
   }
 
-  public void setAuthor (String author) {
-	  this.author = author;
+  public void setAuthor(String author) {
+    this.author = author;
   }
 
-  public String getDateCreated () {
-	  return this.dateCreated;
+  public String getDateCreated() {
+    return this.dateCreated;
   }
 
-  public String getAuthor () {
-	  return this.author;
+  public String getAuthor() {
+    return this.author;
   }
 
-  public void setDateModified (String date) {
-	  this.dateModified = date;
+  public void setDateModified(String date) {
+    this.dateModified = date;
   }
 
-  public String getDateModified () {
-	  return dateModified;
+  public String getDateModified() {
+    return dateModified;
   }
 }

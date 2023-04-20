@@ -1,4 +1,4 @@
-package org.diskproject.server.repository;
+package edu.isi.kcap.diskproject.server.repository;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -40,12 +40,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
-import org.diskproject.shared.classes.adapters.MethodAdapter;
-import org.diskproject.shared.classes.util.KBConstants;
-import org.diskproject.shared.classes.workflow.Variable;
-import org.diskproject.shared.classes.workflow.VariableBinding;
-import org.diskproject.shared.classes.workflow.Workflow;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -54,6 +48,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
+import edu.diskproject.shared.classes.adapters.MethodAdapter;
+import edu.diskproject.shared.classes.util.KBConstants;
+import edu.diskproject.shared.classes.workflow.Variable;
+import edu.diskproject.shared.classes.workflow.VariableBinding;
+import edu.diskproject.shared.classes.workflow.Workflow;
+import edu.diskproject.shared.classes.workflow.WorkflowRun;
 import edu.isi.kcap.ontapi.KBAPI;
 import edu.isi.kcap.ontapi.KBObject;
 import edu.isi.kcap.ontapi.KBTriple;
@@ -138,14 +138,14 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	public List<Workflow> getWorkflowList() {
-		String getTemplatesUrl = "users/" + this.getUsername() + "/" + this.domain +"/workflows/getTemplatesListJSON"; 
+		String getTemplatesUrl = "users/" + this.getUsername() + "/" + this.domain + "/workflows/getTemplatesListJSON";
 		String resp = this.get(getTemplatesUrl, null);
 		List<Workflow> wList = new ArrayList<Workflow>();
 
 		try {
 			JsonArray arr = (JsonArray) jsonParser.parse(resp);
 			int len = arr.size();
-			for (int i  = 0; i < len; i++) {
+			for (int i = 0; i < len; i++) {
 				String fullId = arr.get(i).getAsString();
 				String localId = fullId.replaceAll("^.*#", "");
 				wList.add(new Workflow(fullId, localId, getWorkflowLink(localId), this.getName()));
@@ -161,7 +161,7 @@ public class WingsAdapter extends MethodAdapter {
 	public List<Variable> getWorkflowVariables(String id) {
 		List<Variable> vList = new ArrayList<Variable>();
 		String fullId = this.DOMURI() + "/workflows/" + id + ".owl#" + id;
-		String getVariablesUrl = "users/" + this.getUsername() + "/" + this.domain +"/workflows/getViewerJSON"; 
+		String getVariablesUrl = "users/" + this.getUsername() + "/" + this.domain + "/workflows/getViewerJSON";
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 		formdata.add(new BasicNameValuePair("template_id", fullId));
 		String resp = this.get(getVariablesUrl, formdata);
@@ -193,12 +193,13 @@ public class WingsAdapter extends MethodAdapter {
 		List<String> subClasses = new ArrayList<String>();
 		if (superClass == null)
 			return subClasses;
-		
+
 		subClasses.add(superClass);
 		if (superClass.startsWith(KBConstants.XSD_NS))
 			return subClasses;
 
-		String query = "SELECT ?sc WHERE {\n  ?sc <http://www.w3.org/2000/01/rdf-schema#subClassOf> <" + superClass + ">\n}";
+		String query = "SELECT ?sc WHERE {\n  ?sc <http://www.w3.org/2000/01/rdf-schema#subClassOf> <" + superClass
+				+ ">\n}";
 		String pageid = "sparql";
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 		formdata.add(new BasicNameValuePair("query", query));
@@ -211,7 +212,7 @@ public class WingsAdapter extends MethodAdapter {
 			} catch (Exception e) {
 				System.out.println("Could not decode: " + resultjson);
 				return subClasses;
-			}			 
+			}
 
 			JsonArray bindings = result.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
 
@@ -554,7 +555,8 @@ public class WingsAdapter extends MethodAdapter {
 		String toPost = null, getData = null, getParams = null, getExpansions = null;
 		JsonObject response = null;
 		try {
-			// GET DATA is suggest data on WINGS, this can add inputs, I'm not sure is necessary.
+			// GET DATA is suggest data on WINGS, this can add inputs, I'm not sure is
+			// necessary.
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
 			getData = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/plan/getData",
 					toPost, "application/json", "application/json");
@@ -577,9 +579,10 @@ public class WingsAdapter extends MethodAdapter {
 			System.err.println("RESPONSE: " + getData);
 			return null;
 		}
-		
+
 		try {
-			// GET PARAMETERS is suggest parameters in WINGS, this adds the default parameters.
+			// GET PARAMETERS is suggest parameters in WINGS, this adds the default
+			// parameters.
 			vbindings = addDataBindings(inputVariables, vbindings, getData, false);
 			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
 			getParams = postWithSpecifiedMediaType(
@@ -600,26 +603,29 @@ public class WingsAdapter extends MethodAdapter {
 			return null;
 		}
 
-		//At this point we could use /expandAndRunWorkflow
-		/*try {
-			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
-			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
-
-			String expandAndRun = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/executions/expandAndRunWorkflow",
-					toPost, "application/json", "application/json");
-
-			System.out.println("\n");
-			System.out.println(toPost);
-			System.out.println(expandAndRun);
-			System.out.println("##########");
-
-			if (expandAndRun != null && expandAndRun.length() > 0) {
-				return expandAndRun;
-			}
-		} catch (Exception e) {
-			System.err.println("Error expanding and running " + e.getMessage());
-			System.err.println("REQUEST: " + toPost);
-		}*/
+		// At this point we could use /expandAndRunWorkflow
+		/*
+		 * try {
+		 * vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
+		 * toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+		 * 
+		 * String expandAndRun = postWithSpecifiedMediaType("users/" + getUsername() +
+		 * "/" + domain + "/executions/expandAndRunWorkflow",
+		 * toPost, "application/json", "application/json");
+		 * 
+		 * System.out.println("\n");
+		 * System.out.println(toPost);
+		 * System.out.println(expandAndRun);
+		 * System.out.println("##########");
+		 * 
+		 * if (expandAndRun != null && expandAndRun.length() > 0) {
+		 * return expandAndRun;
+		 * }
+		 * } catch (Exception e) {
+		 * System.err.println("Error expanding and running " + e.getMessage());
+		 * System.err.println("REQUEST: " + toPost);
+		 * }
+		 */
 
 		try {
 			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
@@ -663,9 +669,9 @@ public class WingsAdapter extends MethodAdapter {
 				System.err.println("No templates found");
 				return null;
 			}
-			//System.out.println(templatesobj.size());
+			// System.out.println(templatesobj.size());
 			JsonObject templateobj = templatesobj.get(0).getAsJsonObject();
-			jsonTemplate = templateobj.get("template") .toString();
+			jsonTemplate = templateobj.get("template").toString();
 			jsonConstraints = templateobj.get("constraints").toString();
 
 			JsonObject seedobj = dataobj.get("seed").getAsJsonObject();
@@ -685,13 +691,13 @@ public class WingsAdapter extends MethodAdapter {
 		formdata.add(new BasicNameValuePair("seed_json", jsonSeed));
 		formdata.add(new BasicNameValuePair("seed_constraints_json", jsonSeedConstraints));
 		String pageid = "users/" + getUsername() + "/" + domain + "/executions/runWorkflow";
-		//System.out.println(pageid);
-		//System.out.println(formdata);
+		// System.out.println(pageid);
+		// System.out.println(formdata);
 		return post(pageid, formdata);
-		//} catch (Exception e) {
-		//	e.printStackTrace();
-		//}
-		//return null;
+		// } catch (Exception e) {
+		// e.printStackTrace();
+		// }
+		// return null;
 	}
 
 	public byte[] fetchDataFromWings(String dataid) {
@@ -711,8 +717,8 @@ public class WingsAdapter extends MethodAdapter {
 			CloseableHttpResponse httpResponse = client.execute(securedResource);
 			try {
 				HttpEntity responseEntity = httpResponse.getEntity();
-				ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
-    			responseEntity.writeTo(baos);
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				responseEntity.writeTo(baos);
 				bytes = baos.toByteArray();
 				EntityUtils.consume(responseEntity);
 				httpResponse.close();
@@ -826,7 +832,6 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
-
 	public String addDataToWingsAsFile(String id, byte[] contents, String type) {
 		// Compute the hash of the contents and check it agains filename.
 		String sha = DigestUtils.sha1Hex(contents);
@@ -849,7 +854,7 @@ public class WingsAdapter extends MethodAdapter {
 
 			// Decode response
 			JsonObject uploadR = (JsonObject) jsonParser.parse(uploadResponse);
-			boolean success =  uploadR.get("success").getAsBoolean();
+			boolean success = uploadR.get("success").getAsBoolean();
 			if (success)
 				location = uploadR.get("location").getAsString();
 			f.delete();
@@ -857,7 +862,8 @@ public class WingsAdapter extends MethodAdapter {
 			e.printStackTrace();
 		}
 
-		if (location == null) return null;
+		if (location == null)
+			return null;
 
 		// Add registry on WINGS
 		String dataid = this.DATAID(id);
@@ -890,8 +896,10 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	public String addRemoteDataToWings(String url, String name, String dType) throws Exception {
-		/* FIXME: Wings rename does not rename the file, only the id
-		 * thus we cannot upload two files with the same name and then rename them. */
+		/*
+		 * FIXME: Wings rename does not rename the file, only the id
+		 * thus we cannot upload two files with the same name and then rename them.
+		 */
 		// Get the file.
 		CloseableHttpClient client = HttpClientBuilder.create().setDefaultCookieStore(this.cookieStore).build();
 		byte[] bytes = null;
@@ -900,8 +908,8 @@ public class WingsAdapter extends MethodAdapter {
 			CloseableHttpResponse httpResponse = client.execute(securedResource);
 			try {
 				HttpEntity responseEntity = httpResponse.getEntity();
-				ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
-    			responseEntity.writeTo(baos);
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				responseEntity.writeTo(baos);
 				bytes = baos.toByteArray();
 				EntityUtils.consume(responseEntity);
 				httpResponse.close();
@@ -930,7 +938,8 @@ public class WingsAdapter extends MethodAdapter {
 
 	public List<String> isFileListOnWings(Set<String> filelist, String filetype) {
 		List<String> returnValue = new ArrayList<String>();
-		//String filetype = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
+		// String filetype = this.internal_server + "/export/users/" + getUsername() +
+		// "/" + domain + "/data/ontology.owl#File";
 		String fileprefix = "<" + this.internal_server + "/export/users/" + getUsername() + "/" + domain
 				+ "/data/library.owl#";
 
@@ -982,7 +991,7 @@ public class WingsAdapter extends MethodAdapter {
 				result = jsonParser.parse(resultjson).getAsJsonObject();
 			} catch (Exception e) {
 				System.out.println("ERROR: Return value is not a json object.");
-				//TODO: this generates some errors
+				// TODO: this generates some errors
 			}
 
 			if (result != null) {
@@ -1005,7 +1014,7 @@ public class WingsAdapter extends MethodAdapter {
 
 	public boolean isFileOnWings(String url) {
 		String id = url.replaceAll("^.*\\/", "");
-		//todo: this is hardcoded
+		// todo: this is hardcoded
 		String filetype = this.internal_server + "/export/users/" + getUsername() + "/" + domain
 				+ "/data/ontology.owl#File";
 		String wingsid = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/library.owl#"
@@ -1194,7 +1203,7 @@ public class WingsAdapter extends MethodAdapter {
 				VariableBinding vb = vbl.get(i);
 				if (vb.getVariable().equals(v.getName())) {
 					String curBinding = "\"" + wfname + v.getName() + "\":[";
-					if (v.getDimensionality() ==  0) {
+					if (v.getDimensionality() == 0) {
 						curBinding += "\"" + vb.getBinding() + "\"";
 					} else {
 						String[] dBs = vb.getBinding()
@@ -1206,7 +1215,7 @@ public class WingsAdapter extends MethodAdapter {
 								curBinding += "\"" + (v.isParam() ? "" : dataID) + dBs[j] + "\",";
 							}
 						}
-						curBinding = curBinding.substring(0, curBinding.length() - 1); //rm extra comma
+						curBinding = curBinding.substring(0, curBinding.length() - 1); // rm extra comma
 					}
 
 					if (v.isParam()) {
@@ -1219,9 +1228,11 @@ public class WingsAdapter extends MethodAdapter {
 				}
 			}
 		}
-		//Removing commas again
-		if (paramAdded) paramBindings = paramBindings.substring(0, paramBindings.length() - 1);
-		if (dataAdded)  dataBindings = dataBindings.substring(0, dataBindings.length() - 1);
+		// Removing commas again
+		if (paramAdded)
+			paramBindings = paramBindings.substring(0, paramBindings.length() - 1);
+		if (dataAdded)
+			dataBindings = dataBindings.substring(0, dataBindings.length() - 1);
 
 		output += paramBindings + "}," + dataBindings + "}}";
 		return output;

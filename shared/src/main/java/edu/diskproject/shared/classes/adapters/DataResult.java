@@ -1,4 +1,4 @@
-package org.diskproject.shared.classes.adapters;
+package edu.diskproject.shared.classes.adapters;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -12,20 +12,20 @@ public class DataResult {
     private Map<String, String> values;
     private Map<String, String> names;
 
-    public DataResult () {
+    public DataResult() {
         this.varNames = new HashSet<String>();
         this.values = new HashMap<String, String>();
         this.names = new HashMap<String, String>();
     }
-    
-    public void addValue (String varName, String value) {
+
+    public void addValue(String varName, String value) {
         if (!this.varNames.contains(varName)) {
             this.varNames.add(varName);
         }
         this.values.put(varName, value);
     }
 
-    public void addValue (String varName, String value, String name) {
+    public void addValue(String varName, String value, String name) {
         this.addValue(varName, value);
         String decodedName = name;
         try {
@@ -35,33 +35,33 @@ public class DataResult {
         }
         this.names.put(varName, decodedName);
     }
-    
-    public String getValue (String varName) {
+
+    public String getValue(String varName) {
         return this.varNames.contains(varName) ? this.values.get(varName) : null;
     }
-    
-    public Set<String> getVariableNames () {
+
+    public Set<String> getVariableNames() {
         return this.varNames;
     }
-    
-    public boolean isLiteral (String varName) {
+
+    public boolean isLiteral(String varName) {
         return this.varNames.contains(varName) && this.values.get(varName) != null && this.names.get(varName) == null;
     }
-    
-    public String getName (String varName) {
+
+    public String getName(String varName) {
         return this.varNames.contains(varName) ? this.names.get(varName) : null;
     }
-    
-    public String toString () {
+
+    public String toString() {
         String repr = Integer.toString(this.varNames.size()) + " variables: ";
-        for (String varname: this.varNames) {
+        for (String varname : this.varNames) {
             repr += varname + " ";
         }
         repr += "\n";
-        for (String varname: this.varNames) {
+        for (String varname : this.varNames) {
             repr += "  " + varname + ": " + getValue(varname);
             if (!isLiteral(varname))
-                repr += " (" +getName(varname) + ")";
+                repr += " (" + getName(varname) + ")";
             repr += "\n";
         }
 

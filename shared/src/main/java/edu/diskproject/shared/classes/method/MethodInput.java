@@ -1,7 +1,7 @@
-package org.diskproject.shared.classes.method;
+package edu.diskproject.shared.classes.method;
 
 public class MethodInput extends MethodParameter {
-    public MethodInput (String name, String type) {
+    public MethodInput(String name, String type) {
         super(name, type);
     }
 }
