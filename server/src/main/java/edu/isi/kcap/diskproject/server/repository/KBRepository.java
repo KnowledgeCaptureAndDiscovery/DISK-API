@@ -6,6 +6,8 @@ import java.util.concurrent.Semaphore;
 
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 
+import com.github.andrewoma.dexx.collection.internal.redblack.Tree;
+
 import edu.isi.kcap.diskproject.server.util.Config;
 import edu.isi.kcap.diskproject.server.util.KBCache;
 import edu.isi.kcap.diskproject.shared.classes.adapters.DataAdapter;
@@ -152,4 +154,15 @@ public class KBRepository implements TransactionsAPI {
   public boolean is_in_transaction() {
     return transaction.is_in_transaction();
   }
+
+  @Override
+  public boolean read(Runnable r) {
+    return true;
+  }
+
+  @Override
+  public boolean write(Runnable r) {
+    return true;
+  }
+
 }

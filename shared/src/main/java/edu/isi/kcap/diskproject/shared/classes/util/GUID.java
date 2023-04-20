@@ -29,8 +29,8 @@ public class GUID {
    * @param len
    *              the desired number of characters
    * @param radix
-   *              the number of allowable values for each character (must be <=
-   *              62)
+   *              the number of allowable values for each character (must be less
+   *              that 62)
    */
   public static String get(int len, int radix) {
     if (radix > CHARS.length) {
