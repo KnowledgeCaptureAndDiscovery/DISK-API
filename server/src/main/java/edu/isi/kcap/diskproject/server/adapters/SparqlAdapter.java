@@ -20,9 +20,9 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.jena.query.QueryParseException;
 import org.apache.jena.sparql.engine.http.QueryExceptionHTTP;
 
-import edu.diskproject.shared.classes.adapters.DataAdapter;
-import edu.diskproject.shared.classes.adapters.DataResult;
-import edu.diskproject.shared.classes.util.KBConstants;
+import edu.isi.kcap.diskproject.shared.classes.adapters.DataAdapter;
+import edu.isi.kcap.diskproject.shared.classes.adapters.DataResult;
+import edu.isi.kcap.diskproject.shared.classes.util.KBConstants;
 import edu.isi.kcap.ontapi.KBAPI;
 import edu.isi.kcap.ontapi.KBObject;
 import edu.isi.kcap.ontapi.OntSpec;

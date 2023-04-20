@@ -18,11 +18,11 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 
-import edu.diskproject.shared.classes.adapters.MethodAdapter;
-import edu.diskproject.shared.classes.workflow.Variable;
-import edu.diskproject.shared.classes.workflow.VariableBinding;
-import edu.diskproject.shared.classes.workflow.Workflow;
-import edu.diskproject.shared.classes.workflow.WorkflowRun;
+import edu.isi.kcap.diskproject.shared.classes.adapters.MethodAdapter;
+import edu.isi.kcap.diskproject.shared.classes.workflow.Variable;
+import edu.isi.kcap.diskproject.shared.classes.workflow.VariableBinding;
+import edu.isi.kcap.diskproject.shared.classes.workflow.Workflow;
+import edu.isi.kcap.diskproject.shared.classes.workflow.WorkflowRun;
 
 public class AirFlowAdapter extends MethodAdapter {
     private PoolingHttpClientConnectionManager connectionManager;

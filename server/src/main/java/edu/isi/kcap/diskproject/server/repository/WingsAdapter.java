@@ -48,12 +48,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
-import edu.diskproject.shared.classes.adapters.MethodAdapter;
-import edu.diskproject.shared.classes.util.KBConstants;
-import edu.diskproject.shared.classes.workflow.Variable;
-import edu.diskproject.shared.classes.workflow.VariableBinding;
-import edu.diskproject.shared.classes.workflow.Workflow;
-import edu.diskproject.shared.classes.workflow.WorkflowRun;
+import edu.isi.kcap.diskproject.shared.classes.adapters.MethodAdapter;
+import edu.isi.kcap.diskproject.shared.classes.util.KBConstants;
+import edu.isi.kcap.diskproject.shared.classes.workflow.Variable;
+import edu.isi.kcap.diskproject.shared.classes.workflow.VariableBinding;
+import edu.isi.kcap.diskproject.shared.classes.workflow.Workflow;
+import edu.isi.kcap.diskproject.shared.classes.workflow.WorkflowRun;
 import edu.isi.kcap.ontapi.KBAPI;
 import edu.isi.kcap.ontapi.KBObject;
 import edu.isi.kcap.ontapi.KBTriple;
@@ -608,16 +608,16 @@ public class WingsAdapter extends MethodAdapter {
 		 * try {
 		 * vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
 		 * toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
-		 * 
+		 *
 		 * String expandAndRun = postWithSpecifiedMediaType("users/" + getUsername() +
 		 * "/" + domain + "/executions/expandAndRunWorkflow",
 		 * toPost, "application/json", "application/json");
-		 * 
+		 *
 		 * System.out.println("\n");
 		 * System.out.println(toPost);
 		 * System.out.println(expandAndRun);
 		 * System.out.println("##########");
-		 * 
+		 *
 		 * if (expandAndRun != null && expandAndRun.length() > 0) {
 		 * return expandAndRun;
 		 * }

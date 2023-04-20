@@ -1,6 +1,6 @@
 package edu.isi.kcap.diskproject.server.util;
 
-import edu.diskproject.shared.classes.vocabulary.Vocabulary;
+import edu.isi.kcap.diskproject.shared.classes.vocabulary.Vocabulary;
 import edu.isi.kcap.ontapi.KBAPI;
 
 public class VocabularyConfiguration {

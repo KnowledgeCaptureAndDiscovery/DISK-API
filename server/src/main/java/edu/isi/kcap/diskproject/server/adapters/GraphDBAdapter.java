@@ -25,9 +25,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import edu.diskproject.shared.classes.adapters.DataAdapter;
-import edu.diskproject.shared.classes.adapters.DataResult;
-import edu.diskproject.shared.classes.util.KBConstants;
+import edu.isi.kcap.diskproject.shared.classes.adapters.DataAdapter;
+import edu.isi.kcap.diskproject.shared.classes.adapters.DataResult;
+import edu.isi.kcap.diskproject.shared.classes.util.KBConstants;
 
 public class GraphDBAdapter extends DataAdapter {
     private CloseableHttpClient httpClient;

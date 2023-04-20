@@ -11,7 +11,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import edu.diskproject.shared.api.StaticService;
+import edu.isi.kcap.diskproject.shared.api.StaticService;
 
 @Path("public")
 public class StaticResource implements StaticService {

@@ -6,11 +6,11 @@ import java.util.concurrent.Semaphore;
 
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 
-import edu.diskproject.shared.classes.adapters.DataAdapter;
-import edu.diskproject.shared.classes.adapters.MethodAdapter;
-import edu.diskproject.shared.classes.util.KBConstants;
 import edu.isi.kcap.diskproject.server.util.Config;
 import edu.isi.kcap.diskproject.server.util.KBCache;
+import edu.isi.kcap.diskproject.shared.classes.adapters.DataAdapter;
+import edu.isi.kcap.diskproject.shared.classes.adapters.MethodAdapter;
+import edu.isi.kcap.diskproject.shared.classes.util.KBConstants;
 import edu.isi.kcap.ontapi.KBAPI;
 import edu.isi.kcap.ontapi.OntFactory;
 import edu.isi.kcap.ontapi.OntSpec;
