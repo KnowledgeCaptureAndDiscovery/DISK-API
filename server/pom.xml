@@ -5,14 +5,14 @@
 
 	<!-- POM file generated with GWT webAppCreator -->
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.disk-project</groupId>
+	<groupId>edu.isi.kcap.diskproject</groupId>
 	<artifactId>disk-project-server</artifactId>
 	<name>Disk server</name>
 	<description>Disk REST server</description>
 	<packaging>war</packaging>
 	<parent>
-		<groupId>org.disk-project</groupId>
-		<version>3.0.1</version>
+		<groupId>edu.isi.kcap.diskproject</groupId>
+		<version>3.0.2</version>
 		<artifactId>disk-project</artifactId>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
@@ -41,7 +41,7 @@
 
 		<!-- Disk shared -->
 		<dependency>
-			<groupId>org.disk-project</groupId>
+			<groupId>edu.isi.kcap.diskproject</groupId>
 			<artifactId>disk-project-shared</artifactId>
 			<version>${project.version}</version>
 		</dependency>
