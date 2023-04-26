@@ -1,21 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<!-- POM file generated with GWT webAppCreator -->
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>edu.isi.kcap.diskproject</groupId>
+	<groupId>org.disk-project</groupId>
 	<artifactId>disk-project-server</artifactId>
 	<name>Disk server</name>
 	<description>Disk REST server</description>
 	<packaging>war</packaging>
-	<parent>
-		<groupId>edu.isi.kcap.diskproject</groupId>
-		<version>2.5.0</version>
-		<artifactId>disk-project</artifactId>
-		<relativePath>../pom.xml</relativePath>
-	</parent>
+    <parent>
+        <groupId>org.disk-project</groupId>
+        <version>2.5.0</version>
+        <artifactId>disk-project</artifactId>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
 
 	<properties>
 		<jersey.version>2.22.2</jersey.version>
@@ -49,7 +48,7 @@
 
 		<!-- Disk shared -->
 		<dependency>
-			<groupId>edu.isi.kcap.diskproject</groupId>
+			<groupId>org.disk-project</groupId>
 			<artifactId>disk-project-shared</artifactId>
 			<version>${project.version}</version>
 		</dependency>
@@ -229,6 +228,7 @@
 			<artifactId>guava</artifactId>
 			<version>23.0</version>
 		</dependency>
+
 
 
 		<!-- Servlet API -->
