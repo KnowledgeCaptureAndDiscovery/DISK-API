@@ -1788,7 +1788,11 @@ public class DiskRepository extends WriteKBRepository {
      */
     public String getProvenance(String username, String tloiId, String format)
             throws ParseException, URISyntaxException, IOException {
+
         TriggeredLOI triggerLineOfInquiry = this.getTriggeredLOI(username, tloiId);
+        if (triggerLineOfInquiry == null)
+            throw new IllegalArgumentException("TLOI not found");
+
         List<TriggeredLOI> tlois = this.listTLOIs(username);
 
         if (triggerLineOfInquiry != null) {
@@ -1796,7 +1800,13 @@ public class DiskRepository extends WriteKBRepository {
             String loiId = triggerLineOfInquiry.getParentLoiId();
             Hypothesis hyp = this.getHypothesis(username, hypId);
             LineOfInquiry loi = this.getLOI(username, loiId);
+            if (hyp == null)
+                throw new IllegalArgumentException("Hypothesis not found");
+            if (loiId == null)
+                throw new IllegalArgumentException("LOI not found");
             List<Question> questions = this.listHypothesesQuestions();
+            if (questions == null)
+                throw new IllegalArgumentException("Questions not found");
             Mapper mapper = new Mapper(hyp, loi, tlois, questions);
             DocumentProv documentProv = mapper.doc;
             OutputStream outputStream = new ByteArrayOutputStream();
