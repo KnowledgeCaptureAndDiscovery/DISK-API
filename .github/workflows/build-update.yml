@@ -189,7 +189,7 @@ jobs:
     # This job the container running on k8s cluster
     needs: [build, security]
     name: "Deploy the app"
-    if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', dev)
+    if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', 'dev')
     runs-on: ubuntu-latest
     steps:
       - name: Check out k8s manifests
@@ -219,7 +219,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git commit -am "Disk - Dev backend updated"
+          git commit -am "Disk - Devkkk backend updated"
 
       - name: Push changes
         if: github.event_name != 'pull_request'
