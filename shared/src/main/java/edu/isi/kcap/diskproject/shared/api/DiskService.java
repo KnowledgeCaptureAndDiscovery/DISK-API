@@ -217,7 +217,7 @@ public interface DiskService {
         public Map<String, String> getNarratives(
                         @PathParam("tloiid") String tloiid);
 
-        @POST
+        @GET
         @Path("tloi/{tloiid}/provenance/{format}")
         @Produces(MediaType.TEXT_PLAIN)
         public String getProvenance(

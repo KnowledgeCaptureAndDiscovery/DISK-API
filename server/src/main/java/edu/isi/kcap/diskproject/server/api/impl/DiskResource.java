@@ -573,7 +573,7 @@ public class DiskResource implements DiskService {
     return this.repo.getNarratives(USERNAME, tloiid);
   }
 
-  @POST
+  @GET
   @Path("tloi/{tloiid}/provenance/{format}")
   @Produces(MediaType.TEXT_PLAIN)
   public String getProvenance(
