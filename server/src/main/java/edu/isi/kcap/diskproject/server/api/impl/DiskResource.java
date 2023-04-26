@@ -1,7 +1,9 @@
 package edu.isi.kcap.diskproject.server.api.impl;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +20,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
 
 import org.apache.http.HttpStatus;
@@ -569,6 +572,38 @@ public class DiskResource implements DiskService {
       @PathParam("tloiid") String tloiid) {
     return this.repo.getNarratives(USERNAME, tloiid);
   }
+
+  @POST
+  @Path("tloi/{tloiid}/provenance/{format}")
+  @Produces(MediaType.TEXT_PLAIN)
+  public String getProvenance(
+      @PathParam("tloiid") String tloiid,
+      @PathParam("format") String format) {
+
+    try {
+      return this.repo.getProvenance(USERNAME, tloiid, format);
+    } catch (Exception e) {
+      try {
+        // Create Json error response
+        Gson gson = new Gson();
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = gson.toJson(error);
+
+        // Prepare the response
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+
+        // Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
+    return null;
+
+  };
 
   @POST
   @Path("getData")

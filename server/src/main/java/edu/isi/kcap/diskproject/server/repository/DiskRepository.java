@@ -1,8 +1,14 @@
 package edu.isi.kcap.diskproject.server.repository;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
@@ -25,6 +31,9 @@ import java.util.regex.Pattern;
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.jena.query.QueryParseException;
+import org.openprovenance.prov.interop.InteropFramework;
+import org.openprovenance.prov.interop.Formats.ProvFormat;
+import org.openprovenance.prov.model.Document;
 
 import edu.isi.kcap.diskproject.server.adapters.AirFlowAdapter;
 import edu.isi.kcap.diskproject.server.adapters.GraphDBAdapter;
@@ -67,6 +76,9 @@ import edu.isi.kcap.ontapi.KBObject;
 import edu.isi.kcap.ontapi.KBTriple;
 import edu.isi.kcap.ontapi.OntSpec;
 import edu.isi.kcap.ontapi.SparqlQuerySolution;
+import io.github.knowledgecaptureanddiscovery.diskprovmapper.DocumentProv;
+import io.github.knowledgecaptureanddiscovery.diskprovmapper.Mapper;
+
 import javax.ws.rs.NotFoundException;
 
 public class DiskRepository extends WriteKBRepository {
@@ -1772,6 +1784,32 @@ public class DiskRepository extends WriteKBRepository {
         }
 
         return true;
+    }
+
+    /*
+     * Provenance
+     */
+    public String getProvenance(String username, String tloiId, String format)
+            throws ParseException, URISyntaxException, IOException {
+        TriggeredLOI triggerLineOfInquiry = this.getTriggeredLOI(username, tloiId);
+        List<TriggeredLOI> tlois = this.listTLOIs(username);
+
+        if (triggerLineOfInquiry != null) {
+            String hypId = triggerLineOfInquiry.getParentHypothesisId();
+            String loiId = triggerLineOfInquiry.getParentLoiId();
+            Hypothesis hyp = this.getHypothesis(username, hypId);
+            LineOfInquiry loi = this.getLOI(username, loiId);
+            List<Question> questions = this.listHypothesesQuestions();
+            Mapper mapper = new Mapper(hyp, loi, tlois, questions);
+            DocumentProv documentProv = mapper.doc;
+            Document document = documentProv.document;
+            InteropFramework inf = new InteropFramework();
+            OutputStream outputStream = new ByteArrayOutputStream();
+            ProvFormat provFormat = ProvFormat.valueOf("provn");
+            inf.writeDocument(outputStream, provFormat, document);
+            return outputStream.toString();
+        }
+        throw new IllegalArgumentException("TLOI not found");
     }
 
     /*

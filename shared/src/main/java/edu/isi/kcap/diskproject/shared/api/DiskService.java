@@ -11,6 +11,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.Produces;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -23,6 +24,7 @@ import edu.isi.kcap.diskproject.shared.classes.question.Question;
 import edu.isi.kcap.diskproject.shared.classes.question.VariableOption;
 import edu.isi.kcap.diskproject.shared.classes.util.DataAdapterResponse;
 import edu.isi.kcap.diskproject.shared.classes.util.ExternalDataRequest;
+import edu.isi.kcap.diskproject.shared.classes.util.ProvenanceRequest;
 import edu.isi.kcap.diskproject.shared.classes.util.QuestionOptionsRequest;
 import edu.isi.kcap.diskproject.shared.classes.vocabulary.Vocabulary;
 import edu.isi.kcap.diskproject.shared.classes.workflow.Variable;
@@ -214,6 +216,13 @@ public interface DiskService {
         @Path("tloi/{tloiid}/narratives")
         public Map<String, String> getNarratives(
                         @PathParam("tloiid") String tloiid);
+
+        @POST
+        @Path("tloi/{tloiid}/provenance/{format}")
+        @Produces(MediaType.TEXT_PLAIN)
+        public String getProvenance(
+                        @PathParam("tloiid") String tloiid,
+                        @PathParam("format") String format);
 
         @GET
         @Path("externalQuery")
