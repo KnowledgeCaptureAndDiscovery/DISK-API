@@ -31,9 +31,6 @@ import java.util.regex.Pattern;
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.jena.query.QueryParseException;
-import org.openprovenance.prov.interop.InteropFramework;
-import org.openprovenance.prov.interop.Formats.ProvFormat;
-import org.openprovenance.prov.model.Document;
 
 import edu.isi.kcap.diskproject.server.adapters.AirFlowAdapter;
 import edu.isi.kcap.diskproject.server.adapters.GraphDBAdapter;
