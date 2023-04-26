@@ -1791,7 +1791,7 @@ public class DiskRepository extends WriteKBRepository {
 
         TriggeredLOI triggerLineOfInquiry = this.getTriggeredLOI(username, tloiId);
         if (triggerLineOfInquiry == null)
-            throw new IllegalArgumentException("TLOI not found");
+            throw new IllegalArgumentException("TLOI not found" + tloiId);
 
         List<TriggeredLOI> tlois = this.listTLOIs(username);
 
@@ -1801,9 +1801,9 @@ public class DiskRepository extends WriteKBRepository {
             Hypothesis hyp = this.getHypothesis(username, hypId);
             LineOfInquiry loi = this.getLOI(username, loiId);
             if (hyp == null)
-                throw new IllegalArgumentException("Hypothesis not found");
+                throw new IllegalArgumentException("Hypothesis not found " + hypId);
             if (loiId == null)
-                throw new IllegalArgumentException("LOI not found");
+                throw new IllegalArgumentException("LOI not found" + loiId);
             List<Question> questions = this.listHypothesesQuestions();
             if (questions == null)
                 throw new IllegalArgumentException("Questions not found");
