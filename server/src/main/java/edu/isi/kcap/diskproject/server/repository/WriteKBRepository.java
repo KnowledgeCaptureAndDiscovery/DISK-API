@@ -302,7 +302,7 @@ public class WriteKBRepository extends KBRepository {
 
     protected Hypothesis loadHypothesis(String username, String id) throws Exception {
         String userDomain = this.HYPURI(username);
-        String hypothesisId = id;
+        String hypothesisId = userDomain + "/" + id;
 
         KBAPI userKB = getKB(userDomain);
         if (userKB == null) {
