@@ -1,7 +1,6 @@
 package edu.isi.kcap.diskproject.server.api.impl;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.List;
@@ -138,7 +137,49 @@ public class DiskResource implements DiskService {
   @Override
   public Hypothesis getHypothesis(
       @PathParam("id") String id) {
-    return this.repo.getHypothesis(USERNAME, id);
+
+    Gson response_body = new Gson();
+    response.setContentType("application/json");
+    response.setCharacterEncoding("utf-8");
+    try {
+      return this.repo.getHypothesis(USERNAME, id);
+    } catch (NotFoundException e) {
+      try {
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = response_body.toJson(error);
+        response.setStatus(404);
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+        System.err.println(e.getMessage());
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    } catch (QueryException e) {
+      try {
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = response_body.toJson(error);
+        response.setStatus(HttpStatus.SC_BAD_REQUEST);
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+        System.err.println(e.getMessage());
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    } catch (Exception e) {
+      try {
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = response_body.toJson(error);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+        e.printStackTrace();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
+    return null;
   }
 
   @PUT
@@ -570,7 +611,48 @@ public class DiskResource implements DiskService {
   @Override
   public Map<String, String> getNarratives(
       @PathParam("tloiid") String tloiid) {
-    return this.repo.getNarratives(USERNAME, tloiid);
+    Gson response_body = new Gson();
+    response.setContentType("application/json");
+    response.setCharacterEncoding("utf-8");
+    try {
+      return this.repo.getNarratives(USERNAME, tloiid);
+    } catch (NotFoundException e) {
+      try {
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = response_body.toJson(error);
+        response.setStatus(404);
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+        System.err.println(e.getMessage());
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    } catch (QueryException e) {
+      try {
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = response_body.toJson(error);
+        response.setStatus(HttpStatus.SC_BAD_REQUEST);
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+        System.err.println(e.getMessage());
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    } catch (Exception e) {
+      try {
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = response_body.toJson(error);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+        e.printStackTrace();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
+    return null;
   }
 
   @GET
