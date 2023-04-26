@@ -69,7 +69,6 @@ jobs:
           name: Package
           path: build/
 
-
       - name: Create value as an environment variable
         run: |
           echo "DOCKER_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
@@ -106,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@2a2157eb22c08c9a1fac99263430307b8d1bc7a2
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.docker_tag }}
           format: "template"
@@ -121,7 +120,6 @@ jobs:
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
-
 
   update:
     # This job the container running on k8s cluster
