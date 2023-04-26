@@ -1802,11 +1802,8 @@ public class DiskRepository extends WriteKBRepository {
             List<Question> questions = this.listHypothesesQuestions();
             Mapper mapper = new Mapper(hyp, loi, tlois, questions);
             DocumentProv documentProv = mapper.doc;
-            Document document = documentProv.document;
-            InteropFramework inf = new InteropFramework();
             OutputStream outputStream = new ByteArrayOutputStream();
-            ProvFormat provFormat = ProvFormat.valueOf("provn");
-            inf.writeDocument(outputStream, provFormat, document);
+            documentProv.convert(outputStream, format);
             return outputStream.toString();
         }
         throw new IllegalArgumentException("TLOI not found");
