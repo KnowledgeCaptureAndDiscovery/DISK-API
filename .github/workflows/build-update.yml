@@ -69,7 +69,6 @@ jobs:
           name: Package
           path: build/
 
-
       - name: Create value as an environment variable
         run: |
           echo "DOCKER_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
@@ -95,7 +94,7 @@ jobs:
 
     outputs:
       docker_tag: ${{ steps.exposeValue.outputs.docker_tag }}
-  
+
   security:
     permissions:
       contents: read
@@ -106,22 +105,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@2a2157eb22c08c9a1fac99263430307b8d1bc7a2
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.DOCKER_IMAGE_REPOSITORY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.docker_tag }}
           format: "template"
           template: "@/contrib/sarif.tpl"
           output: "trivy-results.sarif"
           severity: ${{ env.VULNERABILITY_SCAN_LEVEL }}
-          exit-code: "0" 
+          exit-code: "0"
           ignore-unfixed: "true"
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v1
+        uses: github/codeql-action/upload-sarif@v2
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
-  
 
   update:
     # This job the container running on k8s cluster
@@ -151,7 +149,7 @@ jobs:
           cd ${{ env.MANIFEST_REPOSITORY_PATH }}
           kustomize edit set image ${{ env.KUSTOMIZE_IMAGE_NAME }}=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.docker_tag }}
           cat kustomization.yaml
-          
+
       - name: Update Kubernetes resources neuro
         if: github.event_name != 'pull_request'
         run: |
@@ -165,7 +163,7 @@ jobs:
           kustomize edit set image ${{ env.KUSTOMIZE_IMAGE_NAME }}=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.build.outputs.docker_tag }}
           cat kustomization.yaml
 
-      - name: Update Kubernetes resources dev 
+      - name: Update Kubernetes resources dev
         if: github.event_name != 'pull_request'
         run: |
           cd ${{ env.DEV_MANIFEST_REPOSITORY_PATH }}

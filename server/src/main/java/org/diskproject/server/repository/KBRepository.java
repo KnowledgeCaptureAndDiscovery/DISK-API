@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
+import javax.validation.OverridesAttribute;
+
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.KBCache;
@@ -151,5 +153,15 @@ public class KBRepository implements TransactionsAPI {
   @Override
   public boolean is_in_transaction() {
     return transaction.is_in_transaction();
+  }
+
+  @Override
+  public boolean write(Runnable r) {
+    return true;
+  }
+
+  @Override
+  public boolean read(Runnable r) {
+    return true;
   }
 }
