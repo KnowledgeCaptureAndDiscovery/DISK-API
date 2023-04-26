@@ -300,13 +300,14 @@ public class WriteKBRepository extends KBRepository {
         return true;
     }
 
-    protected Hypothesis loadHypothesis(String username, String id) {
+    protected Hypothesis loadHypothesis(String username, String id) throws Exception {
         String userDomain = this.HYPURI(username);
         String hypothesisId = userDomain + "/" + id;
 
         KBAPI userKB = getKB(userDomain);
-        if (userKB == null)
-            return null;
+        if (userKB == null) {
+            throw new Exception("User KB not found");
+        }
 
         this.start_read();
 
@@ -314,7 +315,7 @@ public class WriteKBRepository extends KBRepository {
         Graph graph = this.getKBGraph(hypothesisId);
         if (hypitem == null || graph == null) {
             this.end();
-            return null;
+            throw new Exception("Hypothesis not found");
         }
 
         Hypothesis hypothesis = new Hypothesis();

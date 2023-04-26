@@ -695,7 +695,7 @@ public class DiskRepository extends WriteKBRepository {
         return this.deleteHypothesis(username, id);
     }
 
-    public Hypothesis getHypothesis(String username, String id) {
+    public Hypothesis getHypothesis(String username, String id) throws Exception {
         return loadHypothesis(username, id);
     }
 
@@ -1787,7 +1787,7 @@ public class DiskRepository extends WriteKBRepository {
      * Provenance
      */
     public String getProvenance(String username, String tloiId, String format)
-            throws ParseException, URISyntaxException, IOException {
+            throws Exception {
 
         TriggeredLOI triggerLineOfInquiry = this.getTriggeredLOI(username, tloiId);
         if (triggerLineOfInquiry == null)
@@ -1820,7 +1820,7 @@ public class DiskRepository extends WriteKBRepository {
      * Narratives
      */
 
-    public Map<String, String> getNarratives(String username, String tloiId) {
+    public Map<String, String> getNarratives(String username, String tloiId) throws Exception {
         // DEPRECATED!
         Map<String, String> narratives = new HashMap<String, String>();
         TriggeredLOI tloi = this.getTriggeredLOI(username, tloiId);
