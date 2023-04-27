@@ -155,14 +155,4 @@ public class KBRepository implements TransactionsAPI {
     return transaction.is_in_transaction();
   }
 
-  @Override
-  public boolean read(Runnable r) {
-    return true;
-  }
-
-  @Override
-  public boolean write(Runnable r) {
-    return true;
-  }
-
 }
