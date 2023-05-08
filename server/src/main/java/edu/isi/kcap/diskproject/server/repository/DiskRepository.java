@@ -1842,7 +1842,9 @@ public class DiskRepository extends WriteKBRepository {
             throw new IllegalArgumentException("Questions not found");
         Mapper mapper = new Mapper(hyp, loi, tlois, questions);
         DocumentProv documentProv = mapper.doc;
+        // new ProvWriter().writeDocument(documentProv, System.out, ProvFormat.PROVN);
         Extractor extractor = new Extractor(documentProv);
+
         DataNarrativeVariableSchema narrativesVariables = extractor.getDataNarrativeVariable();
         DataNarrativeGenerator datanarrativeGenerator = new DataNarrativeGenerator(narrativesVariables, template);
         HashMap<String, String> narratives = new HashMap<String, String>();
