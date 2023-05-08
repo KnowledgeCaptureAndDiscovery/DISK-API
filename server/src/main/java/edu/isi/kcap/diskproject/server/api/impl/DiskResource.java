@@ -606,16 +606,17 @@ public class DiskResource implements DiskService {
     return null;
   }
 
-  @GET
+  @POST
   @Path("tloi/{tloiid}/narratives")
   @Override
   public Map<String, String> getNarratives(
-      @PathParam("tloiid") String tloiid) {
+      @PathParam("tloiid") String tloiid,
+      @JsonProperty("config") String template) {
     Gson response_body = new Gson();
     response.setContentType("application/json");
     response.setCharacterEncoding("utf-8");
     try {
-      return this.repo.getNarratives(USERNAME, tloiid);
+      return this.repo.getNarratives(USERNAME, tloiid, template);
     } catch (NotFoundException e) {
       try {
         ErrorMessage error = new ErrorMessage(e.getMessage());

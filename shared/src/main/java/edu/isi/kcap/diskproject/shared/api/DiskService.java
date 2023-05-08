@@ -214,8 +214,10 @@ public interface DiskService {
         /* Get narratives for tloi id */
         @GET
         @Path("tloi/{tloiid}/narratives")
+
         public Map<String, String> getNarratives(
-                        @PathParam("tloiid") String tloiid);
+                        @PathParam("tloiid") String tloiid,
+                        @JsonProperty("config") String template);
 
         @GET
         @Path("tloi/{tloiid}/provenance/{format}")
