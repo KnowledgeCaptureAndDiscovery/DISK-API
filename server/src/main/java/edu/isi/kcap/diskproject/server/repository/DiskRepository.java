@@ -31,7 +31,6 @@ import java.util.regex.Pattern;
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.jena.query.QueryParseException;
-import org.openprovenance.prov.model.Document;
 
 import edu.isi.kcap.diskproject.server.adapters.AirFlowAdapter;
 import edu.isi.kcap.diskproject.server.adapters.GraphDBAdapter;
@@ -1843,8 +1842,7 @@ public class DiskRepository extends WriteKBRepository {
             throw new IllegalArgumentException("Questions not found");
         Mapper mapper = new Mapper(hyp, loi, tlois, questions);
         DocumentProv documentProv = mapper.doc;
-        Document document = documentProv.document;
-        Extractor extractor = new Extractor(document);
+        Extractor extractor = new Extractor(documentProv.document);
         DataNarrativeVariableSchema narrativesVariables = extractor.getDataNarrativeVariable();
         DataNarrativeGenerator datanarrativeGenerator = new DataNarrativeGenerator(narrativesVariables, template);
         HashMap<String, String> narratives = new HashMap<String, String>();
