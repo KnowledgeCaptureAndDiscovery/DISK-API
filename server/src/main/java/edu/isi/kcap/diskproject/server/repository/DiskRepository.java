@@ -75,6 +75,9 @@ import edu.isi.kcap.ontapi.OntSpec;
 import edu.isi.kcap.ontapi.SparqlQuerySolution;
 import io.github.knowledgecaptureanddiscovery.diskprovmapper.DocumentProv;
 import io.github.knowledgecaptureanddiscovery.diskprovmapper.Mapper;
+import io.github.knowledgecaptureanddiscovery.diskprovmapper.ExtractorStep.Extractor;
+import io.github.knowledgecaptureanddiscovery.diskprovmapper.ExtractorStep.DataTypes.DataNarrativeVariableSchema;
+import io.github.knowledgecaptureanddiscovery.diskprovmapper.Generator.DataNarrativeGenerator;
 
 import javax.ws.rs.NotFoundException;
 
@@ -1788,7 +1791,6 @@ public class DiskRepository extends WriteKBRepository {
      */
     public String getProvenance(String username, String tloiId, String format)
             throws Exception {
-
         TriggeredLOI triggerLineOfInquiry = this.getTriggeredLOI(username, tloiId);
         if (triggerLineOfInquiry == null)
             throw new IllegalArgumentException("TLOI not found" + tloiId);
@@ -1810,7 +1812,7 @@ public class DiskRepository extends WriteKBRepository {
             Mapper mapper = new Mapper(hyp, loi, tlois, questions);
             DocumentProv documentProv = mapper.doc;
             OutputStream outputStream = new ByteArrayOutputStream();
-            documentProv.convert(outputStream, format);
+            documentProv.write(outputStream, format);
             return outputStream.toString();
         }
         throw new IllegalArgumentException("TLOI not found");
@@ -1820,111 +1822,33 @@ public class DiskRepository extends WriteKBRepository {
      * Narratives
      */
 
-    public Map<String, String> getNarratives(String username, String tloiId) throws Exception {
-        // DEPRECATED!
-        Map<String, String> narratives = new HashMap<String, String>();
-        TriggeredLOI tloi = this.getTriggeredLOI(username, tloiId);
-        if (tloi != null) {
-            String hypId = tloi.getParentHypothesisId();
-            String loiId = tloi.getParentLoiId();
-            Hypothesis hyp = this.getHypothesis(username, hypId);
-            LineOfInquiry loi = this.getLOI(username, loiId);
+    public HashMap<String, String> getNarratives(String username, String tloiId, String template) throws Exception {
+        TriggeredLOI triggerLineOfInquiry = this.getTriggeredLOI(username, tloiId);
+        if (triggerLineOfInquiry == null)
+            throw new IllegalArgumentException("TLOI not found" + tloiId);
 
-            if (loi == null || hyp == null) {
-                System.out.println("ERROR: could not get hypotheses or LOI");
-                return narratives;
-            }
+        List<TriggeredLOI> tlois = this.listTLOIs(username);
 
-            // Assuming each tloi only has a workflow or metaworkdflow:
-            WorkflowBindings wf = null;
-            List<WorkflowBindings> wfs = tloi.getWorkflows();
-            List<WorkflowBindings> metaWfs = tloi.getMetaWorkflows();
+        String hypId = triggerLineOfInquiry.getParentHypothesisId();
+        String loiId = triggerLineOfInquiry.getParentLoiId();
+        Hypothesis hyp = this.getHypothesis(username, hypId);
+        LineOfInquiry loi = this.getLOI(username, loiId);
+        if (hyp == null)
+            throw new IllegalArgumentException("Hypothesis not found " + hypId);
+        if (loiId == null)
+            throw new IllegalArgumentException("LOI not found" + loiId);
+        List<Question> questions = this.listHypothesesQuestions();
+        if (questions == null)
+            throw new IllegalArgumentException("Questions not found");
+        Mapper mapper = new Mapper(hyp, loi, tlois, questions);
+        DocumentProv documentProv = mapper.doc;
+        // new ProvWriter().writeDocument(documentProv, System.out, ProvFormat.PROVN);
+        Extractor extractor = new Extractor(documentProv);
 
-            if (metaWfs != null && metaWfs.size() > 0) {
-                wf = metaWfs.get(0);
-            } else if (wfs != null && wfs.size() > 0) {
-                wf = wfs.get(0);
-            } else {
-                System.out.println("TLO ID: " + tloiId + " has does not have any workflow.");
-                return null;
-            }
-
-            // List of data used.
-            String dataset = "";
-            String fileprefix = "https://enigma-disk.wings.isi.edu/wings-portal/users/admin/test/data/fetch?data_id=http%3A//skc.isi.edu%3A8080/wings-portal/export/users/"
-                    + username + "/data/library.owl%23";
-            boolean allCollections = true;
-            int len = 0;
-            for (VariableBinding ds : wf.getBindings()) {
-                if (!ds.isCollection()) {
-                    allCollections = false;
-                    break;
-                }
-                len = ds.getBindingAsArray().length > len ? ds.getBindingAsArray().length : len;
-            }
-            if (allCollections) {
-                dataset += "<table><thead><tr><td><b>#</b></td>";
-                for (VariableBinding ds : wf.getBindings()) {
-                    dataset += "<td><b>" + ds.getVariable() + "</b></td>";
-                }
-                dataset += "</tr></thead><tbody>";
-                for (int i = 0; i < len; i++) {
-                    dataset += "<tr>";
-                    dataset += "<td>" + (i + 1) + "</td>";
-                    for (VariableBinding ds : wf.getBindings()) {
-                        String[] bindings = ds.getBindingAsArray();
-                        String datas = bindings[i];
-                        String dataname = datas.replaceAll("^.*#", "").replaceAll("SHA\\w{6}_", "");
-                        String url = fileprefix + datas;
-                        String anchor = "<a target=\"_blank\" href=\"" + url + "\">" + dataname + "</a>";
-                        dataset += "<td>" + anchor + "</td>";
-                    }
-                    dataset += "</tr>";
-                }
-                dataset += "</tbody></table>";
-
-            } else {
-                for (VariableBinding ds : wf.getBindings()) {
-                    String binding = ds.getBinding();
-                    if (binding.startsWith("[")) {
-                        for (String datas : ds.getBindingAsArray()) {
-                            String dataname = datas.replaceAll("^.*#", "").replaceAll("SHA\\w{6}_", "");
-                            String url = fileprefix + datas;
-                            String anchor = "<a target=\"_blank\" href=\"" + url + "\">" + dataname + "</a>";
-                            dataset += "<li>" + anchor + "</li>";
-                        }
-                    }
-                }
-            }
-            Double confidence = tloi.getConfidenceValue();
-            DecimalFormat df = new DecimalFormat(confidence != 0 && confidence < 0.001 ? "0.#E0"
-                    : "0.###");
-
-            String confidenceValueString = df.format(confidence);
-            String confidenceType = tloi.getConfidenceType();
-            // Execution narratives
-            // String executionTemplate = "The Hypothesis with title: <b>${HYP.NAME}</b> was
-            // runned <span class=\"${TLOI.STATUS}\">${TLOI.STATUS}</span>"
-            // + "with the Line of Inquiry: <b>${LOI.NAME}"</b>."
-            // + "The LOI triggered the <a target=\"_blank\"
-            // href="{WF.getWorkflowLink()}">workflow on WINGS</a>"
-            // + " where it was tested with the following datasets:<div
-            // class=\"data-list\"><ol> ${[WF.getInputFiles]}"
-            // + "</ol></div>The resulting p-value is $(tloi.pval).";
-            String execution = "The Hypothesis with title: <b>" + hyp.getName()
-                    + "</b> was runned <span class=\"" + tloi.getStatus() + "\">"
-                    + tloi.getStatus() + "</span>"
-                    + " with the Line of Inquiry: <b>" + loi.getName()
-                    + "</b>. The LOI triggered the <a target=\"_blank\" href=\"" + wf.getWorkflowLink()
-                    + "\">workflow on WINGS</a>"
-                    + " where it was tested with the following datasets:<div class=\"data-list\"><ol>" + dataset
-                    + "</ol></div>The resulting " + confidenceType + " is " + confidenceValueString + ".";
-            narratives.put("execution", execution);
-
-            String dataQuery = "<b>Data Query Narrative:</b><br/>" + this.dataQueryNarrative(loi.getDataQuery());
-
-            narratives.put("dataquery", dataQuery);
-        }
+        DataNarrativeVariableSchema narrativesVariables = extractor.getDataNarrativeVariable();
+        DataNarrativeGenerator datanarrativeGenerator = new DataNarrativeGenerator(narrativesVariables, template);
+        HashMap<String, String> narratives = new HashMap<String, String>();
+        narratives.put("text", datanarrativeGenerator.getNarrative());
         return narratives;
     }
 
