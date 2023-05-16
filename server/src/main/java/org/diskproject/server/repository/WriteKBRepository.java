@@ -107,21 +107,21 @@ public class WriteKBRepository extends KBRepository {
 
     // Deprecate this!
     private void storeTripleDetails(Triple triple, String provId, KBAPI provKB) {
-        TripleDetails details = triple.getDetails();
-        if (details != null) {
-            KBObject stobj = provKB.getResource(provId + "#" + GUID.randomId("Statement"));
-            this.setKBStatement(triple, provKB, stobj);
+        //TripleDetails details = triple.getDetails();
+        //if (details != null) {
+        //    KBObject stobj = provKB.getResource(provId + "#" + GUID.randomId("Statement"));
+        //    this.setKBStatement(triple, provKB, stobj);
 
-            if (details.getConfidenceValue() > 0)
-                provKB.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE),
-                        provKB.createLiteral(triple.getDetails().getConfidenceValue()));
-            if (details.getConfidenceType() != null)
-                provKB.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE),
-                        provKB.createLiteral(triple.getDetails().getConfidenceType()));
-            if (details.getTriggeredLOI() != null)
-                provKB.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_TLOI),
-                        provKB.getResource(triple.getDetails().getTriggeredLOI()));
-        }
+        //    if (details.getConfidenceValue() > 0)
+        //        provKB.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE),
+        //                provKB.createLiteral(triple.getDetails().getConfidenceValue()));
+        //    if (details.getConfidenceType() != null)
+        //        provKB.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE),
+        //                provKB.createLiteral(triple.getDetails().getConfidenceType()));
+        //    if (details.getTriggeredLOI() != null)
+        //        provKB.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_TLOI),
+        //                provKB.getResource(triple.getDetails().getTriggeredLOI()));
+        //}
     }
 
     private Graph updateTripleDetails(Graph graph, KBAPI provKB) {
@@ -162,7 +162,8 @@ public class WriteKBRepository extends KBRepository {
                 if (tloi != null)
                     details.setTriggeredLOI(tloi.getID());
 
-                t.setDetails(details);
+                // TODO:
+                //t.setDetails(details);
             }
         }
         return graph;
@@ -239,9 +240,9 @@ public class WriteKBRepository extends KBRepository {
 
         // Adding parent hypothesis ID
         if (hypothesis.getParentId() != null) {
-            String fullparentid = userDomain + "/" + hypothesis.getParentId();
+            String fullParentId = userDomain + "/" + hypothesis.getParentId();
             userKB.setPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS),
-                    userKB.getResource(fullparentid));
+                    userKB.getResource(fullParentId));
         }
 
         // Adding question template details
@@ -285,15 +286,15 @@ public class WriteKBRepository extends KBRepository {
         this.end();
 
         // FIXME: remove this way of getting the p-value
-        String hypotheisProv = hypothesisId + "/provenance";
-        KBAPI provKB = getOrCreateKB(hypotheisProv);
+        String hypothesisProv = hypothesisId + "/provenance";
+        KBAPI provKB = getOrCreateKB(hypothesisProv);
         if (provKB == null)
             return false;
 
         this.start_write();
         for (Triple triple : hypothesis.getGraph().getTriples()) {
             // Add triple details (confidence value, provenance, etc)
-            this.storeTripleDetails(triple, hypotheisProv, provKB);
+            this.storeTripleDetails(triple, hypothesisProv, provKB);
         }
         this.save(provKB);
         this.end();
@@ -355,11 +356,11 @@ public class WriteKBRepository extends KBRepository {
         List<VariableBinding> variableBindings = new ArrayList<VariableBinding>();
         if (questionBindings != null) {
             for (KBObject binding : questionBindings) {
-                KBObject kbvar = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_VARIABLE));
-                KBObject kbval = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
-                if (kbvar != null && kbval != null) {
-                    String var = kbvar.getValueAsString();
-                    String val = kbval.getValueAsString();
+                KBObject kbVar = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_VARIABLE));
+                KBObject kbVal = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
+                if (kbVar != null && kbVal != null) {
+                    String var = kbVar.getValueAsString();
+                    String val = kbVal.getValueAsString();
                     variableBindings.add(new VariableBinding(var, val));
                 }
             }
@@ -385,10 +386,10 @@ public class WriteKBRepository extends KBRepository {
         String provId = hypothesisId + "/provenance";
 
         KBAPI userKB = getKB(userDomain);
-        KBAPI hypkb = getKB(hypothesisId);
+        KBAPI hypKB = getKB(hypothesisId);
         KBAPI provKB = getKB(provId);
 
-        if (userKB != null && hypkb != null && provKB != null) {
+        if (userKB != null && hypKB != null && provKB != null) {
             this.start_read();
             KBObject hypitem = userKB.getIndividual(hypothesisId);
             if (hypitem != null) {
@@ -416,7 +417,7 @@ public class WriteKBRepository extends KBRepository {
                 this.end();
             }
 
-            return this.start_write() && hypkb.delete() && this.save(hypkb) && this.end() &&
+            return this.start_write() && hypKB.delete() && this.save(hypKB) && this.end() &&
                     this.start_write() && provKB.delete() && this.save(provKB) && this.end();
         }
         return false;
@@ -429,17 +430,17 @@ public class WriteKBRepository extends KBRepository {
         KBAPI userKB = getKB(userDomain);
         if (userKB != null) {
             this.start_read();
-            KBObject hypcls = DISKOnt.getClass(DISK.HYPOTHESIS);
-            KBObject typeprop = userKB.getProperty(KBConstants.RDF_NS + "type");
-            for (KBTriple t : userKB.genericTripleQuery(null, typeprop, hypcls)) {
+            KBObject hypCls = DISKOnt.getClass(DISK.HYPOTHESIS);
+            KBObject typeProp = userKB.getProperty(KBConstants.RDF_NS + "type");
+            for (KBTriple t : userKB.genericTripleQuery(null, typeProp, hypCls)) {
                 KBObject hypobj = t.getSubject();
                 String name = userKB.getLabel(hypobj);
                 String description = userKB.getComment(hypobj);
 
-                String parentid = null;
+                String parentId = null;
                 KBObject parentobj = userKB.getPropertyValue(hypobj, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS));
                 if (parentobj != null)
-                    parentid = parentobj.getName();
+                    parentId = parentobj.getName();
 
                 String dateCreated = null;
                 KBObject dateobj = userKB.getPropertyValue(hypobj, DISKOnt.getProperty(DISK.DATE_CREATED));
@@ -476,7 +477,7 @@ public class WriteKBRepository extends KBRepository {
                     }
                 }
 
-                Hypothesis item = new Hypothesis(hypobj.getName(), name, description, parentid, null);
+                Hypothesis item = new Hypothesis(hypobj.getName(), name, description, parentId, null);
                 if (dateCreated != null)
                     item.setDateCreated(dateCreated);
                 if (dateModified != null)
@@ -619,29 +620,29 @@ public class WriteKBRepository extends KBRepository {
         if (notesobj != null)
             loi.setNotes(notesobj.getValueAsString());
 
-        KBObject tvarobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES));
-        if (tvarobj != null)
-            loi.setTableVariables(tvarobj.getValueAsString());
+        KBObject tableVarObj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES));
+        if (tableVarObj != null)
+            loi.setTableVariables(tableVarObj.getValueAsString());
 
-        KBObject tdesobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION));
-        if (tdesobj != null)
-            loi.setTableDescription(tdesobj.getValueAsString());
+        KBObject tableDescObj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION));
+        if (tableDescObj != null)
+            loi.setTableDescription(tableDescObj.getValueAsString());
 
-        KBObject hqueryobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_QUERY));
-        if (hqueryobj != null)
-            loi.setHypothesisQuery(hqueryobj.getValueAsString());
+        KBObject hypQueryObj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_QUERY));
+        if (hypQueryObj != null)
+            loi.setHypothesisQuery(hypQueryObj.getValueAsString());
 
-        KBObject dqueryobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY));
-        if (dqueryobj != null)
-            loi.setDataQuery(dqueryobj.getValueAsString());
+        KBObject dataQueryObj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY));
+        if (dataQueryObj != null)
+            loi.setDataQuery(dataQueryObj.getValueAsString());
 
         KBObject questionobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION));
         if (questionobj != null)
             loi.setQuestionId(questionobj.getValueAsString());
 
-        KBObject explobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION));
-        if (explobj != null) {
-            loi.setExplanation(explobj.getValueAsString());
+        KBObject explanationObj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION));
+        if (explanationObj != null) {
+            loi.setExplanation(explanationObj.getValueAsString());
         }
 
         this.end();
@@ -678,29 +679,29 @@ public class WriteKBRepository extends KBRepository {
 
         if (userKB != null) {
             this.start_read();
-            KBObject loicls = DISKOnt.getClass(DISK.LOI);
+            KBObject loiCls = DISKOnt.getClass(DISK.LOI);
             KBObject typeprop = userKB.getProperty(KBConstants.RDF_NS + "type");
-            for (KBTriple t : userKB.genericTripleQuery(null, typeprop, loicls)) {
-                KBObject loiobj = t.getSubject();
-                String name = userKB.getLabel(loiobj);
-                String description = userKB.getComment(loiobj);
+            for (KBTriple t : userKB.genericTripleQuery(null, typeprop, loiCls)) {
+                KBObject loiObj = t.getSubject();
+                String name = userKB.getLabel(loiObj);
+                String description = userKB.getComment(loiObj);
 
-                KBObject dateobj = userKB.getPropertyValue(loiobj, DISKOnt.getProperty(DISK.DATE_CREATED));
+                KBObject dateobj = userKB.getPropertyValue(loiObj, DISKOnt.getProperty(DISK.DATE_CREATED));
                 String dateCreated = (dateobj != null) ? dateobj.getValueAsString() : null;
 
-                KBObject dateModifiedObj = userKB.getPropertyValue(loiobj, DISKOnt.getProperty(DISK.DATE_MODIFIED));
+                KBObject dateModifiedObj = userKB.getPropertyValue(loiObj, DISKOnt.getProperty(DISK.DATE_MODIFIED));
                 String dateModified = (dateModifiedObj != null) ? dateModifiedObj.getValueAsString() : null;
 
-                KBObject authorobj = userKB.getPropertyValue(loiobj, DISKOnt.getProperty(DISK.HAS_AUTHOR));
+                KBObject authorobj = userKB.getPropertyValue(loiObj, DISKOnt.getProperty(DISK.HAS_AUTHOR));
                 String author = (authorobj != null) ? authorobj.getValueAsString() : null;
 
-                KBObject questionobj = userKB.getPropertyValue(loiobj, DISKOnt.getProperty(DISK.HAS_QUESTION));
+                KBObject questionobj = userKB.getPropertyValue(loiObj, DISKOnt.getProperty(DISK.HAS_QUESTION));
                 String questionId =  (questionobj != null) ? questionobj.getValueAsString() : null;
 
-                KBObject hqueryobj = userKB.getPropertyValue(loiobj, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_QUERY));
-                String hypothesisQuery = (hqueryobj != null) ? hqueryobj.getValueAsString() : null;
+                KBObject hypQueryObj = userKB.getPropertyValue(loiObj, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_QUERY));
+                String hypothesisQuery = (hypQueryObj != null) ? hypQueryObj.getValueAsString() : null;
 
-                LineOfInquiry item = new LineOfInquiry(loiobj.getName(), name, description);
+                LineOfInquiry item = new LineOfInquiry(loiObj.getName(), name, description);
                 if (dateCreated != null)
                     item.setDateCreated(dateCreated);
                 if (dateModified != null)
@@ -727,8 +728,8 @@ public class WriteKBRepository extends KBRepository {
             tloi.setId(GUID.randomId("TriggeredLOI"));
 
         String userDomain = this.TLOIURI(username);
-        String tloiid = userDomain + "/" + tloi.getId();
-        String hypns = this.HYPURI(username) + "/";
+        String tloiId = userDomain + "/" + tloi.getId();
+        String hypNs = this.HYPURI(username) + "/";
         String loins = this.LOIURI(username) + "/";
 
         KBAPI userKB = getOrCreateKB(userDomain);
@@ -736,7 +737,7 @@ public class WriteKBRepository extends KBRepository {
             return false;
 
         this.start_write();
-        KBObject tloiItem = userKB.createObjectOfClass(tloiid, DISKOnt.getClass(DISK.TLOI));
+        KBObject tloiItem = userKB.createObjectOfClass(tloiId, DISKOnt.getClass(DISK.TLOI));
 
         if (tloi.getName() != null)
             userKB.setLabel(tloiItem, tloi.getName());
@@ -779,12 +780,12 @@ public class WriteKBRepository extends KBRepository {
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_TLOI_STATUS),
                     userKB.createLiteral(tloi.getStatus().toString()));
         if (tloi.getParentLoiId() != null) {
-            KBObject lobj = userKB.getResource(loins + tloi.getParentLoiId());
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_LOI), lobj);
+            KBObject loiObj = userKB.getResource(loins + tloi.getParentLoiId());
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_LOI), loiObj);
         }
         if (tloi.getParentHypothesisId() != null) {
-            KBObject hobj = userKB.getResource(hypns + tloi.getParentHypothesisId());
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS), hobj);
+            KBObject hypObj = userKB.getResource(hypNs + tloi.getParentHypothesisId());
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS), hypObj);
         }
 
         this.save(userKB);
@@ -815,9 +816,9 @@ public class WriteKBRepository extends KBRepository {
             if (hasLOI != null)
                 tloi.setParentLoiId(hasLOI.getName());
 
-            KBObject pobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS));
-            if (pobj != null)
-                tloi.setParentHypothesisId(pobj.getName());
+            KBObject parentHypObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS));
+            if (parentHypObj != null)
+                tloi.setParentHypothesisId(parentHypObj.getName());
 
             KBObject stobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_TLOI_STATUS));
             if (stobj != null)
@@ -839,25 +840,25 @@ public class WriteKBRepository extends KBRepository {
             if (authorobj != null)
                 tloi.setAuthor(authorobj.getValueAsString());
 
-            KBObject dqobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_DATA_QUERY));
-            if (dqobj != null)
-                tloi.setDataQuery(dqobj.getValueAsString());
+            KBObject dataQueryObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_DATA_QUERY));
+            if (dataQueryObj != null)
+                tloi.setDataQuery(dataQueryObj.getValueAsString());
 
             KBObject dataSourceObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE));
             if (dataSourceObj != null)
                 tloi.setDataSource(dataSourceObj.getValueAsString());
 
-            KBObject tvobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES));
-            if (tvobj != null)
-                tloi.setTableVariables(tvobj.getValueAsString());
+            KBObject tableVarObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES));
+            if (tableVarObj != null)
+                tloi.setTableVariables(tableVarObj.getValueAsString());
 
-            KBObject tdobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION));
-            if (tdobj != null)
-                tloi.setTableDescription(tdobj.getValueAsString());
+            KBObject tableDescrObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION));
+            if (tableDescrObj != null)
+                tloi.setTableDescription(tableDescrObj.getValueAsString());
 
-            KBObject explobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION));
-            if (explobj != null)
-                tloi.setDataQueryExplanation(explobj.getValueAsString());
+            KBObject explanationObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION));
+            if (explanationObj != null)
+                tloi.setDataQueryExplanation(explanationObj.getValueAsString());
 
             KBObject confidenceType = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE));
             if (confidenceType != null)
@@ -1146,14 +1147,14 @@ public class WriteKBRepository extends KBRepository {
                 }
 
                 // Variable binding details
-                for (KBObject vbobj : kb.getPropertyValues(wbObj, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING))) {
-                    KBObject varobj = kb.getPropertyValue(vbobj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
-                    KBObject bindobj = kb.getPropertyValue(vbobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
+                for (KBObject vbObj : kb.getPropertyValues(wbObj, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING))) {
+                    KBObject varobj = kb.getPropertyValue(vbObj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
+                    KBObject bindobj = kb.getPropertyValue(vbObj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
                     VariableBinding vBinding = new VariableBinding(varobj.getName(), bindobj.getValueAsString());
                     String cls = null;
                     try {
                         KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
-                        for (KBTriple tr : kb.genericTripleQuery(vbobj, typeprop, null)) {
+                        for (KBTriple tr : kb.genericTripleQuery(vbObj, typeprop, null)) {
                             KBObject o = tr.getObject();
                             if (o != null && !o.getValueAsString().startsWith("http://disk-project.org/ontology/disk#")) {
                                 cls = o.getValueAsString();

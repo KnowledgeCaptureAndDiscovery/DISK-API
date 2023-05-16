@@ -38,14 +38,20 @@ import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.common.TreeItem;
 import org.diskproject.shared.classes.common.Triple;
+import org.diskproject.shared.classes.common.Value;
 import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.WorkflowBindings;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.loi.TriggeredLOI.Status;
+import org.diskproject.shared.classes.question.BoundingBoxQuestionVariable;
+import org.diskproject.shared.classes.question.DynamicOptionsQuestionVariable;
 import org.diskproject.shared.classes.question.Question;
 import org.diskproject.shared.classes.question.QuestionCategory;
 import org.diskproject.shared.classes.question.QuestionVariable;
+import org.diskproject.shared.classes.question.StaticOptionsQuestionVariable;
+import org.diskproject.shared.classes.question.TimeIntervalQuestionVariable;
+import org.diskproject.shared.classes.question.UserInputQuestionVariable;
 import org.diskproject.shared.classes.question.VariableOption;
 import org.diskproject.shared.classes.util.DataAdapterResponse;
 import org.diskproject.shared.classes.util.GUID;
@@ -602,14 +608,14 @@ public class DiskRepository extends WriteKBRepository {
         }
     }
 
-    private String createPropertyLabel(String pname) {
+    private String createPropertyLabel(String pName) {
         // Remove starting "has"
-        pname = pname.replaceAll("^has", "");
+        pName = pName.replaceAll("^has", "");
         // Convert camel case to spaced human readable string
-        pname = pname.replaceAll(String.format("%s|%s|%s", "(?<=[A-Z])(?=[A-Z][a-z])", "(?<=[^A-Z])(?=[A-Z])",
+        pName = pName.replaceAll(String.format("%s|%s|%s", "(?<=[A-Z])(?=[A-Z][a-z])", "(?<=[^A-Z])(?=[A-Z])",
                 "(?<=[A-Za-z])(?=[^A-Za-z])"), " ");
         // Make first letter upper case
-        return pname.substring(0, 1).toUpperCase() + pname.substring(1);
+        return pName.substring(0, 1).toUpperCase() + pName.substring(1);
     }
 
     /********************
@@ -625,7 +631,7 @@ public class DiskRepository extends WriteKBRepository {
         for (Triple triple : graph.getTriples()) {
             String subj = resolvePrefixes(triple.getSubject(), localDomain);
             String pred = resolvePrefixes(triple.getPredicate(), localDomain);
-            triples.add(new Triple(subj, pred, triple.getObject(), triple.getDetails()));
+            triples.add(new Triple(subj, pred, triple.getObject())); //, triple.getDetails()));
         }
         Graph newGraph = new Graph();
         newGraph.setTriples(triples);
@@ -835,6 +841,7 @@ public class DiskRepository extends WriteKBRepository {
                 this.save(kb);
                 this.end();
             } catch (Exception e) {
+                System.err.println("Error while loading " + url);
                 e.printStackTrace();
                 if (is_in_transaction()) {
                     this.end();
@@ -867,11 +874,10 @@ public class DiskRepository extends WriteKBRepository {
                 KBObject question = t.getSubject();
                 KBObject name = kb.getPropertyValue(question, labelprop);
                 KBObject template = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_TEMPLATE));
-                KBObject pattern = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_PATTERN));
                 KBObject constraint = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_QUESTION_CONSTRAINT_QUERY));
                 KBObject category = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_QUESTION_CATEGORY));
                 ArrayList<KBObject> variables = kb.getPropertyValues(question, SQOnt.getProperty(SQO.HAS_VARIABLE));
-
+                KBObject pattern = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_PATTERN));
                 if (name != null && template != null && pattern != null) {
                     List<QuestionVariable> vars = null;
                     if (variables != null && variables.size() > 0) {
@@ -886,7 +892,7 @@ public class DiskRepository extends WriteKBRepository {
                     }
 
                     Question q = new Question(question.getID(), name.getValueAsString(), template.getValueAsString(),
-                            pattern.getValueAsString(), vars);
+                            LoadStatements(pattern, kb), vars);
                     if (constraint != null) q.setConstraint(constraint.getValueAsString());
                     if (category != null) {
                         KBObject catName = kb.getPropertyValue(category, labelprop);
@@ -906,34 +912,31 @@ public class DiskRepository extends WriteKBRepository {
         return null;
     }
 
+    public List<Triple> LoadStatements(KBObject kbList, KBAPI kb) {
+        List<KBObject> patterns = kb.getListItems(kbList);
+        List<Triple> triples = new ArrayList<Triple>();
+        for (KBObject p : patterns) {
+            KBObject sub = kb.getPropertyValue(p, kb.getProperty(KBConstants.RDF_NS + "subject"));
+            KBObject pre = kb.getPropertyValue(p, kb.getProperty(KBConstants.RDF_NS + "predicate"));
+            KBObject obj = kb.getPropertyValue(p, kb.getProperty(KBConstants.RDF_NS + "object"));
+            if (pre != null && obj != null) {
+                triples.add(new Triple(
+                    sub == null? null : sub.getValueAsString(),
+                    pre.getValueAsString(),
+                    obj.isLiteral() ? new Value(obj.getValueAsString(), obj.getDataType()) : new Value(obj.getValueAsString())
+                ));
+            }
+        }
+        return triples;
+    }
+
     public QuestionVariable LoadQuestionVariableFromKB (KBObject var, KBAPI kb) {
         KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
         KBObject variableName = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_VARIABLE_NAME));
-        KBObject representation = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_REPRESENTATION));
-        KBObject optionsQuery = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_OPTIONS_QUERY));
-        KBObject minCardinality = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MIN_CARDINALITY));
-        KBObject maxCardinality = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MAX_CARDINALITY));
-        KBObject explanation = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_EXPLANATION));
-        KBObject explanationQuery = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_EXPLANATION_QUERY));
-
-        // Load fixed options
-        List<KBObject> optionsArray = kb.getPropertyValues(var, SQOnt.getProperty(SQO.HAS_OPTIONS));
-        List<VariableOption> options = null;
-        if (optionsArray != null)
-            for (KBObject opt : optionsArray) {
-                KBObject optValue = kb.getPropertyValue(opt, SQOnt.getProperty(SQO.HAS_VALUE));
-                KBObject optLabel = kb.getPropertyValue(opt, SQOnt.getProperty(SQO.HAS_LABEL));
-                if (optLabel != null && optValue != null) {
-                    VariableOption cur = new VariableOption(optValue.getValueAsString(), optLabel.getValueAsString());
-                    if (options == null)
-                        options = new ArrayList<VariableOption>();
-                    options.add(cur);
-                }
-            }
-        // Load additional types
+        // Get possible subtype for this Question Variable
         List<KBObject> types = kb.getPropertyValues(var, typeprop);
         String additionalType = null;
-        if (types != null)
+        if (types != null) {
             for (KBObject typ : types) {
                 String urlvalue = typ.getValueAsString();
                 if (urlvalue.startsWith(KBConstants.QUESTION_NS)
@@ -941,44 +944,83 @@ public class DiskRepository extends WriteKBRepository {
                     additionalType = urlvalue;
                 }
             }
+        }
 
-        // Create the question variable
+        // Create appropriate Question Variable type
         if (variableName != null) {
-            QuestionVariable q = new QuestionVariable(var.getID(), variableName.getValueAsString());
-            if (options != null)
-                q.setOptions(options);
-            if (optionsQuery != null)
-                q.setOptionsQuery(optionsQuery.getValueAsString());
-            q.setMinCardinality(minCardinality != null ? Double.valueOf(minCardinality.getValueAsString()) : 1);
-            q.setMaxCardinality(maxCardinality != null ? Double.valueOf(maxCardinality.getValueAsString()) : 1);
-
-            if (representation != null)
-                q.setRepresentation(representation.getValueAsString());
-            if (explanation != null)
-                q.setExplanation(explanation.getValueAsString());
-            if (explanationQuery != null)
-                q.setExplanationQuery(explanationQuery.getValueAsString());
-            if (additionalType != null) {
-                q.setSubType(additionalType);
-                // Load data depending of the type
-                if (additionalType.equals(KBConstants.QUESTION_NS + SQO.USER_INPUT_QUESTION_VARIABLE)) {
-                    KBObject inputDatatype = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_INPUT_DATATYPE));
-                    if (inputDatatype != null)
-                        q.setInputDatatype(inputDatatype.getValueAsString());
-                } else if (additionalType.equals(KBConstants.QUESTION_NS + SQO.BOUNDING_BOX_QUESTION_VARIABLE)) {
-                    KBObject minLatVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MIN_LAT));
-                    KBObject minLngVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MIN_LNG));
-                    KBObject maxLatVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MAX_LAT));
-                    KBObject maxLngVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MAX_LNG));
-                    if (minLatVar != null && minLngVar != null && maxLatVar != null && maxLngVar != null) {
-                        q.setBoundingBoxVariables(
-                            LoadQuestionVariableFromKB(minLatVar, kb),
-                            LoadQuestionVariableFromKB(maxLatVar, kb),
-                            LoadQuestionVariableFromKB(minLngVar, kb),
-                            LoadQuestionVariableFromKB(maxLngVar, kb)
-                        );
+            QuestionVariable q = null;
+            if (additionalType == null) {
+                q = new QuestionVariable(var.getID(), variableName.getValueAsString());
+            } else if (additionalType.equals(KBConstants.QUESTION_NS + SQO.USER_INPUT_QUESTION_VARIABLE)) {
+                q = new UserInputQuestionVariable(var.getID(), variableName.getValueAsString());
+                KBObject inputDatatype = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_INPUT_DATATYPE));
+                if (inputDatatype != null)
+                    ((UserInputQuestionVariable) q).setInputDatatype(inputDatatype.getValueAsString());
+            } else if (additionalType.equals(KBConstants.QUESTION_NS + SQO.DYNAMIC_OPTIONS_QUESTION_VARIABLE)) {
+                q = new DynamicOptionsQuestionVariable(var.getID(), variableName.getValueAsString());
+                KBObject optionsQuery = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_OPTIONS_QUERY));
+                if (optionsQuery != null)
+                    ((DynamicOptionsQuestionVariable) q).setOptionsQuery(optionsQuery.getValueAsString());
+            } else if (additionalType.equals(KBConstants.QUESTION_NS + SQO.STATIC_OPTIONS_QUESTION_VARIABLE)) {
+                q = new StaticOptionsQuestionVariable(var.getID(), variableName.getValueAsString());
+                List<KBObject> kbOptions = kb.getPropertyValues(var, SQOnt.getProperty(SQO.HAS_OPTION));
+                List<VariableOption> options = new ArrayList<VariableOption>();
+                for (KBObject curOption: kbOptions) {
+                    KBObject label = kb.getPropertyValue(curOption, SQOnt.getProperty(SQO.HAS_LABEL));
+                    KBObject value = kb.getPropertyValue(curOption, SQOnt.getProperty(SQO.HAS_VALUE));
+                    KBObject comment = kb.getPropertyValue(curOption, SQOnt.getProperty(SQO.HAS_COMMENT));
+                    if (label != null && value != null) {
+                        VariableOption cur = new VariableOption(value.getValueAsString(), label.getValueAsString());
+                        if (comment != null)
+                            cur.setComment(comment.getValueAsString());
+                        options.add(cur);
                     }
                 }
+                if (options != null)
+                    ((StaticOptionsQuestionVariable) q).setOptions(options);
+            } else if (additionalType.equals(KBConstants.QUESTION_NS + SQO.BOUNDING_BOX_QUESTION_VARIABLE)) {
+                q = new BoundingBoxQuestionVariable(var.getID(), variableName.getValueAsString());
+                KBObject minLatVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MIN_LAT));
+                KBObject minLngVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MIN_LNG));
+                KBObject maxLatVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MAX_LAT));
+                KBObject maxLngVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MAX_LNG));
+                if (minLatVar != null && minLngVar != null && maxLatVar != null && maxLngVar != null) {
+                    ((BoundingBoxQuestionVariable) q).setBoundingBoxVariables(
+                        LoadQuestionVariableFromKB(minLatVar, kb),
+                        LoadQuestionVariableFromKB(maxLatVar, kb),
+                        LoadQuestionVariableFromKB(minLngVar, kb),
+                        LoadQuestionVariableFromKB(maxLngVar, kb)
+                    );
+                }
+            } else if (additionalType.equals(KBConstants.QUESTION_NS + SQO.TIME_INTERVAL_QUESTION_VARIABLE)) {
+                q = new TimeIntervalQuestionVariable(var.getID(), variableName.getValueAsString());
+                KBObject startTimeVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_START_TIME));
+                KBObject endTimeVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_END_TIME));
+                KBObject timeTypeVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_TIME_TYPE));
+                if (startTimeVar != null && endTimeVar != null && timeTypeVar != null) {
+                    ((TimeIntervalQuestionVariable) q).setStartTime(LoadQuestionVariableFromKB(startTimeVar, kb));
+                    ((TimeIntervalQuestionVariable) q).setEndTime(LoadQuestionVariableFromKB(endTimeVar, kb));
+                    ((TimeIntervalQuestionVariable) q).setTimeType(LoadQuestionVariableFromKB(timeTypeVar, kb));
+                }
+            } else {
+                System.err.println("WARN: Question subtype not implemented: " + additionalType);
+                q = new QuestionVariable(var.getID(), variableName.getValueAsString());
+            }
+
+            // Set basic Question variables properties:
+            KBObject minCardinality = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MIN_CARDINALITY));
+            KBObject maxCardinality = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MAX_CARDINALITY));
+            KBObject representation = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_REPRESENTATION));
+            KBObject explanation = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_EXPLANATION));
+            KBObject patternFragment = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_PATTERN_FRAGMENT));
+
+            q.setMinCardinality(minCardinality != null ? Double.valueOf(minCardinality.getValueAsString()) : 1);
+            q.setMaxCardinality(maxCardinality != null ? Double.valueOf(maxCardinality.getValueAsString()) : 1);
+            if (representation != null) q.setRepresentation(representation.getValueAsString());
+            if (explanation != null) q.setExplanation(explanation.getValueAsString());
+            if (patternFragment != null) {
+                List<Triple> pFragList = LoadStatements(patternFragment, kb);
+                if (pFragList.size() > 0) q.setPatternFragment(pFragList);
             }
             return q;
         }
@@ -1009,16 +1051,19 @@ public class DiskRepository extends WriteKBRepository {
         }
         // -----
         //QuestionVariable variable = allVariables.containsKey(sid) ? allVariables.get(sid) : null;
-        if (variable == null)
-            return null;
-
-        String varname = variable.getVariableName();
-        String optionsQuery = variable.getOptionsQuery();
-        List<VariableOption> fixedOptions = variable.getOptions();
-        if (fixedOptions != null)
-            return fixedOptions;
-        if (optionsQuery != null)
-            return queryForOptions(varname, optionsQuery);
+        if (variable != null) {
+            String varname = variable.getVariableName();
+            if (variable.getSubType() == QuestionVariable.QuestionSubtype.DYNAMIC_OPTIONS) {
+                String optionsQuery = ((DynamicOptionsQuestionVariable) variable).getOptionsQuery();
+                if (optionsQuery != null)
+                    return queryForOptions(varname, optionsQuery);
+            }
+            if (variable.getSubType() == QuestionVariable.QuestionSubtype.STATIC_OPTIONS) {
+                List<VariableOption> fixedOptions = ((StaticOptionsQuestionVariable) variable).getOptions();
+                if (fixedOptions != null)
+                    return fixedOptions;
+            }
+        }
         return null;
     }
 
@@ -1095,7 +1140,7 @@ public class DiskRepository extends WriteKBRepository {
         Map<String, String> bindings = cfg.getBindings();
         Question q = allQuestions.get(cfg.getId());
         String query = (q != null) ? q.getConstraint() : null;
-        if (q == null) return null; // TODO: If no query constraint should go to variable queries.
+        if (q == null) return null; //TODO: If no query constraint should go to variable queries.
 
         // Create map variableName -> filter
         Map<String, String> filters = new HashMap<String, String>();
@@ -1106,7 +1151,8 @@ public class DiskRepository extends WriteKBRepository {
                     String value = bindings.get(varUrl);
                     String name = curVar.getVariableName();
                     String sparqlValue = value.startsWith("http") ? "<" + value + ">" : "\"" + value + "\"";
-                    filters.put(name, "VALUES " + name + " { " + sparqlValue + " }");
+                    String line = "VALUES " + name + " { " + sparqlValue + " }";
+                    filters.put(name, line);
                 } else {
                     System.err.println("Cannot find variable ID: " + varUrl);
                 }
@@ -1114,7 +1160,6 @@ public class DiskRepository extends WriteKBRepository {
         }
 
         for (QuestionVariable qv: q.getVariables()) {
-            //System.out.println(qv.getId());
             if (qv.getSubType() == null) {
                 String varName = qv.getVariableName();
                 String curQuery = query;
@@ -1125,11 +1170,14 @@ public class DiskRepository extends WriteKBRepository {
                         }
                     }
                 }
-                //System.out.println(query);
                 List<VariableOption> options = curQuery != null ?
                     queryForOptions(varName, curQuery)
                     : listVariableOptions(qv.getId().replaceAll("^.*\\/", ""));
                 all.put(varName, options);
+                if (all.get(varName).size() == 0) {
+                    System.out.println(qv.getId() + " got 0 results.");
+                    System.out.println(curQuery);
+                }
             }
         }
         return all;

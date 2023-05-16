@@ -1,7 +1,7 @@
 package org.diskproject.shared.classes.question;
 
 public class VariableOption {
-    String value, label;
+    String value, label, comment;
 
     public VariableOption (String value, String label) {
         this.value = value;
@@ -22,5 +22,13 @@ public class VariableOption {
 
     public String getValue () {
         return this.value;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
+
+    public String getComment () {
+        return this.comment;
     }
 }

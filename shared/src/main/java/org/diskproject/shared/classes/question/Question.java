@@ -3,23 +3,23 @@ package org.diskproject.shared.classes.question;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.diskproject.shared.classes.common.Triple;
+
 public class Question {
-  String id;
-  String name;
-  String template;
-  String pattern;
-  String constraint;
+  String id, name, template, constraint;
+  List<Triple> pattern;
   QuestionCategory category;
   List<QuestionVariable> variables;
 
-  public Question () {
-  }
-
-  public Question (String id, String name, String template, String pattern, List<QuestionVariable> vars) {
+  public Question (String id, String name, String template, List<Triple> pattern, List<QuestionVariable> vars) {
 	  this.id = id;
 	  this.name = name;
 	  this.template = template;
-	  this.pattern = pattern;
+    if (pattern != null) {
+	    this.pattern = pattern;
+    } else {
+      this.pattern = new ArrayList<Triple>();
+    }
 	  if (vars != null) {
 		  this.variables = vars;
 	  } else {
@@ -63,11 +63,11 @@ public class Question {
     this.template = template;
   }  
 
-  public String getPattern() {
+  public List<Triple> getPattern() {
     return pattern;
   }
 
-  public void setPattern(String pattern) {
+  public void setPattern(List<Triple> pattern) {
     this.pattern = pattern;
   }  
   

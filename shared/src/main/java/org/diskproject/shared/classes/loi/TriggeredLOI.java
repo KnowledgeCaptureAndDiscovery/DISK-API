@@ -26,6 +26,8 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
   String dataQuery, dataQueryExplanation;
   String tableVariables, tableDescription;
 
+  String queryResults;
+
   public TriggeredLOI() {
     workflows = new ArrayList<WorkflowBindings>();
     metaWorkflows = new ArrayList<WorkflowBindings>();
@@ -242,5 +244,13 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
 
   public String getConfidenceType() {
     return confidenceType;
+  }
+
+  public String getQueryResults() {
+    return queryResults;
+  }
+
+  public void setQueryResults(String raw) {
+    this.queryResults = raw;
   }
 }
