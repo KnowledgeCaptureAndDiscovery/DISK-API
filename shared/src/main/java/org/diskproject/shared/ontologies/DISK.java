@@ -28,7 +28,7 @@ public class DISK {
     public static final String HAS_TABLE_VARIABLES = "hasTableVariables";
     public static final String HAS_TABLE_DESCRIPTION = "hasTableDescription";
     public static final String HAS_DATA_QUERY_DESCRIPTION = "hasDataQueryDescription";
-    public static final String HAS_Query_RESULTS = "hasQueryResults";
+    public static final String HAS_QUERY_RESULTS = "hasQueryResults";
 
     public static final String HAS_TLOI_STATUS = "hasTriggeredLineOfInquiryStatus";
     public static final String HAS_LOI = "hasLineOfInquiry";

@@ -6,26 +6,15 @@ import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 
 public class Hypothesis {
-  String id;
-  String name;
-  String description;
-  String dateCreated;
-  String dateModified;
-  String author;
-  String notes;
+  String id, name, description;
+  String dateCreated, dateModified;
+  String author, notes;
+  //For revised hypotheses
+  String parentId;
+  // The graph (for server) and question bindings (for UI)
   String questionId;
   List<VariableBinding> questionBindings;
   Graph graph; // The actual hypothesis.
-  //For revised hypotheses
-  String parentId;
-  
-  public void setQuestionId (String q) {
-    this.questionId = q;
-  }
-  
-  public String getQuestionId () {
-    return this.questionId;
-  }
 
   public Hypothesis (String id, String name, String description, String parentId, Graph graph){
 	  this.id = id;
@@ -37,6 +26,14 @@ public class Hypothesis {
 
   public Hypothesis(){}
   
+  public void setQuestionId (String q) {
+    this.questionId = q;
+  }
+  
+  public String getQuestionId () {
+    return this.questionId;
+  }
+
   public List<VariableBinding> getQuestionBindings () {
 	  return this.questionBindings;
   }

@@ -29,6 +29,7 @@ import org.diskproject.server.adapters.SparqlAdapter;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.ConfigKeys;
 import org.diskproject.server.util.KBCache;
+import org.diskproject.server.util.KBUtils;
 import org.diskproject.server.util.VocabularyConfiguration;
 import org.diskproject.server.util.Config.DataAdapterConfig;
 import org.diskproject.server.util.Config.MethodAdapterConfig;
@@ -36,7 +37,6 @@ import org.diskproject.server.util.Config.VocabularyConfig;
 import org.diskproject.shared.classes.adapters.DataAdapter;
 import org.diskproject.shared.classes.adapters.DataResult;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
-import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.common.TreeItem;
 import org.diskproject.shared.classes.common.Triple;
 import org.diskproject.shared.classes.common.Value;
@@ -55,13 +55,9 @@ import org.diskproject.shared.classes.question.TimeIntervalQuestionVariable;
 import org.diskproject.shared.classes.question.UserInputQuestionVariable;
 import org.diskproject.shared.classes.question.VariableOption;
 import org.diskproject.shared.classes.util.DataAdapterResponse;
-import org.diskproject.shared.classes.util.GUID;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.util.QuestionOptionsRequest;
-import org.diskproject.shared.classes.vocabulary.Individual;
-import org.diskproject.shared.classes.vocabulary.Property;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
-import org.diskproject.shared.classes.vocabulary.Type;
 import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
@@ -376,163 +372,13 @@ public class DiskRepository extends WriteKBRepository {
         vocabulary.setTitle(title);
         if (description != null)
             vocabulary.setDescription(description);
-        this.fetchTypesAndIndividualsFromKB(kb, vocabulary);
-        this.fetchPropertiesFromKB(kb, vocabulary);
+        KBUtils.fetchTypesAndIndividualsFromKB(kb, vocabulary);
+        KBUtils.fetchPropertiesFromKB(kb, vocabulary);
         return vocabulary;
     }
 
-    private void fetchPropertiesFromKB(KBAPI kb, Vocabulary vocabulary) {
-        for (KBObject prop : kb.getAllProperties()) {
-            if (!prop.getID().startsWith(vocabulary.getNamespace()))
-                continue;
-
-            KBObject domCls = kb.getPropertyDomain(prop);
-            KBObject rangeCls = kb.getPropertyRange(prop);
-            String desc = kb.getComment(prop);
-
-            Property mProp = new Property();
-            mProp.setId(prop.getID());
-            mProp.setName(prop.getName());
-            if (desc != null)
-                mProp.setDescription(desc);
-
-            String label = this.createPropertyLabel(prop.getName());
-            mProp.setLabel(label);
-            if (domCls != null)
-                mProp.setDomain(domCls.getID());
-            if (rangeCls != null)
-                mProp.setRange(rangeCls.getID());
-
-            vocabulary.addProperty(mProp);
-        }
-    }
-
-    private void fetchTypesAndIndividualsFromKB(KBAPI kb, Vocabulary vocabulary) {
-        KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
-        for (KBTriple t : kb.genericTripleQuery(null, typeprop, null)) {
-            KBObject inst = t.getSubject();
-            KBObject typeobj = t.getObject();
-            String instId = inst.getID();
-
-            if (instId == null || instId.startsWith(vocabulary.getNamespace())
-                    || typeobj.getNamespace().equals(KBConstants.OWL_NS)) {
-                continue;
-            }
-
-            // Add individual, this does not ADD individuals without type.
-            Individual ind = new Individual();
-            ind.setId(inst.getID());
-            ind.setName(inst.getName());
-            ind.setType(typeobj.getID());
-            String label = kb.getLabel(inst);
-            if (label == null)
-                label = inst.getName();
-            ind.setLabel(label);
-            vocabulary.addIndividual(ind);
-
-            // Add asserted types
-            if (!typeobj.getID().startsWith(vocabulary.getNamespace()))
-                continue;
-            String clsId = typeobj.getID();
-            Type type = new Type();
-            type.setId(clsId);
-            type.setName(typeobj.getName());
-            type.setLabel(kb.getLabel(typeobj));
-            vocabulary.addType(type);
-        }
-
-        // Add types not asserted
-        KBObject clsObj = kb.getProperty(KBConstants.OWL_NS + "Class");
-        for (KBTriple t : kb.genericTripleQuery(null, typeprop, clsObj)) {
-            KBObject cls = t.getSubject();
-            String clsId = cls.getID();
-            if (clsId == null || !clsId.startsWith(vocabulary.getNamespace())
-                    || cls.getNamespace().equals(KBConstants.OWL_NS)) {
-                continue;
-            }
-
-            String desc = kb.getComment(cls);
-            Type type = vocabulary.getType(clsId);
-            if (type == null) {
-                type = new Type();
-                type.setId(clsId);
-                type.setName(cls.getName());
-                type.setLabel(kb.getLabel(cls));
-                if (desc != null)
-                    type.setDescription(desc);
-                vocabulary.addType(type);
-            }
-        }
-
-        // Add type hierarchy
-        KBObject subClsProp = kb.getProperty(KBConstants.RDFS_NS + "subClassOf");
-        for (KBTriple t : kb.genericTripleQuery(null, subClsProp, null)) {
-            KBObject subCls = t.getSubject();
-            KBObject cls = t.getObject();
-            String clsId = cls.getID();
-
-            Type subtype = vocabulary.getType(subCls.getID());
-            if (subtype == null)
-                continue;
-
-            if (!clsId.startsWith(KBConstants.OWL_NS))
-                subtype.setParent(clsId);
-
-            Type type = vocabulary.getType(cls.getID());
-            if (type != null && subtype.getId().startsWith(vocabulary.getNamespace())) {
-                type.addChild(subtype.getId());
-            }
-        }
-    }
-
-    private String createPropertyLabel(String pName) {
-        // Remove starting "has"
-        pName = pName.replaceAll("^has", "");
-        // Convert camel case to spaced human readable string
-        pName = pName.replaceAll(String.format("%s|%s|%s", "(?<=[A-Z])(?=[A-Z][a-z])", "(?<=[^A-Z])(?=[A-Z])",
-                "(?<=[A-Za-z])(?=[^A-Za-z])"), " ");
-        // Make first letter upper case
-        return pName.substring(0, 1).toUpperCase() + pName.substring(1);
-    }
-
-    /********************
-     * API methods
-     */
-
     public Map<String, Vocabulary> getVocabularies() {
         return this.vocabularies;
-    }
-
-    private Graph resolvePrefixesForGraph(Graph graph, String localDomain) {
-        List<Triple> triples = new ArrayList<Triple>();
-        for (Triple triple : graph.getTriples()) {
-            String subj = resolvePrefixes(triple.getSubject(), localDomain);
-            String pred = resolvePrefixes(triple.getPredicate(), localDomain);
-            triples.add(new Triple(subj, pred, triple.getObject())); //, triple.getDetails()));
-        }
-        Graph newGraph = new Graph();
-        newGraph.setTriples(triples);
-        return newGraph;
-    }
-
-    private String resolvePrefixes(String value, String localDomain) {
-        if (localDomain != null && !localDomain.equals("") && value.charAt(0) == ':') { // replace ":" for local domain
-            value = localDomain + value.substring(1);
-        } else {
-            // Resolve SQO and HYP first
-            if (value.startsWith("sqo:")) {
-                value = KBConstants.QUESTION_NS + value.substring(4);
-            } else if (value.startsWith("hyp:")) {
-                value = KBConstants.HYP_NS + value.substring(4);
-            } else
-                for (String prefix : this.externalVocabularies.keySet()) {
-                    if (value.startsWith(prefix + ":")) {
-                        String namespace = this.externalVocabularies.get(prefix).getNamespace();
-                        value = namespace + value.substring(prefix.length() + 1);
-                    }
-                }
-        }
-        return value;
     }
 
     /*
@@ -552,14 +398,14 @@ public class DiskRepository extends WriteKBRepository {
             hypothesis.setDateModified(dateformatter.format(new Date()));
         }
         if (name != null && desc != null && question != null && !name.equals("") && !desc.equals("")
-                && !question.equals("")) {
-            String id = hypothesis.getId();
-            if (id == null || id.equals("")) // Create new Hypothesis ID
-                hypothesis.setId(GUID.randomId("Hypothesis"));
+                && !question.equals("") && writeHypothesis(username, hypothesis)) {
+            //String id = hypothesis.getId();
+            //if (id == null || id.equals("")) // Create new Hypothesis ID
+            //    hypothesis.setId(GUID.randomId("Hypothesis"));
 
-            String hypothesisDomain = this.HYPURI(username) + "/" + hypothesis.getId() + "#";
-            hypothesis.setGraph(resolvePrefixesForGraph(hypothesis.getGraph(), hypothesisDomain));
-            if (writeHypothesis(username, hypothesis))
+            //String hypothesisDomain = this.HYPURI(username) + "/" + hypothesis.getId() + "#";
+            //hypothesis.setGraph(resolvePrefixesForGraph(hypothesis.getGraph(), hypothesisDomain));
+            //if (writeHypothesis(username, hypothesis))
                 return hypothesis;
         }
         return null;

@@ -1,16 +1,15 @@
 package org.diskproject.server.repository;
 
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.common.Triple;
-import org.diskproject.shared.classes.common.TripleDetails;
 import org.diskproject.shared.classes.common.Value;
 import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
@@ -73,7 +72,7 @@ public class WriteKBRepository extends KBRepository {
         return kb;
     }
 
-    private KBObject getKBValue(Value v, KBAPI kb) {
+    private KBObject createKBObjectFromValue(Value v, KBAPI kb) {
         String dataType = v.getDatatype();
         Object value = v.getValue();
         if (v.getType() == Value.Type.LITERAL) {
@@ -83,9 +82,8 @@ public class WriteKBRepository extends KBRepository {
                 return kb.createLiteral(value.toString());
         } else {
             if (dataType != null) {
-                //FIXME: if we assing a new datatype to V we must ensure is an URI
-                //KBObject cls = kb.createClass(dataType);
-                //return kb.createObjectOfClass(value.toString(), cls);
+                // TODO: The idea here is that check if this dataType is a URI for a class in the ontologies
+                // Then create a resource of that class.
                 return kb.getResource(value.toString());
             } else {
                 return kb.getResource(value.toString());
@@ -93,95 +91,18 @@ public class WriteKBRepository extends KBRepository {
         }
     }
 
-    private void setKBStatement(Triple triple, KBAPI kb, KBObject st) {
-        KBObject subj = kb.getResource(triple.getSubject());
-        KBObject pred = kb.getResource(triple.getPredicate());
-        KBObject obj = getKBValue(triple.getObject(), kb);
-        KBObject subprop = kb.getProperty(KBConstants.RDF_NS + "subject");
-        KBObject predprop = kb.getProperty(KBConstants.RDF_NS + "predicate");
-        KBObject objprop = kb.getProperty(KBConstants.RDF_NS + "object");
-        kb.addTriple(st, subprop, subj);
-        kb.addTriple(st, predprop, pred);
-        kb.addTriple(st, objprop, obj);
-    }
-
-    // Deprecate this!
-    private void storeTripleDetails(Triple triple, String provId, KBAPI provKB) {
-        //TripleDetails details = triple.getDetails();
-        //if (details != null) {
-        //    KBObject stObj = provKB.getResource(provId + "#" + GUID.randomId("Statement"));
-        //    this.setKBStatement(triple, provKB, stObj);
-
-        //    if (details.getConfidenceValue() > 0)
-        //        provKB.setPropertyValue(stObj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE),
-        //                provKB.createLiteral(triple.getDetails().getConfidenceValue()));
-        //    if (details.getConfidenceType() != null)
-        //        provKB.setPropertyValue(stObj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE),
-        //                provKB.createLiteral(triple.getDetails().getConfidenceType()));
-        //    if (details.getTriggeredLOI() != null)
-        //        provKB.setPropertyValue(stObj, DISKOnt.getProperty(DISK.HAS_TLOI),
-        //                provKB.getResource(triple.getDetails().getTriggeredLOI()));
-        //}
-    }
-
-    private Graph updateTripleDetails(Graph graph, KBAPI provKB) {
-        HashMap<String, Triple> tripleMap = new HashMap<String, Triple>();
-        for (Triple t : graph.getTriples())
-            tripleMap.put(t.toString(), t);
-
-        KBObject subprop = provKB.getProperty(KBConstants.RDF_NS + "subject");
-        KBObject predprop = provKB.getProperty(KBConstants.RDF_NS + "predicate");
-        KBObject objprop = provKB.getProperty(KBConstants.RDF_NS + "object");
-
-        for (KBTriple kbt : provKB.genericTripleQuery(null, subprop, null)) {
-            KBObject stObj = kbt.getSubject();
-            KBObject subjObj = kbt.getObject();
-            KBObject predObj = provKB.getPropertyValue(stObj, predprop);
-            KBObject objObj = provKB.getPropertyValue(stObj, objprop);
-
-            Value value = this.getObjectValue(objObj);
-            Triple triple = new Triple();
-            triple.setSubject(subjObj.getID());
-            triple.setPredicate(predObj.getID());
-            triple.setObject(value);
-
-            String triplestr = triple.toString();
-            if (tripleMap.containsKey(triplestr)) {
-                Triple t = tripleMap.get(triplestr);
-
-                KBObject conf = provKB.getPropertyValue(stObj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE));
-                KBObject confidenceType = provKB.getPropertyValue(stObj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE));
-                KBObject tloi = provKB.getPropertyValue(stObj, DISKOnt.getProperty(DISK.HAS_TLOI));
-
-                TripleDetails details = new TripleDetails();
-                if (conf != null && conf.getValue() != null)
-                    details.setConfidenceValue((Double) conf.getValue());
-                if (confidenceType != null && confidenceType.getValue() != null){
-                    details.setConfidenceType((String) confidenceType.getValue());
-                }
-                if (tloi != null)
-                    details.setTriggeredLOI(tloi.getID());
-
-                // TODO:
-                //t.setDetails(details);
-            }
-        }
-        return graph;
-    }
-
-    private Value getObjectValue(KBObject obj) {
+    private Value createValueFromKBObject(KBObject obj) {
         Value v = new Value();
         if (obj.isLiteral()) {
-            Object valobj = obj.getValue();
-            if (valobj instanceof Date) {
-                valobj = dateformatter.format((Date) valobj);
-            }
-            if (valobj instanceof String) {
+            Object valObj = obj.getValue();
+            if (valObj instanceof Date) {
+                valObj = dateformatter.format((Date) valObj);
+            } else if (valObj instanceof String) {
                 // Fix quotes and \n
-                valobj = ((String) valobj).replace("\"", "\\\"").replace("\n", "\\n");
+                valObj = ((String) valObj).replace("\"", "\\\"").replace("\n", "\\n");
             }
             v.setType(Value.Type.LITERAL);
-            v.setValue(valobj);
+            v.setValue(valObj);
             v.setDatatype(obj.getDataType());
         } else {
             v.setType(Value.Type.URI);
@@ -190,28 +111,77 @@ public class WriteKBRepository extends KBRepository {
         return v;
     }
 
-    private Graph getKBGraph(String url) {
-        Graph graph = new Graph();
-        KBAPI kb = getKB(url);
-        if (kb == null)
-            return null;
+    private Triple kbTripleToTriple (KBTriple kbTriple) {
+        return new Triple(
+            kbTriple.getSubject().getID(),
+            kbTriple.getPredicate().getID(),
+            createValueFromKBObject(kbTriple.getObject())
+        );
+    }
 
-        for (KBTriple t : kb.genericTripleQuery(null, null, null)) {
-            Value value = this.getObjectValue(t.getObject());
-            Triple triple = new Triple();
-            triple.setSubject(t.getSubject().getID());
-            triple.setPredicate(t.getPredicate().getID());
-            triple.setObject(value);
-            graph.addTriple(triple);
+    private KBTriple tripleToKBTriple (Triple triple, KBAPI kb) {
+        KBObject sub = kb.getResource(triple.getSubject());
+        KBObject pre = kb.getResource(triple.getPredicate());
+        KBObject obj = createKBObjectFromValue(triple.getObject(), kb);
+        if (sub != null && pre != null && obj != null)
+            return this.fac.getTriple(sub, pre, obj);
+        return null;
+    }
+
+    private Graph loadGraphFromKB(String url) {
+        KBAPI kb = getKB(url);
+        if (kb != null) {
+            Graph graph = new Graph();
+            for (KBTriple t : kb.getAllTriples()) {
+                graph.addTriple(kbTripleToTriple(t));
+            }
+            return graph;
         }
-        return graph;
+        return null;
+
+    }
+
+    private boolean isValidURL (String url) {
+        try {
+            new URL(url).toURI();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private String createDomainUri (String domain, String txt) {
+        return domain + "#" + txt.replaceAll(" ", "_").replaceAll(":|?", "");
+    }
+
+    private List<Triple> completeGraphWithDomains (Graph graph, String domain, String emptyResource) {
+        // A graph must have the format: <uri> <uri> ["literal"|<uri>] .
+        // If some resource is not an uri we create one using the domain.
+        List<Triple> triples = new ArrayList<Triple>();
+        for (Triple curTriple: graph.getTriples()) {
+            String sub = curTriple.getSubject(); 
+            String pre = curTriple.getPredicate();
+            Value obj = curTriple.getObject();
+            if (sub == null) {
+                sub = (emptyResource != null) ? domain + "#" + emptyResource : domain;
+            } else if (!isValidURL(sub)) {
+                sub = createDomainUri(domain, sub);
+            }
+            if (!isValidURL(pre)) pre = createDomainUri(domain, pre);
+            triples.add(new Triple(sub, pre, obj));
+        }
+        return triples;
     }
 
     // --- Hypothesis
     protected boolean writeHypothesis(String username, Hypothesis hypothesis) {
+        Boolean newHyp = hypothesis.getId() == null || hypothesis.getId().equals("");
+        if (newHyp) {
+            hypothesis.setId(GUID.randomId("Hypothesis"));
+        }
+
         String userDomain = this.HYPURI(username);
         String hypothesisId = userDomain + "/" + hypothesis.getId();
-
         KBAPI userKB = getOrCreateKB(userDomain);
 
         if (userKB == null)
@@ -238,7 +208,7 @@ public class WriteKBRepository extends KBRepository {
             userKB.setPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES),
                     userKB.createLiteral(hypothesis.getNotes()));
 
-        // Adding parent hypothesis ID
+        // Adding parent hypothesis ID FIXME: this is not used.
         if (hypothesis.getParentId() != null) {
             String fullParentId = userDomain + "/" + hypothesis.getParentId();
             userKB.setPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS),
@@ -267,38 +237,25 @@ public class WriteKBRepository extends KBRepository {
         this.save(userKB);
         this.end();
 
-        // Store hypothesis graph
+        // Store hypothesis as a graph
         KBAPI hypKb = getOrCreateKB(hypothesisId);
-        if (hypKb == null)
+        if (hypKb == null) {
+            // Already exists an hypothesis with this ID.
+            System.err.println("An hypothesis graph with this ID already exists: " + hypothesisId +  " -- Aborted");
             return false;
+        }
 
         this.start_write();
-        for (Triple triple : hypothesis.getGraph().getTriples()) {
-            KBObject subj = hypKb.getResource(triple.getSubject());
-            KBObject pred = hypKb.getResource(triple.getPredicate());
-            KBObject obj = getKBValue(triple.getObject(), hypKb);
-
-            if (subj != null && pred != null && obj != null) {
-                hypKb.addTriple(this.fac.getTriple(subj, pred, obj));
+        for (Triple triple : completeGraphWithDomains(hypothesis.getGraph(), hypothesisId, "goal")) {
+            KBTriple curTriple = tripleToKBTriple(triple, hypKb);
+            if (curTriple != null) {
+                hypKb.addTriple(curTriple);
             }
         }
         this.save(hypKb);
         this.end();
 
-        // FIXME: remove this way of getting the p-value
-        String hypothesisProv = hypothesisId + "/provenance";
-        KBAPI provKB = getOrCreateKB(hypothesisProv);
-        if (provKB == null)
-            return false;
-
-        this.start_write();
-        for (Triple triple : hypothesis.getGraph().getTriples()) {
-            // Add triple details (confidence value, provenance, etc)
-            this.storeTripleDetails(triple, hypothesisProv, provKB);
-        }
-        this.save(provKB);
-        this.end();
-
+        // TODO: I've removed the old provenance code that was here.
         return true;
     }
 
@@ -313,7 +270,7 @@ public class WriteKBRepository extends KBRepository {
         this.start_read();
 
         KBObject hypitem = userKB.getIndividual(hypothesisId);
-        Graph graph = this.getKBGraph(hypothesisId);
+        Graph graph = this.loadGraphFromKB(hypothesisId);
         if (hypitem == null || graph == null) {
             this.end();
             return null;
@@ -366,13 +323,6 @@ public class WriteKBRepository extends KBRepository {
             }
         }
         hypothesis.setQuestionBindings(variableBindings);
-
-        // FIXME: There are several problems on how I store prov.
-        String provId = hypothesisId + "/provenance";
-        KBAPI provKB = getKB(provId);
-        if (provKB != null)
-            this.updateTripleDetails(graph, provKB);
-
         this.end();
         return hypothesis;
     }
@@ -383,13 +333,11 @@ public class WriteKBRepository extends KBRepository {
 
         String userDomain = this.HYPURI(username);
         String hypothesisId = userDomain + "/" + id;
-        String provId = hypothesisId + "/provenance";
 
         KBAPI userKB = getKB(userDomain);
         KBAPI hypKB = getKB(hypothesisId);
-        KBAPI provKB = getKB(provId);
 
-        if (userKB != null && hypKB != null && provKB != null) {
+        if (userKB != null && hypKB != null) {
             this.start_read();
             KBObject hypitem = userKB.getIndividual(hypothesisId);
             if (hypitem != null) {
@@ -417,8 +365,7 @@ public class WriteKBRepository extends KBRepository {
                 this.end();
             }
 
-            return this.start_write() && hypKB.delete() && this.save(hypKB) && this.end() &&
-                    this.start_write() && provKB.delete() && this.save(provKB) && this.end();
+            return this.start_write() && hypKB.delete() && this.save(hypKB) && this.end();
         }
         return false;
     }
@@ -571,23 +518,6 @@ public class WriteKBRepository extends KBRepository {
             return null;
 
         this.start_read();
-        /*
-        KBObject typeprop = userKB.getProperty(KBConstants.RDF_NS + "type");
-        for (KBTriple t : userKB.genericTripleQuery(null, typeprop, null)) {
-            KBObject s = t.getSubject();
-            KBObject o = t.getObject();
-            if (o != null && !o.getValueAsString().startsWith("http://disk-project.org/ontology/disk#")) {
-                System.out.println("> " + s + " = " + o);
-                if (s!= null) {
-                    this.end();
-                    this.start_write();
-                    userKB.removeTriple(t);
-                    this.save(userKB);
-                    this.end();
-                    this.start_read();
-                }
-            }
-        } */
 
         KBObject loiItem = userKB.getIndividual(loiId);
         if (loiItem == null) {
@@ -787,6 +717,9 @@ public class WriteKBRepository extends KBRepository {
             KBObject hypObj = userKB.getResource(hypNs + tloi.getParentHypothesisId());
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS), hypObj);
         }
+        if (tloi.getQueryResults() != null)
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_QUERY_RESULTS),
+                    userKB.createLiteral(tloi.getQueryResults()));
 
         this.save(userKB);
         this.end();
@@ -867,6 +800,10 @@ public class WriteKBRepository extends KBRepository {
             KBObject confidenceObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE));
             if (confidenceObj != null)
                 tloi.setConfidenceValue(Double.valueOf(confidenceObj.getValueAsString()));
+
+            KBObject queryResultsObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_QUERY_RESULTS));
+            if (queryResultsObj != null)
+                tloi.setQueryResults(queryResultsObj.getValueAsString());
 
             this.end();
 
@@ -1053,7 +990,7 @@ public class WriteKBRepository extends KBRepository {
                     userKB.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_VARIABLE),
                             userKB.getResource(workflowuri + "#" + varId));
                     userKB.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE),
-                            this.getKBValue(bindingValue, userKB));
+                            this.createKBObjectFromValue(bindingValue, userKB));
                     userKB.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING), varbindingobj);
                 }
 
@@ -1088,6 +1025,7 @@ public class WriteKBRepository extends KBRepository {
         if (kb != null) {
             this.start_write();
             KBObject loiItem = kb.getIndividual(loiId);
+            KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
 
             for (KBTriple t : kb.genericTripleQuery(loiItem, bindingprop, null)) {
                 KBObject wbObj = t.getObject();
@@ -1151,9 +1089,9 @@ public class WriteKBRepository extends KBRepository {
                     KBObject varobj = kb.getPropertyValue(vbObj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
                     KBObject bindobj = kb.getPropertyValue(vbObj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
                     VariableBinding vBinding = new VariableBinding(varobj.getName(), bindobj.getValueAsString());
+                    // Check for variable classes
                     String cls = null;
                     try {
-                        KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
                         for (KBTriple tr : kb.genericTripleQuery(vbObj, typeprop, null)) {
                             KBObject o = tr.getObject();
                             if (o != null && !o.getValueAsString().startsWith("http://disk-project.org/ontology/disk#")) {
@@ -1161,8 +1099,8 @@ public class WriteKBRepository extends KBRepository {
                             }
                         }
                     } catch (Exception e) {
-                        // TODO: handle exception
-                        System.out.println("Something weird has happened");
+                        System.err.println("An error has ocurred while quering " + vbObj + " a *;");
+                        e.printStackTrace();
                     }
                     if (cls != null) {
                         vBinding.setType(cls);
