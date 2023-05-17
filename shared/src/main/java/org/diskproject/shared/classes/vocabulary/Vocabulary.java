@@ -46,9 +46,9 @@ public class Vocabulary {
       type.getChildren().clear();
     }
     for(Type type : this.types.values()) {
-      Type ptype = this.getType(type.getParent());
-      if(ptype != null) {
-        ptype.getChildren().add(type.getId());
+      Type pType = this.getType(type.getParent());
+      if(pType != null) {
+        pType.getChildren().add(type.getId());
       }
     }
   }
@@ -107,8 +107,8 @@ public class Vocabulary {
     return this.properties.get(propertyid);
   }
   
-  public Individual getIndividual(String individualid) {
-    return this.individuals.get(individualid);
+  public Individual getIndividual(String individualId) {
+    return this.individuals.get(individualId);
   }
   
   public List<Property> getPropertiesForType(Type type) {
@@ -116,15 +116,15 @@ public class Vocabulary {
     ArrayList<Type> queue = new ArrayList<Type>();
     queue.add(type);
     while(!queue.isEmpty()) {
-      Type qtype = queue.remove(0);
-      if(qtype != null) {
-        domains.put(qtype.getId(), true);
-        queue.add(this.getType(qtype.getParent()));
+      Type qType = queue.remove(0);
+      if(qType != null) {
+        domains.put(qType.getId(), true);
+        queue.add(this.getType(qType.getParent()));
       }
     }
     ArrayList<Property> list = new ArrayList<Property>();
-    for(String propid : this.properties.keySet()) {
-      Property prop = this.properties.get(propid);
+    for(String propId : this.properties.keySet()) {
+      Property prop = this.properties.get(propId);
       if(domains.containsKey(prop.getDomain()))
         list.add(prop);
     }
@@ -145,11 +145,11 @@ public class Vocabulary {
     ArrayList<Type> queue = new ArrayList<Type>();
     queue.add(type);
     while(!queue.isEmpty()) {
-      Type qtype = queue.remove(0);
-      if(qtype != null) {
-        types.add(qtype);
-        for(String subtypeid : qtype.getChildren())
-          queue.add(this.getType(subtypeid));
+      Type qType = queue.remove(0);
+      if(qType != null) {
+        types.add(qType);
+        for(String subtypeId : qType.getChildren())
+          queue.add(this.getType(subtypeId));
       }
     }
     return types;
@@ -159,11 +159,11 @@ public class Vocabulary {
     ArrayList<Type> queue = new ArrayList<Type>();
     queue.add(cls1);
     while(!queue.isEmpty()) {
-      Type qtype = queue.remove(0);
-      if(qtype.getId().equals(cls2.getId()))
+      Type qType = queue.remove(0);
+      if(qType.getId().equals(cls2.getId()))
         return true;
-      if(qtype.getParent() != null)
-        queue.add(this.getType(qtype.getParent()));
+      if(qType.getParent() != null)
+        queue.add(this.getType(qType.getParent()));
     }
     return false;
   }

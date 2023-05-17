@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
-import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.KBCache;
 import org.diskproject.shared.classes.adapters.DataAdapter;
@@ -30,11 +29,11 @@ public class KBRepository implements TransactionsAPI {
   protected Map<String, MethodAdapter> methodAdapters;
 
   protected void setConfiguration() {
-    if (Config.get() == null)
+    Config currentConfig =  Config.get();
+    if (currentConfig == null)
       return;
-    PropertyListConfiguration props = Config.get().getProperties();
-    this.server = props.getString("server");
-    tdbdir = props.getString("storage.tdb");
+    this.server = currentConfig.server;
+    tdbdir = currentConfig.storage.tdb;
     File tdbdirF = new File(tdbdir);
     if (!tdbdirF.exists() && !tdbdirF.mkdirs()) {
       System.err.println("Cannot create tdb directory : " + tdbdirF.getAbsolutePath());

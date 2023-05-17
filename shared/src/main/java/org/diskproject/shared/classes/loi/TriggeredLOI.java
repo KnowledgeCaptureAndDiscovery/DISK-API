@@ -71,13 +71,13 @@ public class TriggeredLOI implements Comparable<TriggeredLOI> {
   }
 
   public void copyWorkflowBindings(List<WorkflowBindings> fromlist,
-      List<WorkflowBindings> tolist) {
+      List<WorkflowBindings> toList) {
     for(WorkflowBindings from : fromlist) {
       WorkflowBindings to = new WorkflowBindings();
       to.setWorkflow(from.getWorkflow());
       to.setMeta(from.getMeta());
       to.setBindings(new ArrayList<VariableBinding>(from.getBindings()));
-      tolist.add(to);
+      toList.add(to);
     }
   }
   

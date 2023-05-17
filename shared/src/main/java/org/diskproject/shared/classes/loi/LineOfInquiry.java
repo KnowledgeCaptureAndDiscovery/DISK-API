@@ -173,8 +173,8 @@ public class LineOfInquiry {
     this.metaWorkflows = metaWorkflows;
   }
   
-  public void addMetaWorkflow(WorkflowBindings metaWorkflowid) {
-    this.metaWorkflows.add(metaWorkflowid);
+  public void addMetaWorkflow(WorkflowBindings metaWorkflowId) {
+    this.metaWorkflows.add(metaWorkflowId);
   }
   
   public void setDateCreated(String date) {

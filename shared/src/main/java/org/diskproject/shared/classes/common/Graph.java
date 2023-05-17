@@ -25,10 +25,10 @@ public class Graph {
     this.triples.add(triple);
   }
   
-  public List<Triple> getTriplesForSubject(String subjectid) {
+  public List<Triple> getTriplesForSubject(String subjectId) {
     List<Triple> striples = new ArrayList<Triple>();
     for(Triple triple : this.triples) {
-      if(triple.getSubject() != null && triple.getSubject().equals(subjectid))
+      if(triple.getSubject() != null && triple.getSubject().equals(subjectId))
         striples.add(triple);
     }
     return striples;

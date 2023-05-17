@@ -53,18 +53,18 @@ public class DataResult {
     }
     
     public String toString () {
-        String repr = Integer.toString(this.varNames.size()) + " variables: ";
+        String txt = Integer.toString(this.varNames.size()) + " variables: ";
         for (String varname: this.varNames) {
-            repr += varname + " ";
+            txt += varname + " ";
         }
-        repr += "\n";
+        txt += "\n";
         for (String varname: this.varNames) {
-            repr += "  " + varname + ": " + getValue(varname);
+            txt += "  " + varname + ": " + getValue(varname);
             if (!isLiteral(varname))
-                repr += " (" +getName(varname) + ")";
-            repr += "\n";
+                txt += " (" +getName(varname) + ")";
+            txt += "\n";
         }
 
-        return repr;
+        return txt;
     }
 }

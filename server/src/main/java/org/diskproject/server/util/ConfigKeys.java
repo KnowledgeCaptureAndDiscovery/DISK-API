@@ -10,6 +10,7 @@ public class ConfigKeys {
     public static final String VOCABULARIES = "vocabularies";
     public static final String DATA_ADAPTERS = "data-adapters";
     public static final String METHOD_ADAPTERS = "method-adapters";
+    public static final String QUESTION_TEMPLATES = "question-templates";
 
     public static final String TITLE = "title";
     public static final String PREFIX = "prefix";

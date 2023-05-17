@@ -1,13 +1,88 @@
 package org.diskproject.server.util;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
-import org.apache.commons.configuration.ConfigurationException;
+//import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 
 public class Config {
   static Config singleton = null;
   PropertyListConfiguration props = null;
+  //This is the configuration
+  public class StorageConfig {
+    public String local, tdb, db;
+    public StorageConfig (String local, String tdb, String db) {
+      this.local = local;
+      this.tdb = tdb;
+      this.db = db;
+    }
+  }
+
+  public class KeycloakConfig {
+    public String url, realm;
+    public KeycloakConfig (String url, String realm) {
+      this.url = url;
+      this.realm = realm;
+    }
+  }
+
+  public class DataAdapterConfig {
+    public String name, type, endpoint, repository, username, password, description, namespace, prefix, prefixResolution;
+    public DataAdapterConfig (String name, String type, String endpoint, String repository, String username, String password,
+        String description, String namespace, String prefix, String prefixResolution) {
+      this.name = name;
+      this.type = type;
+      this.endpoint = endpoint;
+      this.repository = repository;
+      this.username = username;
+      this.password = password;
+      this.description = description;
+      this.namespace = namespace;
+      this.prefix = prefix;
+      this.prefixResolution = prefixResolution;
+    }
+  }
+
+  public class MethodAdapterConfig {
+    public String name, type, endpoint, username, password, description, internalServer, domain;
+    public Float version;
+    public MethodAdapterConfig (String name, String type, String endpoint, String username, String password, String description, String internalServer, String domain, Float v) {
+      this.name = name;
+      this.type = type;
+      this.endpoint = endpoint;
+      this.username = username;
+      this.password = password;
+      this.description = description;
+      this.internalServer = internalServer;
+      this.domain = domain;
+      this.version = v;
+    }
+  }
+
+  public class VocabularyConfig {
+    public String name, url, prefix, title, namespace, description;
+    public VocabularyConfig (String name, String url, String prefix, String title, String namespace, String description) {
+      this.name = name;
+      this.url = url;
+      this.prefix = prefix;
+      this.title = title;
+      this.namespace = namespace;
+      this.description = description;
+    }
+  }
+
+  public String server;
+  public StorageConfig storage;
+  public KeycloakConfig keycloak;
+  public List<DataAdapterConfig> dataAdapters;
+  public List<MethodAdapterConfig> methodAdapters;
+  public List<VocabularyConfig> vocabularies;
+  public Map<String, String> questions;
 
   public static void load() {
     singleton = new Config();
@@ -19,16 +94,18 @@ public class Config {
 
   public Config() {
     this.props = loadServerConfiguration();
+    //Load configuration to memory;
+    this.loadDISKConfiguration();
   }
 
-  public PropertyListConfiguration getProperties() {
-    try {
-      props.load();
-    } catch (ConfigurationException e) {
-      e.printStackTrace();
-    }
-    return this.props;
-  }
+  //public PropertyListConfiguration getProperties() {
+  //  try {
+  //    props.load();
+  //  } catch (ConfigurationException e) {
+  //    e.printStackTrace();
+  //  }
+  //  return this.props;
+  //}
 
   private PropertyListConfiguration loadServerConfiguration() {
     String configFile = null;
@@ -94,5 +171,123 @@ public class Config {
     } catch (Exception e) {
       e.printStackTrace();
     }
+  }
+
+  private Map<String, Map<String, String>> configIteratorToMap (Iterator<String> a) {
+    Map<String, Map<String, String>> map = new HashMap<String, Map<String, String>>(); // vocabMap[name -> map[propName -> propValue]]
+    while (a.hasNext()) {
+      String key = a.next();
+      String sp[] = key.split("\\.");
+      if (sp != null && sp.length == 3) { // as the list is normalized length is how deep the property is, eg: vocabularies.NAME.property
+        String name = sp[1];
+        String propName = sp[2];
+        String value = props.getString(key);
+        Map<String, String> propMap;
+        if (map.containsKey(name))
+          propMap = map.get(name);
+        else {
+          propMap = new HashMap<String, String>();
+          map.put(name, propMap);
+        }
+        propMap.put(propName, value);
+      }
+    }
+    return map;
+  }
+
+  private void loadDISKConfiguration() {
+    // Server configuration
+    this.server = props.getString("server");
+    String storageLocal = props.getString("storage.local");
+    String storageTdb = props.getString("storage.tdb");
+    String storageDb = props.getString("storage.db");
+    this.storage = new StorageConfig(storageLocal, storageTdb, storageDb);
+    String keycloakUrl = props.getString("keycloak.url");
+    String keycloakRealm = props.getString("keycloak.realm");
+    this.keycloak = new KeycloakConfig(keycloakUrl, keycloakRealm);
+    // Question ontologies
+    this.questions = new HashMap<String, String>();
+    Iterator<String> a = props.getKeys(ConfigKeys.QUESTION_TEMPLATES);
+    while (a.hasNext()) {
+      String key = a.next();
+      String[] sp = key.split("\\.");
+      String name = sp[1];
+      this.questions.put(name, props.getString(key));
+    }
+    // Data Adapters
+    List<DataAdapterConfig> dataAdapterList = new ArrayList<DataAdapterConfig>();
+    Map<String, Map<String, String>> dataMap = configIteratorToMap(props.getKeys(ConfigKeys.DATA_ADAPTERS));
+    for (String name : dataMap.keySet()) {
+      Map<String, String> propMap = dataMap.get(name);
+      // Check minimal fields
+      if (!(propMap.containsKey(ConfigKeys.ENDPOINT) && propMap.containsKey(ConfigKeys.TYPE))) {
+        String errorMessage = "Error reading configuration file. Data adapters must have '" 
+            + ConfigKeys.ENDPOINT + "' and '" + ConfigKeys.TYPE + "'";
+        System.err.println( errorMessage );
+        continue; // Non critical error
+      }
+      dataAdapterList.add(new DataAdapterConfig(
+        name, 
+        propMap.get(ConfigKeys.TYPE),
+        propMap.get(ConfigKeys.ENDPOINT),
+        propMap.get(ConfigKeys.REPOSITORY),
+        propMap.get(ConfigKeys.USERNAME),
+        propMap.get(ConfigKeys.PASSWORD),
+        propMap.get(ConfigKeys.DESCRIPTION),
+        propMap.get(ConfigKeys.NAMESPACE),
+        propMap.get(ConfigKeys.PREFIX),
+        propMap.get(ConfigKeys.PREFIX_RESOLUTION)
+      )) ;
+    }
+    this.dataAdapters = dataAdapterList;
+    // Method Adapters
+    List<MethodAdapterConfig> methodAdapterList = new ArrayList<MethodAdapterConfig>();
+    Map<String, Map<String, String>> methodMap = configIteratorToMap(props.getKeys(ConfigKeys.METHOD_ADAPTERS));
+    for (String name : methodMap.keySet()) {
+      Map<String, String> propMap = methodMap.get(name);
+      // Check minimal fields
+      if (!(propMap.containsKey(ConfigKeys.ENDPOINT) && propMap.containsKey(ConfigKeys.TYPE))) {
+        String errorMessage = "Error reading configuration file. Method adapters must have '" 
+            + ConfigKeys.ENDPOINT + "' and '" + ConfigKeys.TYPE + "'";
+        System.err.println( errorMessage );
+        continue; // Non critical error
+      }
+      methodAdapterList.add(new MethodAdapterConfig(
+        name,
+        propMap.get(ConfigKeys.TYPE),
+        propMap.get(ConfigKeys.ENDPOINT),
+        propMap.get(ConfigKeys.USERNAME),
+        propMap.get(ConfigKeys.PASSWORD),
+        propMap.get(ConfigKeys.DESCRIPTION),
+        propMap.get(ConfigKeys.INTERNAL_SERVER),
+        propMap.get(ConfigKeys.DOMAIN),
+        propMap.get(ConfigKeys.VERSION) != null ? Float.parseFloat(propMap.get(ConfigKeys.VERSION)) : null
+      )) ;
+    }
+    this.methodAdapters = methodAdapterList;
+    // Vocabularies
+    List<VocabularyConfig> vocabularyList = new ArrayList<VocabularyConfig>();
+    Map<String, Map<String, String>> vocabMap = configIteratorToMap(props.getKeys(ConfigKeys.VOCABULARIES));
+    for (String name : vocabMap.keySet()) {
+      Map<String, String> propMap = vocabMap.get(name);
+      // Check minimal fields
+      if (!(propMap.containsKey(ConfigKeys.URL) && propMap.containsKey(ConfigKeys.PREFIX)
+          && propMap.containsKey(ConfigKeys.NAMESPACE) && propMap.containsKey(ConfigKeys.TITLE))) {
+        String errorMessage = "Error reading configuration file. Vocabularies must have '"
+            + ConfigKeys.URL + "', '" + ConfigKeys.TITLE + "', '" + ConfigKeys.PREFIX + "' and '"
+            + ConfigKeys.NAMESPACE + "'";
+        System.out.println(errorMessage);
+        throw new RuntimeException(errorMessage);
+      }
+      vocabularyList.add(new VocabularyConfig(
+            name,
+            propMap.get(ConfigKeys.URL), 
+            propMap.get(ConfigKeys.PREFIX), 
+            propMap.get(ConfigKeys.TITLE), 
+            propMap.get(ConfigKeys.NAMESPACE), 
+            propMap.get(ConfigKeys.DESCRIPTION)
+      ));
+    }
+    this.vocabularies = vocabularyList;
   }
 }

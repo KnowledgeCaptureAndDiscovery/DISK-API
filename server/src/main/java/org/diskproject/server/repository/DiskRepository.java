@@ -9,7 +9,6 @@ import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.jena.query.QueryParseException;
 import org.diskproject.server.adapters.AirFlowAdapter;
@@ -32,6 +30,9 @@ import org.diskproject.server.util.Config;
 import org.diskproject.server.util.ConfigKeys;
 import org.diskproject.server.util.KBCache;
 import org.diskproject.server.util.VocabularyConfiguration;
+import org.diskproject.server.util.Config.DataAdapterConfig;
+import org.diskproject.server.util.Config.MethodAdapterConfig;
+import org.diskproject.server.util.Config.VocabularyConfig;
 import org.diskproject.shared.classes.adapters.DataAdapter;
 import org.diskproject.shared.classes.adapters.DataResult;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
@@ -158,61 +159,25 @@ public class DiskRepository extends WriteKBRepository {
         SQOnt = new KBCache(this.questionKB);
         this.end();
         loadQuestionTemplates();
-        this.loadKBFromConfig();
+        this.loadVocabulariesFromConfig();
         this.initializeVocabularies();
     }
 
-    private void loadKBFromConfig() throws Exception {
+    private void loadVocabulariesFromConfig() throws Exception {
         this.externalVocabularies = new HashMap<String, VocabularyConfiguration>();
-
-        PropertyListConfiguration cfg = this.getConfig();
-        Map<String, Map<String, String>> ontologies = new HashMap<String, Map<String, String>>();
-        Iterator<String> a = cfg.getKeys(ConfigKeys.VOCABULARIES);
-        while (a.hasNext()) {
-            String key = a.next();
-            String sp[] = key.split("\\.");
-
-            if (sp != null && sp.length == 3) { // as the list is normalized length is how deep the property is
-                Map<String, String> map;
-                if (ontologies.containsKey(sp[1]))
-                    map = ontologies.get(sp[1]);
-                else {
-                    map = new HashMap<String, String>();
-                    ontologies.put(sp[1], map);
-                }
-                map.put(sp[2], cfg.getProperty(key).toString());
-            }
-        }
-
-        for (String name : ontologies.keySet()) {
-            Map<String, String> cur = ontologies.get(name);
-            // Check minimal fields
-            if (!(cur.containsKey(ConfigKeys.URL) && cur.containsKey(ConfigKeys.PREFIX)
-                    && cur.containsKey(ConfigKeys.NAMESPACE) && cur.containsKey(ConfigKeys.TITLE))) {
-                String errorMessage = "Error reading configuration file. Vocabularies must have '"
-                        + ConfigKeys.URL + "', '" + ConfigKeys.TITLE + "', '" + ConfigKeys.PREFIX + "' and '"
-                        + ConfigKeys.NAMESPACE + "'";
-                System.out.println(errorMessage);
-                throw new RuntimeException(errorMessage);
-            }
-            String curUrl = cur.get(ConfigKeys.URL),
-                    curPrefix = cur.get(ConfigKeys.PREFIX),
-                    curNamespace = cur.get(ConfigKeys.NAMESPACE),
-                    curTitle = cur.get(ConfigKeys.TITLE);
-
+        for (VocabularyConfig v: Config.get().vocabularies) {
             KBAPI curKB = null;
             try {
-                curKB = fac.getKB(curUrl, OntSpec.PLAIN, false, true);
+                curKB = fac.getKB(v.url, OntSpec.PLAIN, false, true);
             } catch (Exception e) {
-                System.out.println("Could not load " + curUrl);
+                System.out.println("Could not load " + v.url);
             }
             if (curKB != null) {
-                VocabularyConfiguration vc = new VocabularyConfiguration(curPrefix, curUrl, curNamespace, curTitle);
+                VocabularyConfiguration vc = new VocabularyConfiguration(v.prefix, v.url, v.namespace, v.title);
                 vc.setKB(curKB);
-                if (cur.containsKey(ConfigKeys.DESCRIPTION))
-                    vc.setDescription(cur.get(ConfigKeys.DESCRIPTION));
-
-                this.externalVocabularies.put(curPrefix, vc);
+                if (v.description != null)
+                    vc.setDescription(v.description);
+                this.externalVocabularies.put(v.prefix, vc);
             }
         }
 
@@ -255,96 +220,48 @@ public class DiskRepository extends WriteKBRepository {
         this.initializeKB();
     }
 
-    public PropertyListConfiguration getConfig() {
-        return Config.get().getProperties();
-    }
-
     // -- Data adapters
     private void initializeDataAdapters() {
-        // Reads data adapters from config file.
-        PropertyListConfiguration cfg = this.getConfig();
-        Map<String, Map<String, String>> endpoints = new HashMap<String, Map<String, String>>();
-        Iterator<String> a = cfg.getKeys(ConfigKeys.DATA_ADAPTERS);
-        while (a.hasNext()) {
-            String key = a.next();
-            String sp[] = key.split("\\.");
-
-            if (sp != null && sp.length == 3) { // as the list is normalized length is how deep the property is
-                Map<String, String> map;
-                if (endpoints.containsKey(sp[1]))
-                    map = endpoints.get(sp[1]);
-                else {
-                    map = new HashMap<String, String>();
-                    endpoints.put(sp[1], map);
-                }
-                map.put(sp[2], cfg.getProperty(key).toString());
-            }
-        }
-
-        for (String name : endpoints.keySet()) {
-            Map<String, String> cur = endpoints.get(name);
-            if (!(cur.containsKey(ConfigKeys.ENDPOINT) && cur.containsKey(ConfigKeys.TYPE))) {
-                System.err.println("Error reading configuration file. Data adapters must have '" + ConfigKeys.ENDPOINT
-                        + "' and '" + ConfigKeys.TYPE + "'");
-                continue;
-            }
-
-            String curURI = cur.get(ConfigKeys.ENDPOINT),
-                    curType = cur.get(ConfigKeys.TYPE);
-            String curUser = null, curPass = null, curNamespace = null, curPrefix = null, curDesc = null,
-                    curPrefixRes = null;
-            if (cur.containsKey(ConfigKeys.USERNAME))
-                curUser = cur.get(ConfigKeys.USERNAME);
-            if (cur.containsKey(ConfigKeys.PASSWORD))
-                curPass = cur.get(ConfigKeys.PASSWORD);
-            if (cur.containsKey(ConfigKeys.NAMESPACE))
-                curNamespace = cur.get(ConfigKeys.NAMESPACE);
-            if (cur.containsKey(ConfigKeys.PREFIX))
-                curPrefix = cur.get(ConfigKeys.PREFIX);
-            if (cur.containsKey(ConfigKeys.DESCRIPTION))
-                curDesc = cur.get(ConfigKeys.DESCRIPTION);
-            if (cur.containsKey(ConfigKeys.PREFIX_RESOLUTION))
-                curPrefixRes = cur.get(ConfigKeys.PREFIX_RESOLUTION);
-
+        for (DataAdapterConfig da: Config.get().dataAdapters) {
             DataAdapter curAdapter = null;
-            switch (curType) {
+            switch (da.type) {
                 case ConfigKeys.DATA_TYPE_SPARQL:
-                    curAdapter = new SparqlAdapter(curURI, name, curUser, curPass);
+                    curAdapter = new SparqlAdapter(da.endpoint, da.name, da.username, da.password);
                     break;
                 case ConfigKeys.DATA_TYPE_GRAPH_DB:
-                    //curAdapter = new GraphDBAdapter(curURI, name, curUser, curPass);
-                    GraphDBAdapter ga = new GraphDBAdapter(curURI, name, curUser, curPass);
-                    if (cur.containsKey(ConfigKeys.REPOSITORY))
-                        ga.setRepository(cur.get(ConfigKeys.REPOSITORY));
+                    GraphDBAdapter ga = new GraphDBAdapter(da.endpoint, da.name, da.username, da.password);
+                    if (da.repository != null)
+                        ga.setRepository(da.repository);
                     curAdapter = ga;
                     break;
                 default:
-                    System.out.println("Error: Data adapter type not found: '" + curType + "'");
+                    System.out.println("Error: Data adapter type not found: '" + da.type + "'");
                     break;
             }
-            if (curType != null && curAdapter != null) {
-                if (curNamespace != null && curPrefix != null) {
-                    curAdapter.setPrefix(curPrefix, curNamespace);
+            if (da.type != null && curAdapter != null) {
+                if (da.namespace != null && da.prefix != null) {
+                    curAdapter.setPrefix(da.prefix, da.namespace);
                 }
-                if (curPrefixRes != null) {
-                    curAdapter.setPrefixResolution(curPrefixRes);
+                if (da.prefixResolution != null) {
+                    curAdapter.setPrefixResolution(da.prefixResolution);
                 }
-                if (curDesc != null) {
-                    curAdapter.setDescription(curDesc);
+                if (da.description != null) {
+                    curAdapter.setDescription(da.description);
                 }
-                this.dataAdapters.put(curURI, curAdapter);
+                this.dataAdapters.put(da.endpoint, curAdapter);
             }
         }
 
         // Check data adapters:
         if (this.dataAdapters.size() == 0) {
             System.err.println("WARNING: No data adapters found on configuration file.");
-        } else
+        } else {
             for (DataAdapter curAdp : this.dataAdapters.values()) {
                 if (!curAdp.ping()) {
                     System.err.println("ERROR: Could not connect with " + curAdp.getEndpointUrl());
                 }
             }
+        }
     }
 
     private DataAdapter getDataAdapter(String url) {
@@ -363,63 +280,23 @@ public class DiskRepository extends WriteKBRepository {
 
     // -- Method adapters
     private void initializeMethodAdapters() {
-        // Reads method adapters from config file.
-        PropertyListConfiguration cfg = this.getConfig();
-        Map<String, Map<String, String>> adapters = new HashMap<String, Map<String, String>>();
-        Iterator<String> a = cfg.getKeys(ConfigKeys.METHOD_ADAPTERS);
-        while (a.hasNext()) {
-            String key = a.next();
-            String sp[] = key.split("\\.");
-
-            if (sp != null && sp.length == 3) { // as the list is normalized, length is how deep the property is
-                Map<String, String> map;
-                if (adapters.containsKey(sp[1]))
-                    map = adapters.get(sp[1]);
-                else {
-                    map = new HashMap<String, String>();
-                    adapters.put(sp[1], map);
-                }
-                map.put(sp[2], cfg.getProperty(key).toString());
-            }
-        }
-
-        for (String name : adapters.keySet()) {
-            Map<String, String> cur = adapters.get(name);
-            if (!(cur.containsKey(ConfigKeys.ENDPOINT) && cur.containsKey(ConfigKeys.TYPE))) {
-                System.err.println("Error reading configuration file. Method adapters must have '" + ConfigKeys.ENDPOINT
-                        + "' and '" + ConfigKeys.TYPE + "'");
-                continue;
-            }
-            String curURI = cur.get(ConfigKeys.ENDPOINT), curType = cur.get(ConfigKeys.TYPE);
-            String curUser = null, curPass = null, curDomain = null, curInternalServer = null;
-            Float curVersion = null;
-            if (cur.containsKey(ConfigKeys.USERNAME))
-                curUser = cur.get(ConfigKeys.USERNAME);
-            if (cur.containsKey(ConfigKeys.PASSWORD))
-                curPass = cur.get(ConfigKeys.PASSWORD);
-            if (cur.containsKey(ConfigKeys.DOMAIN))
-                curDomain = cur.get(ConfigKeys.DOMAIN);
-            if (cur.containsKey(ConfigKeys.INTERNAL_SERVER))
-                curInternalServer = cur.get(ConfigKeys.INTERNAL_SERVER);
-            if (cur.containsKey(ConfigKeys.VERSION))
-                curVersion = Float.parseFloat(cur.get(ConfigKeys.VERSION));
-
+        for (MethodAdapterConfig ma: Config.get().methodAdapters) {
             MethodAdapter curAdapter = null;
-            switch (curType) {
+            switch (ma.type) {
                 case ConfigKeys.METHOD_TYPE_WINGS:
-                    curAdapter = new WingsAdapter(name, curURI, curUser, curPass, curDomain, curInternalServer);
+                    curAdapter = new WingsAdapter(ma.name, ma.endpoint, ma.username, ma.password, ma.domain, ma.internalServer);
                     break;
                 case ConfigKeys.METHOD_TYPE_AIRFLOW:
-                    curAdapter = new AirFlowAdapter(name, curURI, curUser, curPass);
+                    curAdapter = new AirFlowAdapter(ma.name, ma.endpoint, ma.username, ma.password);
                     break;
                 default:
-                    System.out.println("Error: Method adapter type not found: '" + curType + "'");
+                    System.out.println("Error: Method adapter type not found: '" + ma.type + "'");
                     break;
             }
             if (curAdapter != null) {
-                if (curVersion != null)
-                    curAdapter.setVersion(curVersion);
-                this.methodAdapters.put(curURI, curAdapter);
+                if (ma.version != null)
+                    curAdapter.setVersion(ma.version);
+                this.methodAdapters.put(ma.endpoint, curAdapter);
             }
         }
 
@@ -821,17 +698,9 @@ public class DiskRepository extends WriteKBRepository {
     private Map<String, QuestionVariable> allVariables;
 
     private void loadQuestionTemplates() {
-        List<String> urls = new ArrayList<String>();
-
-        Iterator<String> a = this.getConfig().getKeys("question-templates");
-        while (a.hasNext()) {
-            String key = a.next();
-            urls.add(this.getConfig().getString(key));
-        }
-
         this.allQuestions = new HashMap<String, Question>();
         this.allVariables = new HashMap<String, QuestionVariable>();
-        for (String url : urls) {
+        for (String url : Config.get().questions.values()) {
             // Clear cache first
             try {
                 start_write();
@@ -1105,8 +974,8 @@ public class DiskRepository extends WriteKBRepository {
             } else { // There's more than one option with the same label
                 boolean allTheSame = true;
                 String lastValue = sameLabelOptions.get(0).get(0); // Comparing IDs
-                for (List<String> candOption : sameLabelOptions) {
-                    if (!lastValue.equals(candOption.get(0))) {
+                for (List<String> curOption : sameLabelOptions) {
+                    if (!lastValue.equals(curOption.get(0))) {
                         allTheSame = false;
                         break;
                     }
@@ -1117,12 +986,12 @@ public class DiskRepository extends WriteKBRepository {
                 } else {
                     Map<String, Integer> dsCount = new HashMap<String, Integer>();
 
-                    for (List<String> candOption : sameLabelOptions) {
-                        String curValue = candOption.get(0);
+                    for (List<String> curOption : sameLabelOptions) {
+                        String curValue = curOption.get(0);
 
-                        String dataSource = candOption.get(2);
+                        String dataSource = curOption.get(2);
                         Integer count = dsCount.containsKey(dataSource) ? dsCount.get(dataSource) : 0;
-                        String label = candOption.get(1) + " (" + dataSource
+                        String label = curOption.get(1) + " (" + dataSource
                                 + (count > 0 ? "_" + count.toString() : "") + ")";
                         dsCount.put(dataSource, (count + 1));
 
@@ -1353,7 +1222,7 @@ public class DiskRepository extends WriteKBRepository {
 
     public Map<LineOfInquiry, List<Map<String, String>>> getLOIByHypothesisId(String username, String id) {
         String hypuri = this.HYPURI(username) + "/" + id;
-        // LOIID -> [{ variable -> value }]
+        // LoiId -> [{ variable -> value }]
         Map<String, List<Map<String, String>>> allMatches = new HashMap<String, List<Map<String, String>>>();
         List<LineOfInquiry> lois = this.listLOIPreviews(username);
 
@@ -1398,12 +1267,12 @@ public class DiskRepository extends WriteKBRepository {
                                         cur.put(var, val);
                                     }
                                 }
-                                // If there is at least one variable binded, add to match list.
+                                // If there is at least one variable, add to match list.
                                 if (cur.size() > 0) {
-                                    String loiid = loi.getId().replaceAll("^.*\\/", "");
-                                    if (!allMatches.containsKey(loiid))
-                                        allMatches.put(loiid, new ArrayList<Map<String, String>>());
-                                    List<Map<String, String>> curList = allMatches.get(loiid);
+                                    String loiId = loi.getId().replaceAll("^.*\\/", "");
+                                    if (!allMatches.containsKey(loiId))
+                                        allMatches.put(loiId, new ArrayList<Map<String, String>>());
+                                    List<Map<String, String>> curList = allMatches.get(loiId);
                                     curList.add(cur);
                                 }
                             }
@@ -1485,8 +1354,8 @@ public class DiskRepository extends WriteKBRepository {
                 // Creating query
                 String dq = getQueryBindings(loi.getDataQuery(), varPattern, values);
                 String query = this.getAllPrefixes() + "SELECT DISTINCT ";
-                for (String qvar : loi.getAllWorkflowVariables())
-                    query += qvar + " ";
+                for (String qVar : loi.getAllWorkflowVariables())
+                    query += qVar + " ";
                 query += "{\n" + dq + "}";
 
                 // Prevents executing the same query several times.
@@ -1573,11 +1442,11 @@ public class DiskRepository extends WriteKBRepository {
             }
             List<TriggeredLOI> candidates = cache.get(parentLoiId);
             TriggeredLOI real = tloi;
-            for (TriggeredLOI cand : candidates) {
-                if (cand.toString().equals(tloi.toString())) {
+            for (TriggeredLOI cur : candidates) {
+                if (cur.toString().equals(tloi.toString())) {
                     // TODO: compare the hash of the input files
-                    System.out.println("Replaced " + tloi.getId() + " with " + cand.getId());
-                    real = cand;
+                    System.out.println("Replaced " + tloi.getId() + " with " + cur.getId());
+                    real = cur;
                     break;
                 }
             }
@@ -1607,69 +1476,69 @@ public class DiskRepository extends WriteKBRepository {
 
             List<Variable> allVars = methodAdapter.getWorkflowVariables(bindings.getWorkflow());
 
-            for (VariableBinding vbinding : bindings.getBindings()) { // Normal variable bindings.
+            for (VariableBinding vBinding : bindings.getBindings()) { // Normal variable bindings.
                 // For each Variable binding, check :
                 // - If this variable expects a collection or single values
                 // - Check the binding values on the data store
-                String binding = vbinding.getBinding();
+                String binding = vBinding.getBinding();
                 Matcher collmat = varCollPattern.matcher(binding);
                 Matcher mat = varPattern.matcher(binding);
 
                 // Get the sparql variable
                 boolean isCollection = false;
-                String sparqlvar = null;
+                String sparqlVar = null;
                 if (collmat.find() && dataVarBindings.containsKey(collmat.group(1))) {
-                    sparqlvar = collmat.group(1);
+                    sparqlVar = collmat.group(1);
                     isCollection = true;
                 } else if (mat.find() && dataVarBindings.containsKey(mat.group(1))) {
-                    sparqlvar = mat.group(1);
+                    sparqlVar = mat.group(1);
                 }
 
-                if (sparqlvar == null)
+                if (sparqlVar == null)
                     continue;
 
                 // Get the data bindings for the sparql variable
-                List<String> dsurls = dataVarBindings.get(sparqlvar);
+                List<String> dsUrls = dataVarBindings.get(sparqlVar);
 
                 // Checks if the bindings are input files.
                 boolean bindingsAreFiles = true;
-                for (String candurl : dsurls) {
-                    if (!candurl.startsWith("http")) {
+                for (String curUrl : dsUrls) {
+                    if (!curUrl.startsWith("http")) {
                         bindingsAreFiles = false;
                         break;
                     }
                 }
 
                 // Datasets names
-                List<String> dsnames = new ArrayList<String>();
+                List<String> dsNames = new ArrayList<String>();
 
                 if (bindingsAreFiles) {
-                    String varName = vbinding.getVariable();
+                    String varName = vBinding.getVariable();
                     String dType = null;
                     for (Variable v: allVars) {
                         if (varName.equals(v.getName())) {
                             List<String> classes = v.getType();
                             if (classes != null && classes.size() > 0) {
-                                dType = classes.contains(vbinding.getType()) ? vbinding.getType() : classes.get(0);
+                                dType = classes.contains(vBinding.getType()) ? vBinding.getType() : classes.get(0);
                             }
                         }
                     }
                     // TODO: this should be async
                     // Check hashes, create local name and upload data:
-                    Map<String, String> urlToName = addData(dsurls, methodAdapter, dataAdapter, dType);
-                    for (String dsurl : dsurls) {
-                        String dsname = urlToName.containsKey(dsurl) ? urlToName.get(dsurl)
-                                : dsurl.replaceAll("^.*\\/", "");
-                        dsnames.add(dsname);
+                    Map<String, String> urlToName = addData(dsUrls, methodAdapter, dataAdapter, dType);
+                    for (String dsUrl : dsUrls) {
+                        String dsName = urlToName.containsKey(dsUrl) ? urlToName.get(dsUrl)
+                                : dsUrl.replaceAll("^.*\\/", "");
+                        dsNames.add(dsName);
                     }
                 } else {
                     // If the binding is not a file, send the value with no quotes
-                    for (String value : dsurls) {
+                    for (String value : dsUrls) {
                         // Remove quotes from parameters
                         if (value.charAt(0) == '"' && value.charAt(value.length() - 1) == '"') {
                             value = value.substring(1, value.length() - 1);
                         }
-                        dsnames.add(value);
+                        dsNames.add(value);
                     }
                 }
 
@@ -1677,17 +1546,17 @@ public class DiskRepository extends WriteKBRepository {
                 if (isCollection) {
                     // This variable expects a collection. Modify the existing tloiBinding values,
                     // collections of non-files are send as comma separated values:
-                    tloiBinding.addBinding(new VariableBinding(vbinding.getVariable(), dsnames.toString()));
+                    tloiBinding.addBinding(new VariableBinding(vBinding.getVariable(), dsNames.toString()));
                 } else {
-                    if (dsnames.size() == 1) {
-                        tloiBinding.addBinding(new VariableBinding(vbinding.getVariable(), dsnames.get(0)));
+                    if (dsNames.size() == 1) {
+                        tloiBinding.addBinding(new VariableBinding(vBinding.getVariable(), dsNames.get(0)));
                     } else {
                         System.out.println("IS MORE THAN ONE VALUE BUT NOT COLLECTION!");
                         // This variable expects a single file. Add new tloi bindings for each dataset
                         List<WorkflowBindings> newTloiBindings = new ArrayList<WorkflowBindings>();
                         for (WorkflowBindings tmpBinding : tloiBindings) { // For all already processed workflow
                                                                            // bindings
-                            for (String dsname : dsnames) {
+                            for (String dsName : dsNames) {
                                 ArrayList<VariableBinding> newBindings = (ArrayList<VariableBinding>) SerializationUtils
                                         .clone((Serializable) tmpBinding.getBindings());
 
@@ -1695,7 +1564,7 @@ public class DiskRepository extends WriteKBRepository {
                                         bindings.getWorkflow(),
                                         bindings.getWorkflowLink(),
                                         newBindings);
-                                newWorkflowBindings.addBinding(new VariableBinding(vbinding.getVariable(), dsname));
+                                newWorkflowBindings.addBinding(new VariableBinding(vBinding.getVariable(), dsName));
                                 newWorkflowBindings.setMeta(bindings.getMeta());
                                 newWorkflowBindings.setSource(bindings.getSource());
                                 newTloiBindings.add(newWorkflowBindings);
@@ -1711,16 +1580,16 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     //This adds dsUrls to the data-repository, returns filename -> URL
-    private Map<String, String> addData(List<String> dsurls, MethodAdapter methodAdapter, DataAdapter dataAdapter, String dType)
+    private Map<String, String> addData(List<String> dsUrls, MethodAdapter methodAdapter, DataAdapter dataAdapter, String dType)
             throws Exception {
         // To add files to wings and not replace anything, we need to get the hash from the wiki.
         // TODO: here connect with minio.
         Map<String, String> nameToUrl = new HashMap<String, String>();
         Map<String, String> urlToName = new HashMap<String, String>();
-        Map<String, String> filesETag = dataAdapter.getFileHashesByETag(dsurls);  // File -> ETag
+        Map<String, String> filesETag = dataAdapter.getFileHashesByETag(dsUrls);  // File -> ETag
         boolean allOk = true; // All is OK if we have all file ETags.
 
-        for (String fileUrl: dsurls) {
+        for (String fileUrl: dsUrls) {
             if (filesETag.containsKey(fileUrl)) {
                 String eTag = filesETag.get(fileUrl);
                 // This name should be different now, this is not the SHA
@@ -1734,8 +1603,8 @@ public class DiskRepository extends WriteKBRepository {
         }
 
         if (!allOk) { // Get hashes from the data-adapter (SPARQL)
-            Map<String, String> hashes = dataAdapter.getFileHashes(dsurls); // File -> SHA1
-            for (String fileUrl : dsurls) {
+            Map<String, String> hashes = dataAdapter.getFileHashes(dsUrls); // File -> SHA1
+            for (String fileUrl : dsUrls) {
                 if (hashes.containsKey(fileUrl)) {
                     if (!urlToName.containsKey(fileUrl)) {
                         String hash = hashes.get(fileUrl);
@@ -1750,9 +1619,9 @@ public class DiskRepository extends WriteKBRepository {
         }
 
         // Show files with no hash and throw a exception.
-        for (String file : dsurls) {
+        for (String file : dsUrls) {
             if (!urlToName.containsKey(file)) {
-                //TODO: hadnle exception
+                //TODO: handle exception
                 System.err.println("Warning: file " + file + " does not contain any hash on " + dataAdapter.getName());
             }
         }
@@ -1773,19 +1642,19 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     public Boolean runAllHypotheses(String username) throws Exception {
-        List<String> hlist = new ArrayList<String>();
+        List<String> hList = new ArrayList<String>();
         String url = this.HYPURI(username);
         try {
             KBAPI kb = this.fac.getKB(url, OntSpec.PLAIN, true);
-            KBObject hypcls = DISKOnt.getClass(DISK.HYPOTHESIS);
+            KBObject hypCls = DISKOnt.getClass(DISK.HYPOTHESIS);
 
             this.start_read();
             KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
-            for (KBTriple t : kb.genericTripleQuery(null, typeprop, hypcls)) {
+            for (KBTriple t : kb.genericTripleQuery(null, typeprop, hypCls)) {
                 KBObject hypobj = t.getSubject();
                 String uri = hypobj.getID();
                 String[] sp = uri.split("/");
-                hlist.add(sp[sp.length - 1]);
+                hList.add(sp[sp.length - 1]);
                 System.out.println("Hyp ID: " + sp[sp.length - 1]);
             }
         } catch (ConcurrentModificationException e) {
@@ -1798,14 +1667,14 @@ public class DiskRepository extends WriteKBRepository {
             this.end();
         }
 
-        List<TriggeredLOI> tlist = new ArrayList<TriggeredLOI>();
+        List<TriggeredLOI> tList = new ArrayList<TriggeredLOI>();
 
-        for (String hid : hlist) {
-            tlist.addAll(queryHypothesis(username, hid));
+        for (String hid : hList) {
+            tList.addAll(queryHypothesis(username, hid));
         }
 
         // Only hypotheses with status == null are new
-        for (TriggeredLOI tloi : tlist) {
+        for (TriggeredLOI tloi : tList) {
             if (tloi.getStatus() == null) {
                 System.out.println("TLOI " + tloi.getId() + " will be trigger");
                 addTriggeredLOI(username, tloi);
@@ -1834,7 +1703,7 @@ public class DiskRepository extends WriteKBRepository {
                 return narratives;
             }
 
-            // Assuming each tloi only has a workflow or metaworkdflow:
+            // Assuming each tloi only has a workflow or metaworkflow:
             WorkflowBindings wf = null;
             List<WorkflowBindings> wfs = tloi.getWorkflows();
             List<WorkflowBindings> metaWfs = tloi.getMetaWorkflows();
@@ -1872,9 +1741,9 @@ public class DiskRepository extends WriteKBRepository {
                     dataset += "<td>" + (i + 1) + "</td>";
                     for (VariableBinding ds : wf.getBindings()) {
                         String[] bindings = ds.getBindingAsArray();
-                        String datas = bindings[i];
-                        String dataname = datas.replaceAll("^.*#", "").replaceAll("SHA\\w{6}_", "");
-                        String url = fileprefix + datas;
+                        String bindingData = bindings[i];
+                        String dataname = bindingData.replaceAll("^.*#", "").replaceAll("SHA\\w{6}_", "");
+                        String url = fileprefix + bindingData;
                         String anchor = "<a target=\"_blank\" href=\"" + url + "\">" + dataname + "</a>";
                         dataset += "<td>" + anchor + "</td>";
                     }
@@ -1886,9 +1755,9 @@ public class DiskRepository extends WriteKBRepository {
                 for (VariableBinding ds : wf.getBindings()) {
                     String binding = ds.getBinding();
                     if (binding.startsWith("[")) {
-                        for (String datas : ds.getBindingAsArray()) {
-                            String dataname = datas.replaceAll("^.*#", "").replaceAll("SHA\\w{6}_", "");
-                            String url = fileprefix + datas;
+                        for (String bindingData : ds.getBindingAsArray()) {
+                            String dataname = bindingData.replaceAll("^.*#", "").replaceAll("SHA\\w{6}_", "");
+                            String url = fileprefix + bindingData;
                             String anchor = "<a target=\"_blank\" href=\"" + url + "\">" + dataname + "</a>";
                             dataset += "<li>" + anchor + "</li>";
                         }
@@ -1909,7 +1778,7 @@ public class DiskRepository extends WriteKBRepository {
             // href="{WF.getWorkflowLink()}">workflow on WINGS</a>"
             // + " where it was tested with the following datasets:<div
             // class=\"data-list\"><ol> ${[WF.getInputFiles]}"
-            // + "</ol></div>The resulting p-value is $(tloi.pval).";
+            // + "</ol></div>The resulting p-value is $(tloi.pVal).";
             String execution = "The Hypothesis with title: <b>" + hyp.getName()
                     + "</b> was runned <span class=\"" + tloi.getStatus() + "\">"
                     + tloi.getStatus() + "</span>"
@@ -2013,11 +1882,11 @@ public class DiskRepository extends WriteKBRepository {
         return list;
     }
 
-    public List<TriggeredLOI> runHypothesisAndLOI(String username, String hypid, String loiid) throws Exception {
-        List<TriggeredLOI> hyptlois = queryHypothesis(username, hypid);
+    public List<TriggeredLOI> runHypothesisAndLOI(String username, String hypId, String loiId) throws Exception {
+        List<TriggeredLOI> hypTlois = queryHypothesis(username, hypId);
         // TriggeredLOI match = null;
-        for (TriggeredLOI tloi : hyptlois) {
-            if (tloi.getStatus() == null && tloi.getParentLoiId().equals(loiid)) {
+        for (TriggeredLOI tloi : hypTlois) {
+            if (tloi.getStatus() == null && tloi.getParentLoiId().equals(loiId)) {
                 // Set basic metadata
                 tloi.setAuthor("System");
                 Date date = new Date();
@@ -2028,7 +1897,7 @@ public class DiskRepository extends WriteKBRepository {
             }
         }
 
-        return getTLOIsForHypothesisAndLOI(username, hypid, loiid);
+        return getTLOIsForHypothesisAndLOI(username, hypId, loiId);
     }
 
     /*
@@ -2074,18 +1943,18 @@ public class DiskRepository extends WriteKBRepository {
 
                 List<WorkflowBindings> wflowBindings = this.metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows();
 
-                boolean allok = true;
+                boolean allOk = true;
                 // Start workflows from tloi
                 for (WorkflowBindings bindings : wflowBindings) {
                     MethodAdapter methodAdapter = getMethodAdapterByName(bindings.getSource());
                     if (methodAdapter == null) {
-                        allok = false;
+                        allOk = false;
                         break; // This could be `continue`, so to execute the other workflows...
                     }
                     // Get workflow input details
                     Map<String, Variable> inputs = methodAdapter.getWorkflowInputs(bindings.getWorkflow());
-                    List<VariableBinding> vbindings = bindings.getBindings();
-                    List<VariableBinding> sendbindings = new ArrayList<VariableBinding>(vbindings);
+                    List<VariableBinding> vBindings = bindings.getBindings();
+                    List<VariableBinding> sendbindings = new ArrayList<VariableBinding>(vBindings);
 
                     // Special processing for Meta Workflows
                     if (this.metamode) {
@@ -2094,28 +1963,28 @@ public class DiskRepository extends WriteKBRepository {
 
                     // Execute workflow
                     System.out.println("[R] Executing " + bindings.getWorkflow() + " with:");
-                    for (VariableBinding v : vbindings) {
+                    for (VariableBinding v : vBindings) {
                         String[] l = v.isCollection() ? v.getBindingAsArray() : null;
                         System.out.println("[R] - " + v.getVariable() + ": "
                                 + (l == null ? v.getBinding() : l[0] + " (" + l.length + ")"));
                     }
 
-                    String runid = methodAdapter.runWorkflow(bindings.getWorkflow(), sendbindings, inputs);
+                    String runId = methodAdapter.runWorkflow(bindings.getWorkflow(), sendbindings, inputs);
 
-                    if (runid != null) {
-                        System.out.println("[R] Run ID: " + runid);
-                        bindings.getRun().setId(runid);// .replaceAll("^.*#", ""));
+                    if (runId != null) {
+                        System.out.println("[R] Run ID: " + runId);
+                        bindings.getRun().setId(runId);// .replaceAll("^.*#", ""));
                     } else {
-                        allok = false;
+                        allOk = false;
                         System.out.println("[R] Error: Could not get run id");
                     }
                 }
 
-                tloi.setStatus(allok ? Status.RUNNING : Status.FAILED);
+                tloi.setStatus(allOk ? Status.RUNNING : Status.FAILED);
                 updateTriggeredLOI(username, tloi.getId(), tloi);
 
                 // Start monitoring
-                if (allok) {
+                if (allOk) {
                     TLOIMonitoringThread monitorThread = new TLOIMonitoringThread(username, tloi, metamode);
                     monitor.schedule(monitorThread, 15, TimeUnit.SECONDS);
                 } else {
@@ -2149,51 +2018,51 @@ public class DiskRepository extends WriteKBRepository {
                 int numSuccessful = 0;
                 int numFinished = 0;
                 for (WorkflowBindings bindings : wflowBindings) {
-                    String runid = bindings.getRun().getId();
+                    String runId = bindings.getRun().getId();
                     MethodAdapter methodAdapter = getMethodAdapterByName(bindings.getSource());
-                    if (runid == null) {
+                    if (runId == null) {
                         overallStatus = Status.FAILED;
                         numFinished++;
                         continue;
                     }
-                    String rname = runid.replaceAll("^.*#", "");
-                    WorkflowRun wstatus = methodAdapter.getRunStatus(rname);
-                    bindings.setRun(wstatus);
+                    String rName = runId.replaceAll("^.*#", "");
+                    WorkflowRun wStatus = methodAdapter.getRunStatus(rName);
+                    bindings.setRun(wStatus);
 
-                    if (wstatus.getStatus() == null || wstatus.getStatus().equals("FAILURE")) {
-                        if (wstatus.getStatus() == null)
-                            System.out.println("[E] Cannot get status for " + tloi.getId() + " - RUN " + rname);
+                    if (wStatus.getStatus() == null || wStatus.getStatus().equals("FAILURE")) {
+                        if (wStatus.getStatus() == null)
+                            System.out.println("[E] Cannot get status for " + tloi.getId() + " - RUN " + rName);
                         overallStatus = Status.FAILED;
                         numFinished++;
                         continue;
                     }
-                    if (wstatus.getStatus().equals("RUNNING")) {
+                    if (wStatus.getStatus().equals("RUNNING")) {
                         if (overallStatus != Status.FAILED)
                             overallStatus = Status.RUNNING;
                         continue;
                     }
-                    if (wstatus.getStatus().equals("SUCCESS")) {
+                    if (wStatus.getStatus().equals("SUCCESS")) {
                         numFinished++;
                         numSuccessful++;
 
                         // Search for p-value on the outputs
-                        Map<String, String> outputs = wstatus.getOutputs();
+                        Map<String, String> outputs = wStatus.getOutputs();
                         if (outputs != null) {
                             for (String outname : outputs.keySet()) {
                                 if (outname.equals("p_value") || outname.equals("pval") || outname.equals("p_val")) {
                                     String dataid = outputs.get(outname);
                                     byte[] byteConf = methodAdapter.fetchData(dataid);
                                     String wingsP = byteConf != null ? new String(byteConf, StandardCharsets.UTF_8) : null;
-                                    Double pval = null;
+                                    Double pVal = null;
                                     try {
                                         String strPVal = wingsP != null ? wingsP.split("\n",2)[0] : "";
-                                        pval = Double.valueOf(strPVal);
+                                        pVal = Double.valueOf(strPVal);
                                     } catch (Exception e) {
                                         System.err.println("[M] Error: " + dataid + " is a non valid p-value: " + wingsP);
                                     }
-                                    if (pval != null) {
-                                        System.out.println("[M] Detected p-value: " + pval);
-                                        tloi.setConfidenceValue(pval);
+                                    if (pVal != null) {
+                                        System.out.println("[M] Detected p-value: " + pVal);
+                                        tloi.setConfidenceValue(pVal);
                                         tloi.setConfidenceType("P-VALUE");
                                     }
                                 }

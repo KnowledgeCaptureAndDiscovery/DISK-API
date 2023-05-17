@@ -214,9 +214,9 @@ public interface DiskService {
   
   /* Get narratives for tloi id*/
   @GET
-  @Path("tloi/{tloiid}/narratives")
+  @Path("tloi/{tloiId}/narratives")
   public Map<String, String> getNarratives(
-      @PathParam("tloiid") String tloiid);
+      @PathParam("tloiId") String tloiId);
 
 
   @GET

@@ -152,7 +152,7 @@ public class GraphDBAdapter extends DataAdapter {
     }
 
     @Override
-    public Map<String, String> getFileHashes(List<String> dsurls) throws Exception {
+    public Map<String, String> getFileHashes(List<String> dsUrls) throws Exception {
         // TODO Auto-generated method stub
         return null;
     }

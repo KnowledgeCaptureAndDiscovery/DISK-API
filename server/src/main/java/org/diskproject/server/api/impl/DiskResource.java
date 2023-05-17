@@ -562,11 +562,11 @@ public class DiskResource implements DiskService {
   }
 
   @GET
-  @Path("tloi/{tloiid}/narratives")
+  @Path("tloi/{tloiId}/narratives")
   @Override
   public Map<String, String> getNarratives(
-      @PathParam("tloiid") String tloiid) {
-    return this.repo.getNarratives(USERNAME, tloiid);
+      @PathParam("tloiId") String tloiId) {
+    return this.repo.getNarratives(USERNAME, tloiId);
   }
 
   @POST

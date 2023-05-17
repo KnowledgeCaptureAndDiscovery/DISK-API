@@ -8,9 +8,9 @@ import java.util.regex.Pattern;
 import org.diskproject.shared.classes.util.KBConstants;
 
 public class TripleUtil {
-  private Map<String, String> nsmap;
+  private Map<String, String> nsMap;
   Pattern uriPattern = Pattern.compile("^<(.+)>$");
-  Pattern qnamePattern = Pattern.compile("^(\\w*):(.+)$");
+  Pattern qNamePattern = Pattern.compile("^(\\w*):(.+)$");
   Pattern typedLiteralPattern = Pattern.compile("\"(.+)\"\\^\\^(.+)");
   Pattern stringLiteralPattern = Pattern.compile("^\"(.+)\"$");
   Pattern boolLiteralPattern = Pattern.compile("^(true|false)$");
@@ -18,23 +18,23 @@ public class TripleUtil {
   Pattern floatLiteralPattern = Pattern.compile("^[\\d\\.]+$");
   
   public TripleUtil() {
-    nsmap = new HashMap<String, String>();
-    nsmap.put("rdf", KBConstants.RDF_NS);
-    nsmap.put("rdfs", KBConstants.RDFS_NS);
-    nsmap.put("owl", KBConstants.OWL_NS);
-    nsmap.put("xsd", KBConstants.XSD_NS);    
+    nsMap = new HashMap<String, String>();
+    nsMap.put("rdf", KBConstants.RDF_NS);
+    nsMap.put("rdfs", KBConstants.RDFS_NS);
+    nsMap.put("owl", KBConstants.OWL_NS);
+    nsMap.put("xsd", KBConstants.XSD_NS);    
 
   }
   
   public void addNamespacePrefix(String prefix, String ns) {
-    nsmap.put(prefix, ns);
+    nsMap.put(prefix, ns);
   }
   
   public Triple fromString(String tripleString) {
-    String[] tarr = tripleString.split("\\s+", 3);
-    String subject = this.getURIValue(tarr[0]);
-    String predicate = this.getURIValue(tarr[1]);
-    Value object = this.getObjectValue(tarr[2]);
+    String[] tArr = tripleString.split("\\s+", 3);
+    String subject = this.getURIValue(tArr[0]);
+    String predicate = this.getURIValue(tArr[1]);
+    Value object = this.getObjectValue(tArr[2]);
 
     if(subject != null && predicate != null && object != null) {
       Triple triple = new Triple();
@@ -46,30 +46,30 @@ public class TripleUtil {
     return null;
   }
   
-  private String getURIValue(String qname) {
-    if(qname.equals("a"))
-      return nsmap.get("rdf") + "type";
+  private String getURIValue(String qName) {
+    if(qName.equals("a"))
+      return nsMap.get("rdf") + "type";
     
-    Matcher m1 = uriPattern.matcher(qname);
+    Matcher m1 = uriPattern.matcher(qName);
     if(m1.find())
       return m1.group(1);
-    Matcher m2 = qnamePattern.matcher(qname);
+    Matcher m2 = qNamePattern.matcher(qName);
     if(m2.find()) {
-      if(this.nsmap.containsKey(m2.group(1)))
-        return this.nsmap.get(m2.group(1)) + m2.group(2);
+      if(this.nsMap.containsKey(m2.group(1)))
+        return this.nsMap.get(m2.group(1)) + m2.group(2);
     }
     
     return null;
   }
   
   private String getQName(String uri) {
-    if(uri.equals(nsmap.get("rdf") + "type"))
+    if(uri.equals(nsMap.get("rdf") + "type"))
       return "a";
     
-    for(String prefix: nsmap.keySet()) {
-      String nsuri = nsmap.get(prefix);
-      if(uri.startsWith(nsuri)) {
-        String lname = uri.substring(nsuri.length());
+    for(String prefix: nsMap.keySet()) {
+      String nsUri = nsMap.get(prefix);
+      if(uri.startsWith(nsUri)) {
+        String lname = uri.substring(nsUri.length());
         return prefix + ":" + lname;
       }
     }
@@ -89,9 +89,9 @@ public class TripleUtil {
   
   private Value getObjectValue(String literalstr) {
     // Check if the object is a URI
-    String urival = this.getURIValue(literalstr);
-    if(urival != null)
-      return new Value(urival);
+    String uriVal = this.getURIValue(literalstr);
+    if(uriVal != null)
+      return new Value(uriVal);
     
     // Check if the object is a typed literal example: "true"^^xsd:boolean
     Matcher m1 = typedLiteralPattern.matcher(literalstr);

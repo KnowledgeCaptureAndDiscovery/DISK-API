@@ -199,11 +199,11 @@ public class WingsAdapter extends MethodAdapter {
 			return subClasses;
 
 		String query = "SELECT ?sc WHERE {\n  ?sc <http://www.w3.org/2000/01/rdf-schema#subClassOf> <" + superClass + ">\n}";
-		String pageid = "sparql";
+		String pageId = "sparql";
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 		formdata.add(new BasicNameValuePair("query", query));
 		formdata.add(new BasicNameValuePair("format", "json"));
-		String resultjson = get(pageid, formdata);
+		String resultjson = get(pageId, formdata);
 		if (resultjson != null && !resultjson.equals("")) {
 			JsonObject result = null;
 			try {
@@ -236,10 +236,10 @@ public class WingsAdapter extends MethodAdapter {
 			KBObject execobj = kb.getIndividual(runid);
 			KBObject prop = kb.getProperty(executionNS + "hasExpandedTemplate");
 			KBObject xtpl = kb.getPropertyValue(execobj, prop);
-			String xtpluri = xtpl.getID().replaceAll("#.*", "");
+			String xtplUri = xtpl.getID().replaceAll("#.*", "");
 
 			Map<String, String> varmap = new HashMap<String, String>();
-			KBAPI xkb = fac.getKB(xtpluri, OntSpec.PLAIN);
+			KBAPI xkb = fac.getKB(xtplUri, OntSpec.PLAIN);
 			KBObject bindprop = xkb.getProperty(this.workflowNS + "hasDataBinding");
 
 			for (KBTriple triple : xkb.genericTripleQuery(null, bindprop, null)) {
@@ -256,13 +256,13 @@ public class WingsAdapter extends MethodAdapter {
 
 	@Override
 	public Map<String, Variable> getWorkflowInputs(String id) {
-		String pageid = "users/" + getUsername() + "/" + this.domain + "/workflows/getInputsJSON";
+		String pageId = "users/" + getUsername() + "/" + this.domain + "/workflows/getInputsJSON";
 
 		String wflowid = this.WFLOWID(id);
 		List<NameValuePair> data = new ArrayList<NameValuePair>();
 		data.add(new BasicNameValuePair("template_id", wflowid));
 
-		String inputsjson = this.get(pageid, data);
+		String inputsjson = this.get(pageId, data);
 
 		Type type = new TypeToken<List<Map<String, Object>>>() {
 		}.getType();
@@ -271,8 +271,8 @@ public class WingsAdapter extends MethodAdapter {
 		Map<String, Variable> inputs = new HashMap<String, Variable>();
 		for (Map<String, Object> inputitem : list) {
 			Variable var = new Variable();
-			String varid = (String) inputitem.get("id");
-			var.setName(varid.replaceAll("^.*#", ""));
+			String varId = (String) inputitem.get("id");
+			var.setName(varId.replaceAll("^.*#", ""));
 			if (inputitem.containsKey("dim"))
 				var.setDimensionality(((Double) inputitem.get("dim"))
 						.intValue());
@@ -334,16 +334,16 @@ public class WingsAdapter extends MethodAdapter {
 	public WorkflowRun getWorkflowRunStatus(String runid) {
 		try {
 			// Get data
-			String execid = RUNID(runid);
+			String execId = RUNID(runid);
 			List<NameValuePair> formdata = new ArrayList<NameValuePair>();
-			formdata.add(new BasicNameValuePair("run_id", execid));
-			String pageid = "users/" + getUsername() + "/" + this.domain + "/executions/getRunDetails";
-			String runjson = this.post(pageid, formdata);
+			formdata.add(new BasicNameValuePair("run_id", execId));
+			String pageId = "users/" + getUsername() + "/" + this.domain + "/executions/getRunDetails";
+			String runjson = this.post(pageId, formdata);
 			if (runjson == null)
 				return null;
 
-			WorkflowRun wflowstatus = new WorkflowRun();
-			wflowstatus.setId(execid);
+			WorkflowRun wflowStatus = new WorkflowRun();
+			wflowStatus.setId(execId);
 
 			JsonObject runobj = jsonParser.parse(runjson).getAsJsonObject();
 
@@ -371,9 +371,9 @@ public class WingsAdapter extends MethodAdapter {
 					for (JsonElement resp : outs) {
 						JsonObject outputObj = resp.getAsJsonObject();
 						JsonObject bindingObj = outputObj.get("binding").getAsJsonObject();
-						String outid = outputObj.get("derivedFrom").getAsString();
+						String outId = outputObj.get("derivedFrom").getAsString();
 						String binding = bindingObj.get("id").toString().replaceAll("\"", "");
-						String sp[] = outid.split("#");
+						String sp[] = outId.split("#");
 						outputs.put(sp[sp.length - 1], binding);
 					}
 				} catch (Exception e) {
@@ -388,7 +388,7 @@ public class WingsAdapter extends MethodAdapter {
 							String[] sp = id.split("#");
 							if (sp.length > 0) {
 								String name = sp[sp.length - 1];
-								wflowstatus.addFile(name, id);
+								wflowStatus.addFile(name, id);
 							}
 						}
 					}
@@ -401,23 +401,23 @@ public class WingsAdapter extends MethodAdapter {
 
 			// Creating link
 			String link = this.server + "/users/" + getUsername() + "/" + domain + "/executions";
-			link += "?run_id=" + URLEncoder.encode(execid, "UTF-8");
+			link += "?run_id=" + URLEncoder.encode(execId, "UTF-8");
 
-			wflowstatus.setStatus(status);
-			wflowstatus.setLink(link);
-			wflowstatus.setOutputs(outputs);
+			wflowStatus.setStatus(status);
+			wflowStatus.setLink(link);
+			wflowStatus.setOutputs(outputs);
 
 			Format formatter = new SimpleDateFormat("HH:mm:ss yyyy-MM-dd");
 
 			if (tsStart != null) {
 				Date dateStart = new Date(Long.parseLong(tsStart) * 1000);
-				wflowstatus.setStartDate(formatter.format(dateStart));
+				wflowStatus.setStartDate(formatter.format(dateStart));
 				System.out.println(" Start: " + tsStart + " " + dateStart.toString());
 			}
 
 			if (tsEnd != null) {
 				Date dateEnd = new Date(Long.parseLong(tsEnd) * 1000);
-				wflowstatus.setEndDate(formatter.format(dateEnd));
+				wflowStatus.setEndDate(formatter.format(dateEnd));
 				System.out.println(" End: " + tsEnd + " " + dateEnd.toString());
 			}
 
@@ -436,7 +436,7 @@ public class WingsAdapter extends MethodAdapter {
 				}
 			}
 
-			return wflowstatus;
+			return wflowStatus;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -444,7 +444,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	// TODO: Hackish function. Fix it !!!! *IMPORTANT*
-	private String getWorkflowRunWithSameBindings(String templateid, List<VariableBinding> vbindings) {
+	private String getWorkflowRunWithSameBindings(String templateId, List<VariableBinding> vBindings) {
 		// Get all successful runs for the template (and their variable
 		// bindings)
 		String query = "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n"
@@ -454,7 +454,7 @@ public class WingsAdapter extends MethodAdapter {
 				+ "SELECT ?run\n"
 				+ "(group_concat(concat(strafter(str(?iv), \"#\"), \"=\", str(?b));separator=\"||\") as ?bindings)  \n"
 				+ "WHERE {\n" + "  ?run a exec:Execution .\n"
-				+ "  ?run exec:hasTemplate <" + templateid + "> .\n"
+				+ "  ?run exec:hasTemplate <" + templateId + "> .\n"
 				+ "  ?run exec:hasExecutionStatus \"SUCCESS\"^^xsd:string .\n"
 				+ "\n" + "  ?run exec:hasExpandedTemplate ?xt .\n"
 				+ "  ?xt wflow:hasInputRole ?ir .\n"
@@ -463,34 +463,34 @@ public class WingsAdapter extends MethodAdapter {
 				+ "  OPTIONAL { ?iv wflow:hasParameterValue ?b } .\n" + "}\n"
 				+ "GROUP BY ?run";
 
-		String pageid = "sparql";
+		String pageId = "sparql";
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 		formdata.add(new BasicNameValuePair("query", query));
 		formdata.add(new BasicNameValuePair("format", "json"));
-		String resultjson = get(pageid, formdata);
+		String resultjson = get(pageId, formdata);
 		if (resultjson == null || resultjson.equals(""))
 			return null;
 
 		// Check the variable bindings to see if this matches the values that we
 		// have
 		JsonObject result = jsonParser.parse(resultjson).getAsJsonObject();
-		JsonArray qbindings = result.get("results").getAsJsonObject()
+		JsonArray qBindings = result.get("results").getAsJsonObject()
 				.get("bindings").getAsJsonArray();
 
-		for (JsonElement qbinding : qbindings) {
-			JsonObject qb = qbinding.getAsJsonObject();
+		for (JsonElement qBinding : qBindings) {
+			JsonObject qb = qBinding.getAsJsonObject();
 			if (qb.get("run") == null)
 				continue;
 			String runid = qb.get("run").getAsJsonObject().get("value")
 					.getAsString();
-			String bindstrs = qb.get("bindings").getAsJsonObject().get("value")
+			String bindStrList = qb.get("bindings").getAsJsonObject().get("value")
 					.getAsString();
 			HashMap<String, String> keyvalues = new HashMap<String, String>();
-			for (String bindstr : bindstrs.split("\\|\\|")) {
+			for (String bindstr : bindStrList.split("\\|\\|")) {
 				String[] keyval = bindstr.split("=", 2);
-				String varid = keyval[0];
+				String varId = keyval[0];
 				String value = keyval[1];
-				keyvalues.put(varid, value);
+				keyvalues.put(varId, value);
 			}
 			String[] array = keyvalues.keySet().toArray(new String[keyvalues.keySet().size()]);
 			for (String key : array) {
@@ -506,19 +506,19 @@ public class WingsAdapter extends MethodAdapter {
 				}
 			}
 			boolean match = true;
-			for (VariableBinding vbinding : vbindings) {
-				String value = keyvalues.get(vbinding.getVariable());
+			for (VariableBinding vBinding : vBindings) {
+				String value = keyvalues.get(vBinding.getVariable());
 
 				if (value == null) {
 					match = false;
 					break;
 				}
 				String[] tempValues = value.split(",");
-				String[] vbindingValues = vbinding.getBinding().split(",");
-				for (int i = 0; i < vbindingValues.length; i++) {
+				String[] vBindingValues = vBinding.getBinding().split(",");
+				for (int i = 0; i < vBindingValues.length; i++) {
 					boolean singleMatch = false;
 					for (int j = 0; j < tempValues.length; j++) {
-						if (vbindingValues[i].equals(tempValues[j]
+						if (vBindingValues[i].equals(tempValues[j]
 								.substring(tempValues[j].indexOf("#") + 1))) {
 							singleMatch = true;
 							break;
@@ -549,13 +549,13 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public String runWorkflow(String wflowname, List<VariableBinding> vbindings, Map<String, Variable> inputVariables) {
-		wflowname = WFLOWID(wflowname);
+	public String runWorkflow(String workflowName, List<VariableBinding> vBindings, Map<String, Variable> inputVariables) {
+		workflowName = WFLOWID(workflowName);
 		String toPost = null, getData = null, getParams = null, getExpansions = null;
 		JsonObject response = null;
 		try {
 			// GET DATA is suggest data on WINGS, this can add inputs, I'm not sure is necessary.
-			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			toPost = toPlanAcceptableFormat(workflowName, vBindings, inputVariables);
 			getData = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/plan/getData",
 					toPost, "application/json", "application/json");
 
@@ -580,8 +580,8 @@ public class WingsAdapter extends MethodAdapter {
 		
 		try {
 			// GET PARAMETERS is suggest parameters in WINGS, this adds the default parameters.
-			vbindings = addDataBindings(inputVariables, vbindings, getData, false);
-			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			vBindings = addDataBindings(inputVariables, vBindings, getData, false);
+			toPost = toPlanAcceptableFormat(workflowName, vBindings, inputVariables);
 			getParams = postWithSpecifiedMediaType(
 					"users/" + getUsername() + "/" + domain + "/plan/getParameters",
 					toPost, "application/json", "application/json");
@@ -602,8 +602,8 @@ public class WingsAdapter extends MethodAdapter {
 
 		//At this point we could use /expandAndRunWorkflow
 		try {
-			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
-			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			vBindings = addDataBindings(inputVariables, vBindings, getParams, true);
+			toPost = toPlanAcceptableFormat(workflowName, vBindings, inputVariables);
 
 			String expandAndRun = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/executions/expandAndRunWorkflow",
 					toPost, "application/json", "application/json");
@@ -621,14 +621,14 @@ public class WingsAdapter extends MethodAdapter {
 		}
 
 		try {
-			vbindings = addDataBindings(inputVariables, vbindings, getParams, true);
-			toPost = toPlanAcceptableFormat(wflowname, vbindings, inputVariables);
+			vBindings = addDataBindings(inputVariables, vBindings, getParams, true);
+			toPost = toPlanAcceptableFormat(workflowName, vBindings, inputVariables);
 
 			// TODO: This should be called after getting expanded workflow.
 			// - Create mapping data from expanded workflow, and then check.
 			// - *NEEDED* to handle collections properly
 
-			String runid = getWorkflowRunWithSameBindings(wflowname, vbindings);
+			String runid = getWorkflowRunWithSameBindings(workflowName, vBindings);
 			if (runid != null) {
 				System.out.println("Found existing run : " + runid);
 				return runid;
@@ -678,19 +678,13 @@ public class WingsAdapter extends MethodAdapter {
 
 		// Run the first Expanded workflow
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
-		formdata.add(new BasicNameValuePair("template_id", wflowname));
+		formdata.add(new BasicNameValuePair("template_id", workflowName));
 		formdata.add(new BasicNameValuePair("json", jsonTemplate));
 		formdata.add(new BasicNameValuePair("constraints_json", jsonConstraints));
 		formdata.add(new BasicNameValuePair("seed_json", jsonSeed));
 		formdata.add(new BasicNameValuePair("seed_constraints_json", jsonSeedConstraints));
-		String pageid = "users/" + getUsername() + "/" + domain + "/executions/runWorkflow";
-		//System.out.println(pageid);
-		//System.out.println(formdata);
-		return post(pageid, formdata);
-		//} catch (Exception e) {
-		//	e.printStackTrace();
-		//}
-		//return null;
+		String pageId = "users/" + getUsername() + "/" + domain + "/executions/runWorkflow";
+		return post(pageId, formdata);
 	}
 
 	public byte[] fetchDataFromWings(String dataid) {
@@ -710,9 +704,9 @@ public class WingsAdapter extends MethodAdapter {
 			CloseableHttpResponse httpResponse = client.execute(securedResource);
 			try {
 				HttpEntity responseEntity = httpResponse.getEntity();
-				ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
-    			responseEntity.writeTo(baos);
-				bytes = baos.toByteArray();
+				ByteArrayOutputStream rawBits = new ByteArrayOutputStream(); 
+    			responseEntity.writeTo(rawBits);
+				bytes = rawBits.toByteArray();
 				EntityUtils.consume(responseEntity);
 				httpResponse.close();
 			} catch (Exception e) {
@@ -899,9 +893,9 @@ public class WingsAdapter extends MethodAdapter {
 			CloseableHttpResponse httpResponse = client.execute(securedResource);
 			try {
 				HttpEntity responseEntity = httpResponse.getEntity();
-				ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
-    			responseEntity.writeTo(baos);
-				bytes = baos.toByteArray();
+				ByteArrayOutputStream rawBits = new ByteArrayOutputStream(); 
+    			responseEntity.writeTo(rawBits);
+				bytes = rawBits.toByteArray();
 				EntityUtils.consume(responseEntity);
 				httpResponse.close();
 			} catch (Exception e) {
@@ -956,7 +950,7 @@ public class WingsAdapter extends MethodAdapter {
 					i = 0;
 				}
 			}
-			if (i != 0) { // That means the last one wasnt added yet
+			if (i != 0) { // That means the last one was not added yet
 				grouped.add(cur);
 			}
 		}
@@ -968,11 +962,11 @@ public class WingsAdapter extends MethodAdapter {
 			query += queryEnd;
 
 			// Doing the query
-			String pageid = "sparql";
+			String pageId = "sparql";
 			List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 			formdata.add(new BasicNameValuePair("query", query));
 			formdata.add(new BasicNameValuePair("format", "json"));
-			String resultjson = get(pageid, formdata);
+			String resultjson = get(pageId, formdata);
 			if (resultjson == null || resultjson.equals(""))
 				return returnValue;
 
@@ -985,10 +979,10 @@ public class WingsAdapter extends MethodAdapter {
 			}
 
 			if (result != null) {
-				JsonArray qbindings = result.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
+				JsonArray qBindings = result.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
 
-				for (JsonElement qbinding : qbindings) {
-					JsonObject qb = qbinding.getAsJsonObject();
+				for (JsonElement qBinding : qBindings) {
+					JsonObject qb = qBinding.getAsJsonObject();
 					if (qb.get("value") == null)
 						continue;
 					String fileurl = qb.get("value").getAsJsonObject().get("value").getAsString();
@@ -1014,19 +1008,19 @@ public class WingsAdapter extends MethodAdapter {
 				+ "  <" + wingsid + "> ?prop <" + filetype + "> .\n"
 				+ "\n}";
 
-		String pageid = "sparql";
+		String pageId = "sparql";
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 		formdata.add(new BasicNameValuePair("query", query));
 		formdata.add(new BasicNameValuePair("format", "json"));
-		String resultjson = get(pageid, formdata);
+		String resultjson = get(pageId, formdata);
 		if (resultjson == null || resultjson.equals(""))
 			return false;
 
 		JsonObject result = jsonParser.parse(resultjson).getAsJsonObject();
-		JsonArray qbindings = result.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
+		JsonArray qBindings = result.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
 
-		for (JsonElement qbinding : qbindings) {
-			JsonObject qb = qbinding.getAsJsonObject();
+		for (JsonElement qBinding : qBindings) {
+			JsonObject qb = qBinding.getAsJsonObject();
 			if (qb.get("prop") == null)
 				continue;
 			return true;
@@ -1034,11 +1028,11 @@ public class WingsAdapter extends MethodAdapter {
 		return false;
 	}
 
-	private String get(String pageid, List<NameValuePair> data) {
+	private String get(String pageId, List<NameValuePair> data) {
 		this.login();
 		CloseableHttpClient client = HttpClientBuilder.create().setDefaultCookieStore(this.cookieStore).build();
 		try {
-			String url = this.server + "/" + pageid;
+			String url = this.server + "/" + pageId;
 			if (data != null && data.size() > 0) {
 				url += "?" + URLEncodedUtils.format(data, "UTF-8");
 			}
@@ -1097,9 +1091,9 @@ public class WingsAdapter extends MethodAdapter {
 				// If Parameter, the entries aren't arrays
 				obj = el.getAsJsonObject();
 			} else {
-				JsonArray ellist = el.getAsJsonArray();
-				if (ellist.size() > 0) {
-					obj = ellist.get(0).getAsJsonObject();
+				JsonArray elList = el.getAsJsonArray();
+				if (elList.size() > 0) {
+					obj = elList.get(0).getAsJsonObject();
 				}
 			}
 			if (obj != null)
@@ -1155,13 +1149,13 @@ public class WingsAdapter extends MethodAdapter {
 		return vbl;
 	}
 
-	private String toPlanAcceptableFormat(String wfname, List<VariableBinding> vbl, Map<String, Variable> ivm) {
+	private String toPlanAcceptableFormat(String wfName, List<VariableBinding> vbl, Map<String, Variable> ivm) {
 		// We are creating a json here, should be a better way to do it.
 		String output = "";
 
 		// Set Template ID first
-		output += "{\"templateId\":\"" + wfname + "\",";
-		wfname = wfname.substring(0, wfname.lastIndexOf("#") + 1);
+		output += "{\"templateId\":\"" + wfName + "\",";
+		wfName = wfName.substring(0, wfName.lastIndexOf("#") + 1);
 
 		// Set Component Bindings
 		output += "\"componentBindings\": {},";
@@ -1173,7 +1167,7 @@ public class WingsAdapter extends MethodAdapter {
 			if (var.isParam()) {
 				List<String> types = var.getType();
 				String type = types != null && types.size() > 0 ? types.get(0) : KBConstants.XSD_NS + "string";
-				paramTypes += "\"" + wfname + key + "\":\"" + type + "\",";
+				paramTypes += "\"" + wfName + key + "\":\"" + type + "\",";
 			}
 		}
 		if (paramTypes.length() > 0)
@@ -1192,7 +1186,7 @@ public class WingsAdapter extends MethodAdapter {
 			for (int i = 0; i < vbl.size(); i++) {
 				VariableBinding vb = vbl.get(i);
 				if (vb.getVariable().equals(v.getName())) {
-					String curBinding = "\"" + wfname + v.getName() + "\":[";
+					String curBinding = "\"" + wfName + v.getName() + "\":[";
 					if (v.getDimensionality() ==  0) {
 						curBinding += "\"" + vb.getBinding() + "\"";
 					} else {
@@ -1226,12 +1220,12 @@ public class WingsAdapter extends MethodAdapter {
 		return output;
 	}
 
-	private String postWithSpecifiedMediaType(String pageid, String data, String type, String type2) {
+	private String postWithSpecifiedMediaType(String pageId, String data, String type, String type2) {
 		this.login();
 		CloseableHttpClient client = HttpClientBuilder.create()
 				.setDefaultCookieStore(this.cookieStore).build();
 		try {
-			HttpPost securedResource = new HttpPost(server + "/" + pageid);
+			HttpPost securedResource = new HttpPost(server + "/" + pageId);
 			securedResource.setEntity(new StringEntity(data));
 			securedResource.addHeader("Accept", type);
 			securedResource.addHeader("Content-type", type2);
@@ -1247,7 +1241,7 @@ public class WingsAdapter extends MethodAdapter {
 				httpResponse.close();
 			}
 		} catch (Exception e) {
-			System.out.println("POST: " + pageid);
+			System.out.println("POST: " + pageId);
 			System.out.println("DATA: " + data);
 			e.printStackTrace();
 		} finally {
@@ -1259,13 +1253,13 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
-	private String post(String pageid, List<NameValuePair> data) {
+	private String post(String pageId, List<NameValuePair> data) {
 		this.login();
 		CloseableHttpClient client = HttpClientBuilder.create()
 				.setDefaultCookieStore(this.cookieStore).build();
 
 		try {
-			HttpPost securedResource = new HttpPost(this.server + "/" + pageid);
+			HttpPost securedResource = new HttpPost(this.server + "/" + pageId);
 			securedResource.setEntity(new UrlEncodedFormEntity(data));
 			CloseableHttpResponse httpResponse = client
 					.execute(securedResource);
@@ -1288,12 +1282,12 @@ public class WingsAdapter extends MethodAdapter {
 		return null;
 	}
 
-	private String upload(String pageid, String type, File file) {
+	private String upload(String pageId, String type, File file) {
 		this.login();
 		CloseableHttpClient client = HttpClientBuilder.create()
 				.setDefaultCookieStore(this.cookieStore).build();
 		try {
-			HttpPost post = new HttpPost(this.server + "/" + pageid);
+			HttpPost post = new HttpPost(this.server + "/" + pageId);
 			MultipartEntityBuilder builder = MultipartEntityBuilder.create();
 			builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 			builder.addTextBody("name", file.getName());
@@ -1328,13 +1322,13 @@ public class WingsAdapter extends MethodAdapter {
 			System.out.print("AUTHENTICATED ON WINGS: " + this.server + "... ");
 			OntFactory fac = new OntFactory(OntFactory.JENA);
 
-			String liburi = this.WFLOWURI() + "/library.owl";
+			String libUri = this.WFLOWURI() + "/library.owl";
 			try {
-				fac.getKB(liburi, OntSpec.PLAIN);
+				fac.getKB(libUri, OntSpec.PLAIN);
 				System.out.print("OK\n");
 				return true;
 			} catch (Exception e) {
-				System.err.print("\nERROR: WINGS adapter could not open KB: " + liburi);
+				System.err.print("\nERROR: WINGS adapter could not open KB: " + libUri);
 				return false;
 			}
 		} else {

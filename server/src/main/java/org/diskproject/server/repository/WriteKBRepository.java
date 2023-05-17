@@ -109,17 +109,17 @@ public class WriteKBRepository extends KBRepository {
     private void storeTripleDetails(Triple triple, String provId, KBAPI provKB) {
         //TripleDetails details = triple.getDetails();
         //if (details != null) {
-        //    KBObject stobj = provKB.getResource(provId + "#" + GUID.randomId("Statement"));
-        //    this.setKBStatement(triple, provKB, stobj);
+        //    KBObject stObj = provKB.getResource(provId + "#" + GUID.randomId("Statement"));
+        //    this.setKBStatement(triple, provKB, stObj);
 
         //    if (details.getConfidenceValue() > 0)
-        //        provKB.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE),
+        //        provKB.setPropertyValue(stObj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE),
         //                provKB.createLiteral(triple.getDetails().getConfidenceValue()));
         //    if (details.getConfidenceType() != null)
-        //        provKB.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE),
+        //        provKB.setPropertyValue(stObj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE),
         //                provKB.createLiteral(triple.getDetails().getConfidenceType()));
         //    if (details.getTriggeredLOI() != null)
-        //        provKB.setPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_TLOI),
+        //        provKB.setPropertyValue(stObj, DISKOnt.getProperty(DISK.HAS_TLOI),
         //                provKB.getResource(triple.getDetails().getTriggeredLOI()));
         //}
     }
@@ -134,24 +134,24 @@ public class WriteKBRepository extends KBRepository {
         KBObject objprop = provKB.getProperty(KBConstants.RDF_NS + "object");
 
         for (KBTriple kbt : provKB.genericTripleQuery(null, subprop, null)) {
-            KBObject stobj = kbt.getSubject();
-            KBObject subjobj = kbt.getObject();
-            KBObject predobj = provKB.getPropertyValue(stobj, predprop);
-            KBObject objobj = provKB.getPropertyValue(stobj, objprop);
+            KBObject stObj = kbt.getSubject();
+            KBObject subjObj = kbt.getObject();
+            KBObject predObj = provKB.getPropertyValue(stObj, predprop);
+            KBObject objObj = provKB.getPropertyValue(stObj, objprop);
 
-            Value value = this.getObjectValue(objobj);
+            Value value = this.getObjectValue(objObj);
             Triple triple = new Triple();
-            triple.setSubject(subjobj.getID());
-            triple.setPredicate(predobj.getID());
+            triple.setSubject(subjObj.getID());
+            triple.setPredicate(predObj.getID());
             triple.setObject(value);
 
             String triplestr = triple.toString();
             if (tripleMap.containsKey(triplestr)) {
                 Triple t = tripleMap.get(triplestr);
 
-                KBObject conf = provKB.getPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE));
-                KBObject confidenceType = provKB.getPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE));
-                KBObject tloi = provKB.getPropertyValue(stobj, DISKOnt.getProperty(DISK.HAS_TLOI));
+                KBObject conf = provKB.getPropertyValue(stObj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE));
+                KBObject confidenceType = provKB.getPropertyValue(stObj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE));
+                KBObject tloi = provKB.getPropertyValue(stObj, DISKOnt.getProperty(DISK.HAS_TLOI));
 
                 TripleDetails details = new TripleDetails();
                 if (conf != null && conf.getValue() != null)
@@ -820,9 +820,9 @@ public class WriteKBRepository extends KBRepository {
             if (parentHypObj != null)
                 tloi.setParentHypothesisId(parentHypObj.getName());
 
-            KBObject stobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_TLOI_STATUS));
-            if (stobj != null)
-                tloi.setStatus(Status.valueOf(stobj.getValue().toString()));
+            KBObject stObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_TLOI_STATUS));
+            if (stObj != null)
+                tloi.setStatus(Status.valueOf(stObj.getValue().toString()));
 
             KBObject notesObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES));
             if (notesObj != null)

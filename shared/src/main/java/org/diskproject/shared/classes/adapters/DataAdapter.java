@@ -78,10 +78,10 @@ public abstract class DataAdapter {
     public abstract List<DataResult> queryOptions (String varname, String constraintQuery) throws Exception;
 
     // file -> hash
-    public abstract Map<String, String> getFileHashes (List<String> dsurls) throws Exception;
+    public abstract Map<String, String> getFileHashes (List<String> dsUrls) throws Exception;
 
     // Test connection with source
     public abstract boolean ping ();
     
-    public abstract Map<String,String> getFileHashesByETag(List<String> dsurls) throws Exception;
+    public abstract Map<String,String> getFileHashesByETag(List<String> dsUrls) throws Exception;
 }
