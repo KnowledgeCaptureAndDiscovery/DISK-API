@@ -6,7 +6,6 @@ public class QuestionCategory {
     public QuestionCategory (String id, String name) {
         this.id = id;
         this.name = name;
-
     }
 
     public String getId() {

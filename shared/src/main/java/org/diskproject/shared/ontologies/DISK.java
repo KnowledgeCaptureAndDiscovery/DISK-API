@@ -7,6 +7,7 @@ public class DISK {
     public static final String TLOI = "TriggeredLineOfInquiry";
     public static final String VARIABLE_BINDING = "VariableBinding";
     public static final String WORKFLOW_BINDING = "WorkflowBinding";
+    public static final String WORKFLOW_RUN = "http://www.wings-workflows.org/ontology/execution.owl#Execution";
     //Properties
     public static final String HAS_CONFIDENCE_VALUE = "hasConfidenceValue";
     public static final String HAS_CONFIDENCE_TYPE = "hasConfidenceType";
@@ -35,6 +36,7 @@ public class DISK {
     //public static final String HAS_RESULTING_HYPOTHESIS = "hasResultingHypothesis";
 
     public static final String HAS_WORKFLOW_BINDING = "hasWorkflowBinding";
+    public static final String HAS_WORKFLOW_RUN = "hasExecution";
     public static final String HAS_METAWORKFLOW_BINDING = "hasMetaWorkflowBinding";
 
     public static final String HAS_WORKFLOW = "hasWorkflow";

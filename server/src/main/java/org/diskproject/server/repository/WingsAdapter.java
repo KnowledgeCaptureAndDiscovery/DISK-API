@@ -549,7 +549,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public String runWorkflow(String workflowName, List<VariableBinding> vBindings, Map<String, Variable> inputVariables) {
+	public List<String> runWorkflow(String workflowName, List<VariableBinding> vBindings, Map<String, Variable> inputVariables) {
 		workflowName = WFLOWID(workflowName);
 		String toPost = null, getData = null, getParams = null, getExpansions = null;
 		JsonObject response = null;
@@ -608,12 +608,13 @@ public class WingsAdapter extends MethodAdapter {
 			String expandAndRun = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/executions/expandAndRunWorkflow",
 					toPost, "application/json", "application/json");
 
-			System.out.println("\n");
-			System.out.println(expandAndRun);
-			System.out.println("##########");
-
 			if (expandAndRun != null && expandAndRun.length() > 0) {
-				return expandAndRun;
+				List<String> l = new ArrayList<String>();
+				String[] uris = expandAndRun.substring(2, expandAndRun.length()-2).split("\",\"");
+				for (String uri: uris) {
+					l.add(uri);
+				}
+				return l;
 			}
 		} catch (Exception e) {
 			System.err.println("Error expanding and running " + e.getMessage());
@@ -631,7 +632,9 @@ public class WingsAdapter extends MethodAdapter {
 			String runid = getWorkflowRunWithSameBindings(workflowName, vBindings);
 			if (runid != null) {
 				System.out.println("Found existing run : " + runid);
-				return runid;
+				List<String> l = new ArrayList<String>(); 
+				l.add(runid);
+				return l;
 			}
 			getExpansions = postWithSpecifiedMediaType("users/" + getUsername() + "/" + domain + "/plan/getExpansions",
 					toPost, "application/json", "application/json");
@@ -684,7 +687,10 @@ public class WingsAdapter extends MethodAdapter {
 		formdata.add(new BasicNameValuePair("seed_json", jsonSeed));
 		formdata.add(new BasicNameValuePair("seed_constraints_json", jsonSeedConstraints));
 		String pageId = "users/" + getUsername() + "/" + domain + "/executions/runWorkflow";
-		return post(pageId, formdata);
+		List<String> l = new ArrayList<String>(); 
+		String runid = post(pageId, formdata);
+		l.add(runid);
+		return l;
 	}
 
 	public byte[] fetchDataFromWings(String dataid) {
@@ -1187,10 +1193,14 @@ public class WingsAdapter extends MethodAdapter {
 				VariableBinding vb = vbl.get(i);
 				if (vb.getVariable().equals(v.getName())) {
 					String curBinding = "\"" + wfName + v.getName() + "\":[";
-					if (v.getDimensionality() ==  0) {
-						curBinding += "\"" + vb.getBinding() + "\"";
+					String bindingValue = vb.getBinding();
+					if (v.getDimensionality() ==  0 && !bindingValue.startsWith("[")) {
+						curBinding += "\"" + bindingValue + "\"";
 					} else {
-						String[] dBs = vb.getBinding()
+						if (v.getDimensionality() == 0) {
+							System.err.println("WARNING: Variable " + v.getName() + " has dimensionality 0 but the binding is an array");
+						}
+						String[] dBs = bindingValue
 								.replaceFirst("^\\[", "")
 								.replaceFirst("\\]$", "")
 								.split("\\s*,\\s*");

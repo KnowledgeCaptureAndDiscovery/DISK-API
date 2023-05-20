@@ -69,9 +69,19 @@ public class GraphDBAdapter extends DataAdapter {
     }
 
     public List<DataResult> getDataResultFromJsonString (String jsonString) {
-        JsonObject json = (JsonObject) jsonParser.parse(jsonString);
-        JsonArray variables = json.get("head").getAsJsonObject().get("vars").getAsJsonArray();
-        JsonArray bindings = json.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
+        JsonArray variables = null;
+        JsonArray bindings = null;
+        try {
+            JsonObject json = (JsonObject) jsonParser.parse(jsonString);
+            variables = json.get("head").getAsJsonObject().get("vars").getAsJsonArray();
+            bindings = json.get("results").getAsJsonObject().get("bindings").getAsJsonArray();
+        } catch (Exception e) {
+            System.out.println("Error decoding data results:");
+            System.out.println(jsonString);
+        }
+        if (variables == null || bindings == null) {
+            return new ArrayList<DataResult>();
+        }
 
         List<DataResult> results = new ArrayList<DataResult>();
 

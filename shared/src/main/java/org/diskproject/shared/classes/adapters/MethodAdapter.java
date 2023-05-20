@@ -83,7 +83,7 @@ public abstract class MethodAdapter {
 
 	public abstract Map<String, Variable> getWorkflowInputs (String id);
 
-	public abstract String runWorkflow (String wfId, List<VariableBinding> vBindings, Map<String, Variable> inputVariables);
+	public abstract List<String> runWorkflow (String wfId, List<VariableBinding> vBindings, Map<String, Variable> inputVariables);
 
 	public abstract WorkflowRun getRunStatus (String runId);
 

@@ -105,7 +105,7 @@ public class AirFlowAdapter extends MethodAdapter {
     }
 
     @Override
-    public String runWorkflow(String wfId, List<VariableBinding> vBindings, Map<String, Variable> inputVariables) {
+    public List<String> runWorkflow(String wfId, List<VariableBinding> vBindings, Map<String, Variable> inputVariables) {
         // Auto-generated method stub
         return null;
     }

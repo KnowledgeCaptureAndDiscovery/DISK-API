@@ -4,6 +4,7 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -920,22 +921,24 @@ public class WriteKBRepository extends KBRepository {
                     userKB.setComment(bindingobj, description);
 
                 // Get Run details
-                WorkflowRun run = bindings.getRun();
-                if (run != null) {
+                for (WorkflowRun run: bindings.getRuns().values()) {
+                    KBObject newRunObj = userKB.createObjectOfClass(null, userKB.getResource(DISK.WORKFLOW_RUN)); //TODO: this is not on the ontology?
+                    userKB.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_WORKFLOW_RUN) , newRunObj);
+
                     if (run.getId() != null)
-                        userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_ID),
+                        userKB.setPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_ID),
                                 userKB.createLiteral(run.getId()));
                     if (run.getStatus() != null)
-                        userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_STATUS),
+                        userKB.setPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_STATUS),
                                 userKB.createLiteral(run.getStatus()));
                     if (run.getLink() != null)
-                        userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_RUN_LINK),
+                        userKB.setPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_RUN_LINK),
                                 userKB.createLiteral(run.getLink()));
                     if (run.getStartDate() != null)
-                        userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_RUN_START_DATE),
+                        userKB.setPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_RUN_START_DATE),
                                 userKB.createLiteral(run.getStartDate()));
                     if (run.getEndDate() != null)
-                        userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_RUN_END_DATE),
+                        userKB.setPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_RUN_END_DATE),
                                 userKB.createLiteral(run.getEndDate()));
 
                     // Input Files
@@ -949,7 +952,7 @@ public class WriteKBRepository extends KBRepository {
                                     userKB.getResource(workflowuri + "#" + name.replaceAll(" ", "_")));
                             userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE),
                                     userKB.createLiteral(url));
-                            userKB.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_INPUT_FILE), fileBinding);
+                            userKB.addPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_INPUT_FILE), fileBinding);
                         }
 
                     // Output Files
@@ -963,8 +966,9 @@ public class WriteKBRepository extends KBRepository {
                                     userKB.getResource(workflowuri + "#" + name.replaceAll(" ", "_")));
                             userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE),
                                     userKB.createLiteral(url));
-                            userKB.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE), fileBinding);
+                            userKB.addPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE), fileBinding);
                         }
+
                 }
 
                 // Creating workflow data bindings
@@ -1042,38 +1046,44 @@ public class WriteKBRepository extends KBRepository {
                 if (description != null)
                     bindings.setDescription(description);
 
-                // Workflow Run details
-                WorkflowRun run = new WorkflowRun();
-                KBObject runIdObj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_ID));
-                if (runIdObj != null)
-                    run.setId(runIdObj.getValue().toString());
-                KBObject statusObj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_STATUS));
-                if (statusObj != null)
-                    run.setStatus(statusObj.getValue().toString());
-                KBObject linkObj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_RUN_LINK));
-                if (linkObj != null)
-                    run.setLink(linkObj.getValue().toString());
-                KBObject runStartObj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_RUN_START_DATE));
-                if (runStartObj != null)
-                    run.setStartDate(runStartObj.getValue().toString());
-                KBObject runEndObj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_RUN_END_DATE));
-                if (runEndObj != null)
-                    run.setEndDate(runEndObj.getValue().toString());
+                List<KBObject> runObjs = kb.getPropertyValues(wbObj, DISKOnt.getProperty(DISK.HAS_WORKFLOW_RUN));
+                Map<String, WorkflowRun> runs = new HashMap<String, WorkflowRun>();
+                for (KBObject runObj: runObjs) {
+                    // Workflow Run details
+                    WorkflowRun run = new WorkflowRun();
+                    KBObject runIdObj = kb.getPropertyValue(runObj, DISKOnt.getProperty(DISK.HAS_ID));
+                    if (runIdObj != null)
+                        run.setId(runIdObj.getValue().toString());
+                    KBObject statusObj = kb.getPropertyValue(runObj, DISKOnt.getProperty(DISK.HAS_STATUS));
+                    if (statusObj != null)
+                        run.setStatus(statusObj.getValue().toString());
+                    KBObject linkObj = kb.getPropertyValue(runObj, DISKOnt.getProperty(DISK.HAS_RUN_LINK));
+                    if (linkObj != null)
+                        run.setLink(linkObj.getValue().toString());
+                    KBObject runStartObj = kb.getPropertyValue(runObj, DISKOnt.getProperty(DISK.HAS_RUN_START_DATE));
+                    if (runStartObj != null)
+                        run.setStartDate(runStartObj.getValue().toString());
+                    KBObject runEndObj = kb.getPropertyValue(runObj, DISKOnt.getProperty(DISK.HAS_RUN_END_DATE));
+                    if (runEndObj != null)
+                        run.setEndDate(runEndObj.getValue().toString());
 
-                // Inputs
-                for (KBObject inputObj : kb.getPropertyValues(wbObj, DISKOnt.getProperty(DISK.HAS_INPUT_FILE))) {
-                    KBObject name = kb.getPropertyValue(inputObj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
-                    KBObject url = kb.getPropertyValue(inputObj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
-                    run.addFile(name.getName(), url.getValueAsString());
-                }
+                    // Inputs
+                    for (KBObject inputObj : kb.getPropertyValues(runObj, DISKOnt.getProperty(DISK.HAS_INPUT_FILE))) {
+                        KBObject name = kb.getPropertyValue(inputObj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
+                        KBObject url = kb.getPropertyValue(inputObj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
+                        run.addFile(name.getName(), url.getValueAsString());
+                    }
 
-                // Outputs
-                for (KBObject outputObj : kb.getPropertyValues(wbObj, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE))) {
-                    KBObject name = kb.getPropertyValue(outputObj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
-                    KBObject url = kb.getPropertyValue(outputObj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
-                    run.addOutput(name.getName(), url.getValueAsString());
+                    // Outputs
+                    for (KBObject outputObj : kb.getPropertyValues(runObj, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE))) {
+                        KBObject name = kb.getPropertyValue(outputObj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
+                        KBObject url = kb.getPropertyValue(outputObj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
+                        run.addOutput(name.getName(), url.getValueAsString());
+                    }
+
+                    runs.put(run.getId(), run);
                 }
-                bindings.setRun(run);
+                bindings.setRuns(runs);
 
                 // Workflow details
                 KBObject workflowobj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_WORKFLOW));

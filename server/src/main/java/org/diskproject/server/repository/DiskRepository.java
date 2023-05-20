@@ -9,8 +9,10 @@ import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
@@ -54,6 +56,7 @@ import org.diskproject.shared.classes.question.StaticOptionsQuestionVariable;
 import org.diskproject.shared.classes.question.TimeIntervalQuestionVariable;
 import org.diskproject.shared.classes.question.UserInputQuestionVariable;
 import org.diskproject.shared.classes.question.VariableOption;
+import org.diskproject.shared.classes.question.QuestionVariable.QuestionSubtype;
 import org.diskproject.shared.classes.util.DataAdapterResponse;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.util.QuestionOptionsRequest;
@@ -90,6 +93,9 @@ public class DiskRepository extends WriteKBRepository {
 
     private Map<String, List<VariableOption>> optionsCache;
     private Map<String, VocabularyConfiguration> externalVocabularies;
+
+    private Map<String, Question> allQuestions;
+    private Map<String, QuestionVariable> allVariables;
 
     public static void main(String[] args) {
         get();
@@ -390,23 +396,15 @@ public class DiskRepository extends WriteKBRepository {
         String desc = hypothesis.getDescription();
         String question = hypothesis.getQuestionId();
         String dateCreated = hypothesis.getDateCreated();
+        // Set or update date
         if (dateCreated == null || dateCreated.equals("")) {
-            // SET DATE
             hypothesis.setDateCreated(dateformatter.format(new Date()));
         } else {
-            // Update date
             hypothesis.setDateModified(dateformatter.format(new Date()));
         }
         if (name != null && desc != null && question != null && !name.equals("") && !desc.equals("")
                 && !question.equals("") && writeHypothesis(username, hypothesis)) {
-            //String id = hypothesis.getId();
-            //if (id == null || id.equals("")) // Create new Hypothesis ID
-            //    hypothesis.setId(GUID.randomId("Hypothesis"));
-
-            //String hypothesisDomain = this.HYPURI(username) + "/" + hypothesis.getId() + "#";
-            //hypothesis.setGraph(resolvePrefixesForGraph(hypothesis.getGraph(), hypothesisDomain));
-            //if (writeHypothesis(username, hypothesis))
-                return hypothesis;
+            return hypothesis;
         }
         return null;
     }
@@ -443,11 +441,10 @@ public class DiskRepository extends WriteKBRepository {
         String desc = loi.getDescription();
         String question = loi.getQuestionId();
         String dateCreated = loi.getDateCreated();
+        // Set or update date
         if (dateCreated == null || dateCreated.equals("")) {
-            // SET DATE
             loi.setDateCreated(dateformatter.format(new Date()));
         } else {
-            // Update date
             loi.setDateModified(dateformatter.format(new Date()));
         }
         if (name != null && desc != null && question != null &&
@@ -539,9 +536,6 @@ public class DiskRepository extends WriteKBRepository {
     /*
      * Questions and option configuration
      */
-
-    private Map<String, Question> allQuestions;
-    private Map<String, QuestionVariable> allVariables;
 
     private void loadQuestionTemplates() {
         this.allQuestions = new HashMap<String, Question>();
@@ -701,10 +695,10 @@ public class DiskRepository extends WriteKBRepository {
                 KBObject maxLngVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MAX_LNG));
                 if (minLatVar != null && minLngVar != null && maxLatVar != null && maxLngVar != null) {
                     ((BoundingBoxQuestionVariable) q).setBoundingBoxVariables(
-                        LoadQuestionVariableFromKB(minLatVar, kb),
-                        LoadQuestionVariableFromKB(maxLatVar, kb),
-                        LoadQuestionVariableFromKB(minLngVar, kb),
-                        LoadQuestionVariableFromKB(maxLngVar, kb)
+                        ((UserInputQuestionVariable) LoadQuestionVariableFromKB(minLatVar, kb)),
+                        ((UserInputQuestionVariable) LoadQuestionVariableFromKB(maxLatVar, kb)),
+                        ((UserInputQuestionVariable) LoadQuestionVariableFromKB(minLngVar, kb)),
+                        ((UserInputQuestionVariable) LoadQuestionVariableFromKB(maxLngVar, kb))
                     );
                 }
             } else if (additionalType.equals(KBConstants.QUESTION_NS + SQO.TIME_INTERVAL_QUESTION_VARIABLE)) {
@@ -713,9 +707,9 @@ public class DiskRepository extends WriteKBRepository {
                 KBObject endTimeVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_END_TIME));
                 KBObject timeTypeVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_TIME_TYPE));
                 if (startTimeVar != null && endTimeVar != null && timeTypeVar != null) {
-                    ((TimeIntervalQuestionVariable) q).setStartTime(LoadQuestionVariableFromKB(startTimeVar, kb));
-                    ((TimeIntervalQuestionVariable) q).setEndTime(LoadQuestionVariableFromKB(endTimeVar, kb));
-                    ((TimeIntervalQuestionVariable) q).setTimeType(LoadQuestionVariableFromKB(timeTypeVar, kb));
+                    ((TimeIntervalQuestionVariable) q).setStartTime((UserInputQuestionVariable) LoadQuestionVariableFromKB(startTimeVar, kb));
+                    ((TimeIntervalQuestionVariable) q).setEndTime((UserInputQuestionVariable) LoadQuestionVariableFromKB(endTimeVar, kb));
+                    ((TimeIntervalQuestionVariable) q).setTimeType((StaticOptionsQuestionVariable) LoadQuestionVariableFromKB(timeTypeVar, kb));
                 }
             } else {
                 System.err.println("WARN: Question subtype not implemented: " + additionalType);
@@ -849,13 +843,28 @@ public class DiskRepository extends WriteKBRepository {
         return options;
     }
 
-    public Map<String,List<VariableOption>> listDynamicOptions (QuestionOptionsRequest cfg) throws Exception {
-        Map<String, List<VariableOption>> all = new HashMap<String, List<VariableOption>>();
+    public String createQuestionOptionsQuery (Question q) {
+        if (q != null) {
+            String queryConstraint = q.getConstraint();
+            String query = queryConstraint != null ? queryConstraint : "";
+            for (QuestionVariable qv: q.getVariables()) {
+                QuestionSubtype t = qv.getSubType();
+                if (t == QuestionSubtype.DYNAMIC_OPTIONS || t == QuestionSubtype.BOUNDING_BOX || t == QuestionSubtype.TIME_INTERVAL) {
+                    String queryFragment = ((DynamicOptionsQuestionVariable) qv).getOptionsQuery();
+                    if (queryFragment != null)
+                        query += queryFragment;
+                }
+            }
+            return query;
+        }
+        return null;
+    }
 
+    public Map<String,List<VariableOption>> listDynamicOptions (QuestionOptionsRequest cfg) throws Exception {
         Map<String, String> bindings = cfg.getBindings();
         Question q = allQuestions.get(cfg.getId());
-        String query = (q != null) ? q.getConstraint() : null;
-        if (q == null) return null; //TODO: If no query constraint should go to variable queries.
+        String query = createQuestionOptionsQuery(q);
+        if (q == null) return null;
 
         // Create map variableName -> filter
         Map<String, String> filters = new HashMap<String, String>();
@@ -874,28 +883,36 @@ public class DiskRepository extends WriteKBRepository {
             }
         }
 
+        Map<String, List<VariableOption>> varNameToOptions = new HashMap<String, List<VariableOption>>();
         for (QuestionVariable qv: q.getVariables()) {
-            if (qv.getSubType() == null) {
-                String varName = qv.getVariableName();
-                String curQuery = query;
-                if (filters != null && query != null) {
-                    for (String diffVar: filters.keySet()) {
-                        if (!diffVar.equals(varName)) {
-                            curQuery += "\n" + filters.get(diffVar);
+            QuestionSubtype t = qv.getSubType();
+            String varName = qv.getVariableName();
+            if (t == QuestionSubtype.STATIC_OPTIONS) {
+                varNameToOptions.put(varName, ((StaticOptionsQuestionVariable) qv).getOptions());
+            } else if (t == QuestionSubtype.DYNAMIC_OPTIONS) {
+                // We add all the filter except the value for the queried variable
+                if (query == null) {
+                    System.err.println("WARN: Could not find suitable query for " + qv.getId());
+                } else {
+                    String curQuery = query;
+                    if (filters != null && filters.size() > 0) {
+                        for (String filterVarName: filters.keySet()) {
+                            if (!filterVarName.equals(qv.getVariableName())) {
+                                curQuery += "\n" + filters.get(filterVarName);
+                            }
                         }
                     }
-                }
-                List<VariableOption> options = curQuery != null ?
-                    queryForOptions(varName, curQuery)
-                    : listVariableOptions(qv.getId().replaceAll("^.*\\/", ""));
-                all.put(varName, options);
-                if (all.get(varName).size() == 0) {
-                    System.out.println(qv.getId() + " got 0 results.");
-                    System.out.println(curQuery);
+                    varNameToOptions.put(varName, queryForOptions(varName, curQuery));
+                    if (varNameToOptions.get(varName).size() == 0) {
+                        System.out.println(qv.getId() + " got 0 results:");
+                        System.out.println(curQuery);
+                    } else {
+                        System.out.println(qv.getId() + " got " + varNameToOptions.get(varName).size() + " results.");
+                    }
                 }
             }
         }
-        return all;
+        return varNameToOptions;
     }
 
     /*
@@ -1076,13 +1093,12 @@ public class DiskRepository extends WriteKBRepository {
         try {
             this.start_read();
             KBAPI hypKB = this.fac.getKB(hypuri, OntSpec.PLAIN, true);
-            System.out.println("GRAPH: " + hypKB.getAllTriples());
+            System.out.println("GRAPH: " + hypKB.getAllTriples().toString().replace("),", ")\n"));
             for (LineOfInquiry loi : lois) {
                 String hq = loi.getHypothesisQuery();
                 if (hq != null) {
                     String query = this.getAllPrefixes() + "SELECT DISTINCT * WHERE { \n"
-                            + loi.getHypothesisQuery().replaceAll("\n", ".\n") + " }";
-                    //System.out.println("Query: " + query + "\n---------------------------");
+                            + loi.getHypothesisQuery() + " }";
                     ArrayList<ArrayList<SparqlQuerySolution>> allSolutions = null;
                     try {
                         allSolutions = hypKB.sparqlQuery(query);
@@ -1815,14 +1831,19 @@ public class DiskRepository extends WriteKBRepository {
                                 + (l == null ? v.getBinding() : l[0] + " (" + l.length + ")"));
                     }
 
-                    String runId = methodAdapter.runWorkflow(bindings.getWorkflow(), sendbindings, inputs);
+                    List<String> runIds = methodAdapter.runWorkflow(bindings.getWorkflow(), sendbindings, inputs);
 
-                    if (runId != null) {
-                        System.out.println("[R] Run ID: " + runId);
-                        bindings.getRun().setId(runId);// .replaceAll("^.*#", ""));
+                    if (runIds != null) {
+                        System.out.println("[R] Workflow send: ");
+                        for (String rid: runIds) {
+                            WorkflowRun run = new WorkflowRun();
+                            run.setId(rid);
+                            System.out.println("[R]   ID: " + rid);
+                            bindings.setRun(run);
+                        }
                     } else {
                         allOk = false;
-                        System.out.println("[R] Error: Could not get run id");
+                        System.out.println("[R] Error: Could not run workflow");
                     }
                 }
 
@@ -1846,11 +1867,52 @@ public class DiskRepository extends WriteKBRepository {
         String username;
         boolean metamode;
         TriggeredLOI tloi;
+        Map<String, Map<String, Status>> runs;
+        boolean error;
 
         public TLOIMonitoringThread(String username, TriggeredLOI tloi, boolean metamode) {
             this.username = username;
             this.tloi = tloi;
+            this.error = false;
             this.metamode = metamode;
+            this.runs = new HashMap<String, Map<String, Status>>();
+            for (WorkflowBindings bindings : (metamode ? this.tloi.getMetaWorkflows() : this.tloi.getWorkflows())) {
+                Map<String, Status> curMap = new HashMap<String,Status>();
+                for (String runId: bindings.getRuns().keySet()){
+                    curMap.put(runId, Status.QUEUED);
+                }
+                this.runs.put(bindings.getWorkflow(), curMap);
+            }
+        }
+
+        private String getRandomRunId (String wfName) {
+            Map<String, Status> s = this.runs.get(wfName);
+            List<String> queued = new ArrayList<String>();
+            for (String key: s.keySet()) {
+                if (s.get(key) == Status.QUEUED)
+                    queued.add(key);
+            }
+            int size = queued.size();
+            if (size == 0) return null;
+
+            int rnd = new Random().nextInt(size);
+            Iterator<String> iter = queued.iterator();
+            for (int i = 0; i < rnd; i++) {
+                iter.next();
+            }
+            return iter.next();
+        }
+
+        private void removeFromQueue (String wfName, String id, Status s) {
+            this.runs.get(wfName).put(id, s);
+        }
+
+        private boolean isFinished () {
+            for (WorkflowBindings wf  : (metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows())) {
+                if (getRandomRunId(wf.getWorkflow()) != null)
+                    return false;
+            }
+            return true;
         }
 
         @Override
@@ -1861,14 +1923,12 @@ public class DiskRepository extends WriteKBRepository {
                 List<WorkflowBindings> wflowBindings = this.metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows();
 
                 Status overallStatus = tloi.getStatus();
-                int numSuccessful = 0;
-                int numFinished = 0;
                 for (WorkflowBindings bindings : wflowBindings) {
-                    String runId = bindings.getRun().getId();
+                    String wfName = bindings.getWorkflow();
+                    String runId = getRandomRunId(wfName);
+                    System.out.println("[M] Pending runs: " + bindings.getRuns().size());
                     MethodAdapter methodAdapter = getMethodAdapterByName(bindings.getSource());
-                    if (runId == null) {
-                        overallStatus = Status.FAILED;
-                        numFinished++;
+                    if (runId == null) { // lets assume thats is bc we have finished.
                         continue;
                     }
                     String rName = runId.replaceAll("^.*#", "");
@@ -1879,7 +1939,8 @@ public class DiskRepository extends WriteKBRepository {
                         if (wStatus.getStatus() == null)
                             System.out.println("[E] Cannot get status for " + tloi.getId() + " - RUN " + rName);
                         overallStatus = Status.FAILED;
-                        numFinished++;
+                        this.error = true;
+                        removeFromQueue(wfName, runId, Status.FAILED);
                         continue;
                     }
                     if (wStatus.getStatus().equals("RUNNING")) {
@@ -1888,10 +1949,10 @@ public class DiskRepository extends WriteKBRepository {
                         continue;
                     }
                     if (wStatus.getStatus().equals("SUCCESS")) {
-                        numFinished++;
-                        numSuccessful++;
+                        removeFromQueue(wfName, runId, Status.SUCCESSFUL);
 
                         // Search for p-value on the outputs
+                        // TODO: change this to allow any output.
                         Map<String, String> outputs = wStatus.getOutputs();
                         if (outputs != null) {
                             for (String outname : outputs.keySet()) {
@@ -1916,21 +1977,30 @@ public class DiskRepository extends WriteKBRepository {
                         }
                     }
                 }
-                // If all the workflows are successfully finished
-                if (numSuccessful == wflowBindings.size()) {
+                // Check runs
+                if (isFinished()) {
                     if (metamode) {
-                        overallStatus = Status.SUCCESSFUL;
-                        System.out.println("[M] " + this.tloi.getId() + " was successfully executed.");
+                        if (error) {
+                            overallStatus = Status.FAILED;
+                            System.out.println("[M] " + this.tloi.getId() + " was executed with errors.");
+                        } else {
+                            overallStatus = Status.SUCCESSFUL;
+                            System.out.println("[M] " + this.tloi.getId() + " was successfully executed.");
+                        }
                     } else {
-                        overallStatus = Status.RUNNING;
-                        System.out.println("[M] Starting metamode after " + numSuccessful + " workflows.");
-
-                        // Start meta workflows
-                        TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, true);
-                        executor.execute(wflowThread);
+                        if (error) {
+                            overallStatus = Status.FAILED;
+                            System.out.println("[M] " + this.tloi.getId() + " will not initialice metamode as some runs failed.");
+                        } else {
+                            overallStatus = Status.RUNNING;
+                            System.out.println("[M] Starting metamode after n workflows.");
+                            // Start meta workflows TODO: should pass workflow results.
+                            TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, true);
+                            executor.execute(wflowThread);
+                        }
                     }
-                } else if (numFinished < wflowBindings.size()) {
-                    monitor.schedule(this, 2, TimeUnit.MINUTES);
+                } else {
+                    monitor.schedule(this, 20, TimeUnit.SECONDS);
                 }
                 tloi.setStatus(overallStatus);
                 updateTriggeredLOI(username, tloi.getId(), tloi);

@@ -2,7 +2,9 @@ package org.diskproject.shared.classes.loi;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
@@ -13,12 +15,12 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
   String workflowLink;
   String description;
   List<VariableBinding> bindings;
-  WorkflowRun run;
   MetaWorkflowDetails meta;
+  Map<String, WorkflowRun> runs;
 
   public WorkflowBindings() {
     bindings = new ArrayList<VariableBinding>();
-    run = new WorkflowRun();
+    runs = new HashMap<String, WorkflowRun>();
     meta = new MetaWorkflowDetails();
   }
 
@@ -26,7 +28,7 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
     this.workflow = workflow;
     this.workflowLink = workflowLink;
     bindings = new ArrayList<VariableBinding>();
-    run = new WorkflowRun();
+    runs = new HashMap<String, WorkflowRun>();
     meta = new MetaWorkflowDetails();
   }
 
@@ -34,7 +36,7 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
     this.workflow = workflow;
     this.workflowLink = workflowLink;
     this.bindings = bindings;
-    run = new WorkflowRun();
+    runs = new HashMap<String, WorkflowRun>();
     meta = new MetaWorkflowDetails();
   }
 
@@ -70,12 +72,20 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
     this.workflowLink = workflowLink;
   }
 
-  public WorkflowRun getRun() {
-    return run;
+  public Map<String, WorkflowRun> getRuns() {
+    return runs;
   }
 
-  public void setRun(WorkflowRun run) {
-    this.run = run;
+  public void setRuns(Map<String, WorkflowRun> runs) {
+    this.runs = runs;
+  }
+
+  public void setRun (WorkflowRun run) {
+    this.runs.put(run.getId(), run);
+  }
+
+  public WorkflowRun getRun (String runId) {
+    return this.runs.get(runId);
   }
 
   public List<VariableBinding> getBindings() {
