@@ -205,5 +205,28 @@ public class GraphDBAdapter extends DataAdapter {
         }
         return null;
     }
-    
+
+    @Override
+    public void queryCSV(String queryString) throws Exception {
+        String url = getEndpointUrl() + "repositories/" + this.repository;
+        URIBuilder builder = new URIBuilder(url);
+        builder.setParameter("query", queryString);
+
+        HttpGet get = new HttpGet(builder.build());
+        get.setHeader("Content-Type", "text/csv");
+        if (token != null)
+            get.addHeader("Authorization", token);
+
+        try (CloseableHttpResponse response = httpClient.execute(get)) {
+            HttpEntity entity = response.getEntity();
+            String strResponse = EntityUtils.toString(entity);
+            System.out.println(get.getURI());
+            System.out.println(entity.getContentType());
+            System.out.println(entity.getContentLength());
+            EntityUtils.consume(entity);
+            System.out.println(strResponse);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

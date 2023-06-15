@@ -1,6 +1,8 @@
 package org.diskproject.server.adapters;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,10 +12,14 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -64,8 +70,27 @@ public class SparqlAdapter extends DataAdapter {
     }
 
     @Override
+    public void queryCSV(String queryString) throws Exception, QueryParseException, QueryExceptionHTTP {
+        String url = getEndpointUrl() + "sparql";
+        try {
+            URIBuilder builder = new URIBuilder(url);
+            builder.setParameter("query", queryString);
+
+            HttpGet get = new HttpGet(builder.build());
+            get.setHeader("Content-Type", "text/csv");
+            HttpResponse response = httpClient.execute(get);
+            HttpEntity entity = response.getEntity();
+            System.out.println(entity.getContentType());
+            InputStream io = entity.getContent();
+            String result = IOUtils.toString(io, StandardCharsets.UTF_8);
+            System.out.println(result);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
     public List<DataResult> query(String queryString) throws Exception, QueryParseException, QueryExceptionHTTP {
-        //System.out.println("SparqlAdapter.query: " + queryString);
         ArrayList<ArrayList<SparqlQuerySolution>> solutions = null;
         try {
             String user = this.getUsername(), pass = this.getPassword();

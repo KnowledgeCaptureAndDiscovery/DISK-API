@@ -17,6 +17,15 @@ public abstract class MethodAdapter {
     private String description;
     private Float version; 
 
+    public static class FileAndMeta {
+        public byte[] data;
+        public String contentType;
+        public FileAndMeta (byte[] d, String t) {
+            data = d;
+            contentType = t;
+        }
+    }
+
     public MethodAdapter (String adapterName, String url) {
         this.name = adapterName;
         this.endpointUrl = url;
@@ -87,7 +96,7 @@ public abstract class MethodAdapter {
 
 	public abstract WorkflowRun getRunStatus (String runId);
 
-	public abstract byte[] fetchData (String dataId);
+	public abstract FileAndMeta fetchData (String dataId);
 
 	public abstract Map<String, String> getRunVariableBindings (String runId);
 

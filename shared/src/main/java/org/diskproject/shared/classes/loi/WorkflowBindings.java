@@ -80,7 +80,11 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
     this.runs = runs;
   }
 
-  public void setRun (WorkflowRun run) {
+  public void addRun (WorkflowRun run) {
+    if (this.runs == null)
+      this.runs = new HashMap<String, WorkflowRun>();
+    if (this.runs.containsKey(run.getId()))
+      this.runs.remove(run.getId());
     this.runs.put(run.getId(), run);
   }
 

@@ -3,12 +3,10 @@ package org.diskproject.server.repository;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.net.URLEncoder;
-import java.text.Format;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -21,6 +19,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -46,6 +45,10 @@ import org.diskproject.shared.classes.workflow.Variable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
+import org.diskproject.shared.classes.workflow.WorkflowRun.RunBinding;
+import org.diskproject.shared.classes.workflow.WorkflowRun.RuntimeInfo;
+import org.diskproject.shared.classes.workflow.WorkflowRun.Status;
+import org.diskproject.shared.classes.common.Value;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -331,117 +334,167 @@ public class WingsAdapter extends MethodAdapter {
 		return false;
 	}
 
-	public WorkflowRun getWorkflowRunStatus(String runid) {
+	private WorkflowRun parseExecutionDetails (String details) {
+		JsonObject runobj = jsonParser.parse(details).getAsJsonObject();
+		JsonObject execution = null, variables = null;//, constraints = null;
+		WorkflowRun curRun = new WorkflowRun();
+
 		try {
-			// Get data
-			String execId = RUNID(runid);
+			JsonElement xw = runobj.get("execution");
+			execution = xw.getAsJsonObject();
+		} catch (Exception e) {
+			System.err.println("Error parsing execution details: Cannot parse execution.");
+		}
+		if (execution == null)
+			return null;
+
+		// Get run info.
+		RuntimeInfo runInfo = null;
+		JsonObject runInfoJson = execution.get("runtimeInfo").getAsJsonObject();
+		JsonElement id = execution.get("id");
+		JsonElement status = runInfoJson.get("status");
+		JsonElement log = runInfoJson.get("log");
+		JsonElement tsStart = runInfoJson.get("startTime");
+		JsonElement tsEnd = runInfoJson.get("endTime");
+		if (status != null && id != null) {
+			curRun.setId(id.getAsString());
+			runInfo = new RuntimeInfo();
+			runInfo.status = getStatusFromString(status.getAsString());
+			runInfo.log = log == null ? "" : log.getAsString();
+			if (tsStart != null) runInfo.startTime = tsStart.getAsInt();
+			if (tsEnd != null) runInfo.endTime = tsEnd.getAsInt();
+		} else {
+			System.err.println("Error parsing execution details: Cannot get run status.");
+		}
+		if (runInfo == null) 
+			return null;
+		curRun.setExecutionInfo(runInfo);
+
+		// Get steps info.
+		List<RuntimeInfo> stepInfo = null;
+		if (execution != null) {
+			JsonObject queueJson = execution.get("queue").getAsJsonObject();
+			JsonArray stepsArray = queueJson.get("steps").getAsJsonArray();
+			stepInfo = new ArrayList<RuntimeInfo>();
+			for (JsonElement step: stepsArray) {
+				RuntimeInfo info = new RuntimeInfo();
+				JsonObject rInfo = step.getAsJsonObject().get("runtimeInfo").getAsJsonObject();
+				JsonElement stepStatus = rInfo.get("status");
+				JsonElement stepLog = rInfo.get("log");
+				JsonElement stepStart = rInfo.get("startTime");
+				JsonElement stepEnd = rInfo.get("endTime");
+				if (stepStatus != null) {
+					info.status = getStatusFromString(stepStatus.getAsString());
+					info.log = stepLog == null ? "" : stepLog.getAsString();
+					if (stepStart != null) info.startTime = stepStart.getAsInt();
+					if (stepEnd != null) info.endTime = stepEnd.getAsInt();
+				} else {
+					System.err.println("Error parsing execution details: Cannot get step status.");
+				}
+			}
+		}
+
+		if (stepInfo != null)
+			curRun.setStepsInfo(stepInfo);
+
+		try {
+			variables = runobj.get("variables").getAsJsonObject();
+		} catch (Exception e) {
+			System.out.println(details);
+		}
+
+		Map<String, RunBinding> input = null, output = null;
+		if (variables != null) {
+			input = new HashMap<String, RunBinding>();
+			JsonArray inputArray = variables.get("input").getAsJsonArray();
+			for (JsonElement cur : inputArray) {
+				JsonObject curObj = cur.getAsJsonObject();
+				JsonElement bindingObj = curObj.get("binding"); //.getAsJsonObject();
+				JsonElement inputTypeObj = curObj.get("type");//.getAsInt();
+				JsonElement nameObj = curObj.get("id");
+				if (nameObj != null && inputTypeObj != null && bindingObj != null) {
+					RunBinding curInput = new RunBinding();
+					JsonObject bindingsJson = bindingObj.getAsJsonObject();
+					String name = nameObj.getAsString().replaceAll("^.*\\#", "");
+					curInput.type = inputTypeObj.getAsInt() == 1 ? Value.Type.URI : Value.Type.LITERAL;
+					// --
+					JsonElement idObj = bindingsJson.get("id");
+					if (idObj != null) curInput.id = idObj.getAsString();
+					JsonElement valueJson = bindingsJson.get("value");
+					if (valueJson != null) curInput.value = valueJson.getAsString();
+					JsonElement datatypeJson = bindingsJson.get("datatype");
+					if (datatypeJson != null) curInput.datatype = datatypeJson.getAsString();
+					input.put(name, curInput);
+				}
+			}
+
+			output = new HashMap<String, RunBinding>();
+			JsonArray outputArray = variables.get("output").getAsJsonArray();
+			for (JsonElement cur : outputArray) {
+				JsonObject curObj = cur.getAsJsonObject();
+				JsonElement bindingObj = curObj.get("binding"); //.getAsJsonObject();
+				JsonElement inputTypeObj = curObj.get("type");//.getAsInt();
+				JsonElement nameObj = curObj.get("id");
+				if (nameObj != null && inputTypeObj != null && bindingObj != null) {
+					RunBinding curOutput = new RunBinding();
+					JsonObject bindingsJson = bindingObj.getAsJsonObject();
+					String name = nameObj.getAsString().replaceAll("^.*\\#", "");
+					curOutput.type = inputTypeObj.getAsInt() == 1 ? Value.Type.URI : Value.Type.LITERAL;
+					// --
+					JsonElement idObj = bindingsJson.get("id");
+					if (idObj != null) curOutput.id = idObj.getAsString();
+					JsonElement valueJson = bindingsJson.get("value");
+					if (valueJson != null) curOutput.value = valueJson.getAsString();
+					JsonElement datatypeJson = bindingsJson.get("datatype");
+					if (datatypeJson != null) curOutput.datatype = datatypeJson.getAsString();
+					output.put(name, curOutput);
+				}
+			}
+		}
+		if (input != null) curRun.setInputs(input);
+		if (output != null) curRun.setOutputs(output);
+		return curRun;
+	}
+
+	public WorkflowRun getWorkflowRunStatus(String runid) {
+		String execId = RUNID(runid);
+		String runjson = null;
+		try {
+			// Get run details.
 			List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 			formdata.add(new BasicNameValuePair("run_id", execId));
 			String pageId = "users/" + getUsername() + "/" + this.domain + "/executions/getRunDetails";
-			String runjson = this.post(pageId, formdata);
-			if (runjson == null)
-				return null;
-
-			WorkflowRun wflowStatus = new WorkflowRun();
-			wflowStatus.setId(execId);
-
-			JsonObject runobj = jsonParser.parse(runjson).getAsJsonObject();
-
-			// Try to get the execution information
-			String status = null,
-					tsStart = null,
-					tsEnd = null;
-
-			try {
-				JsonObject expobj = runobj.get("execution").getAsJsonObject();
-				JsonObject runInfo = expobj.get("runtimeInfo").getAsJsonObject();
-				status = runInfo.get("status").getAsString();
-				tsStart = runInfo.get("startTime").getAsString();
-				tsEnd = runInfo.get("endTime").getAsString();
-			} catch (Exception e) {
-				System.out.println("Run ID " + runid + ": No execution information");
-			}
-
-			// Try to get output files
-			Map<String, String> outputs = new HashMap<String, String>();
-			try {
-				JsonObject vars = runobj.get("variables").getAsJsonObject();
-				try {
-					JsonArray outs = vars.get("output").getAsJsonArray();
-					for (JsonElement resp : outs) {
-						JsonObject outputObj = resp.getAsJsonObject();
-						JsonObject bindingObj = outputObj.get("binding").getAsJsonObject();
-						String outId = outputObj.get("derivedFrom").getAsString();
-						String binding = bindingObj.get("id").toString().replaceAll("\"", "");
-						String sp[] = outId.split("#");
-						outputs.put(sp[sp.length - 1], binding);
-					}
-				} catch (Exception e) {
-					System.out.println("Run ID " + runid + ": No output files");
-				}
-				try {
-					JsonArray inputs = vars.get("input").getAsJsonArray();
-					for (JsonElement input : inputs) {
-						JsonObject binding = input.getAsJsonObject().get("binding").getAsJsonObject();
-						if (binding.get("type").toString().equals("\"uri\"")) {
-							String id = binding.get("id").toString().replaceAll("\"", "");
-							String[] sp = id.split("#");
-							if (sp.length > 0) {
-								String name = sp[sp.length - 1];
-								wflowStatus.addFile(name, id);
-							}
-						}
-					}
-				} catch (Exception e) {
-					System.out.println("Run ID " + runid + ": No input files");
-				}
-			} catch (Exception e) {
-				System.out.println("Run ID " + runid + ": No variables attribute");
-			}
-
-			// Creating link
-			String link = this.server + "/users/" + getUsername() + "/" + domain + "/executions";
-			link += "?run_id=" + URLEncoder.encode(execId, "UTF-8");
-
-			wflowStatus.setStatus(status);
-			wflowStatus.setLink(link);
-			wflowStatus.setOutputs(outputs);
-
-			Format formatter = new SimpleDateFormat("HH:mm:ss yyyy-MM-dd");
-
-			if (tsStart != null) {
-				Date dateStart = new Date(Long.parseLong(tsStart) * 1000);
-				wflowStatus.setStartDate(formatter.format(dateStart));
-				System.out.println(" Start: " + tsStart + " " + dateStart.toString());
-			}
-
-			if (tsEnd != null) {
-				Date dateEnd = new Date(Long.parseLong(tsEnd) * 1000);
-				wflowStatus.setEndDate(formatter.format(dateEnd));
-				System.out.println(" End: " + tsEnd + " " + dateEnd.toString());
-			}
-
-			if (status != null) {
-				System.out.println(" Status: " + status);
-			}
-
-			if (link != null) {
-				System.out.println(" Link: " + link);
-			}
-
-			if (outputs.size() > 0) {
-				System.out.println(" Outputs:");
-				for (String id : outputs.keySet()) {
-					System.out.println(id + ": " + outputs.get(id));
-				}
-			}
-
-			return wflowStatus;
+			runjson = this.post(pageId, formdata);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return null;
+		if (runjson == null)
+			return null;
+
+		WorkflowRun wfRunStatus = parseExecutionDetails(runjson);
+		if (wfRunStatus == null) {
+			System.out.println(runjson);
+			return null;
+		}
+		String link = this.server + "/users/" + getUsername() + "/" + domain + "/executions";
+		try {
+			link += "?run_id=" + URLEncoder.encode(execId, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		wfRunStatus.setLink(link);
+		return wfRunStatus;
 	}
+	
+    public Status getStatusFromString (String statusStr) {
+		if (statusStr == null || statusStr.equals(""))
+			return Status.PENDING;
+        return statusStr.equals("SUCCESS") ? Status.SUCCESSFUL
+                : (statusStr.equals("FAILED") || statusStr.equals("FAILURE")   ? Status.FAILED
+                        : (statusStr.equals("RUNNING") ? Status.RUNNING
+                                : (statusStr.equals("QUEUED") ? Status.QUEUED : Status.PENDING)));
+
+    }
 
 	// TODO: Hackish function. Fix it !!!! *IMPORTANT*
 	private String getWorkflowRunWithSameBindings(String templateId, List<VariableBinding> vBindings) {
@@ -693,7 +746,7 @@ public class WingsAdapter extends MethodAdapter {
 		return l;
 	}
 
-	public byte[] fetchDataFromWings(String dataid) {
+	public FileAndMeta fetchDataFromWings(String dataid) {
 		String url = this.server + "/users/" + getUsername() + "/" + domain + "/data/fetch";
 		// Download data already present on the server
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
@@ -704,15 +757,18 @@ public class WingsAdapter extends MethodAdapter {
 			return null;
 		}
 		CloseableHttpClient client = HttpClientBuilder.create().setDefaultCookieStore(this.cookieStore).build();
-		byte[] bytes = null;
+		FileAndMeta fileData = null;
 		try {
 			HttpGet securedResource = new HttpGet(url);
 			CloseableHttpResponse httpResponse = client.execute(securedResource);
 			try {
 				HttpEntity responseEntity = httpResponse.getEntity();
-				ByteArrayOutputStream rawBits = new ByteArrayOutputStream(); 
-    			responseEntity.writeTo(rawBits);
-				bytes = rawBits.toByteArray();
+				Header x = responseEntity.getContentType();
+				String ct = x == null ? null : x.getValue();
+				ByteArrayOutputStream rawBytes = new ByteArrayOutputStream(); 
+    			responseEntity.writeTo(rawBytes);
+				byte[] bytes = rawBytes.toByteArray();
+				fileData = new FileAndMeta(bytes, ct);
 				EntityUtils.consume(responseEntity);
 				httpResponse.close();
 			} catch (Exception e) {
@@ -729,7 +785,7 @@ public class WingsAdapter extends MethodAdapter {
 			}
 		}
 
-		return bytes;
+		return fileData;
 	}
 
 	public String addOrUpdateData(String id, String type, String contents, boolean addServer) {
@@ -1194,7 +1250,8 @@ public class WingsAdapter extends MethodAdapter {
 				if (vb.getVariable().equals(v.getName())) {
 					String curBinding = "\"" + wfName + v.getName() + "\":[";
 					String bindingValue = vb.getBinding();
-					if (v.getDimensionality() ==  0 && !bindingValue.startsWith("[")) {
+
+					if (v.getDimensionality() ==  0) { // && !bindingValue.startsWith("[")) {
 						curBinding += "\"" + bindingValue + "\"";
 					} else {
 						if (v.getDimensionality() == 0) {
@@ -1211,6 +1268,7 @@ public class WingsAdapter extends MethodAdapter {
 						}
 						curBinding = curBinding.substring(0, curBinding.length() - 1); //rm extra comma
 					}
+
 
 					if (v.isParam()) {
 						paramBindings += curBinding + "],";
@@ -1366,8 +1424,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public byte[] fetchData(String dataId) {
+	public FileAndMeta fetchData(String dataId) {
 		return this.fetchDataFromWings(dataId);
 	}
-
 }

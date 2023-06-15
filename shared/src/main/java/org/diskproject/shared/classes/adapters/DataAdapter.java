@@ -71,6 +71,7 @@ public abstract class DataAdapter {
     }
 
     public abstract List<DataResult> query (String queryString) throws Exception;
+    public abstract void queryCSV(String queryString) throws Exception;
 
     //This data query must return two variable names:
     static public String VARURI = "uri";
@@ -84,4 +85,5 @@ public abstract class DataAdapter {
     public abstract boolean ping ();
     
     public abstract Map<String,String> getFileHashesByETag(List<String> dsUrls) throws Exception;
+
 }

@@ -1,7 +1,6 @@
 package org.diskproject.server.api.impl;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -18,12 +17,16 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.http.HttpStatus;
 import org.apache.jena.query.QueryException;
 import org.diskproject.server.repository.DiskRepository;
 import org.diskproject.shared.api.DiskService;
+import org.diskproject.shared.classes.adapters.MethodAdapter.FileAndMeta;
 import org.diskproject.shared.classes.common.TreeItem;
 import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
@@ -571,17 +574,20 @@ public class DiskResource implements DiskService {
 
   @POST
   @Path("getData")
-  @Produces("text/html")
   @Override
-  public String getOutputData(
-      @JsonProperty("request") ExternalDataRequest r) {
-    byte[] result = this.repo.getOutputData(r.getSource(), r.getDataId());
-    String tmp = ""; // FIXME: this should not be an string.
+  public Response getOutputData(@JsonProperty("request") ExternalDataRequest r) {
+    FileAndMeta result = this.repo.getOutputData(r.getSource(), r.getDataId());
+    System.out.println("<< " + r.getSource() + " -- " + r.getDataId());
     if (result == null) {
-      System.out.println("ERROR: " + r.getDataId() + " not available on " + r.getSource() + ".");
-    } else {
-      tmp = new String(result, StandardCharsets.UTF_8);
-    }
-    return tmp;
+      ResponseBuilder rBuilder = Response.status(Response.Status.NOT_FOUND);
+      System.out.println("ERROR !!");
+      return rBuilder.type(MediaType.TEXT_PLAIN)
+          .entity("Could not find file")
+          .build();
+    } 
+    System.out.println(">> " + result.contentType + " -- " + result.data.length);
+
+    ResponseBuilder rBuild = Response.ok(result.data, result.contentType);
+    return rBuild.build();
   }
 }

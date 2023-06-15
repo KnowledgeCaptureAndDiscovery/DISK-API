@@ -117,7 +117,7 @@ public class AirFlowAdapter extends MethodAdapter {
     }
 
     @Override
-    public byte[] fetchData(String dataId) {
+    public FileAndMeta fetchData(String dataId) {
         // Auto-generated method stub
         return null;
     }

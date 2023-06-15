@@ -39,6 +39,7 @@ import org.diskproject.server.util.Config.VocabularyConfig;
 import org.diskproject.shared.classes.adapters.DataAdapter;
 import org.diskproject.shared.classes.adapters.DataResult;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
+import org.diskproject.shared.classes.adapters.MethodAdapter.FileAndMeta;
 import org.diskproject.shared.classes.common.TreeItem;
 import org.diskproject.shared.classes.common.Triple;
 import org.diskproject.shared.classes.common.Value;
@@ -46,7 +47,9 @@ import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.WorkflowBindings;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
-import org.diskproject.shared.classes.loi.TriggeredLOI.Status;
+import org.diskproject.shared.classes.workflow.WorkflowRun.RunBinding;
+import org.diskproject.shared.classes.workflow.WorkflowRun.RuntimeInfo;
+import org.diskproject.shared.classes.workflow.WorkflowRun.Status;
 import org.diskproject.shared.classes.question.BoundingBoxQuestionVariable;
 import org.diskproject.shared.classes.question.DynamicOptionsQuestionVariable;
 import org.diskproject.shared.classes.question.Question;
@@ -587,7 +590,7 @@ public class DiskRepository extends WriteKBRepository {
                 KBObject category = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_QUESTION_CATEGORY));
                 ArrayList<KBObject> variables = kb.getPropertyValues(question, SQOnt.getProperty(SQO.HAS_VARIABLE));
                 KBObject pattern = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_PATTERN));
-                if (name != null && template != null && pattern != null) {
+                if (name != null && template != null) {
                     List<QuestionVariable> vars = null;
                     if (variables != null && variables.size() > 0) {
                         vars = new ArrayList<QuestionVariable>();
@@ -601,7 +604,7 @@ public class DiskRepository extends WriteKBRepository {
                     }
 
                     Question q = new Question(question.getID(), name.getValueAsString(), template.getValueAsString(),
-                            LoadStatements(pattern, kb), vars);
+                            pattern != null ? LoadStatements(pattern, kb) : null, vars);
                     if (constraint != null) q.setConstraint(constraint.getValueAsString());
                     if (category != null) {
                         KBObject catName = kb.getPropertyValue(category, labelprop);
@@ -1075,10 +1078,11 @@ public class DiskRepository extends WriteKBRepository {
             List<String> varList = wb.getAllVariables();
             if (varList.size() == 0)
                 return false;
-            for (String varName : varList) {
-                if (!(hypothesisBindings.containsKey(varName.substring(1)) || dataQuery.contains(varName)))
-                    return false;
-            }
+            // This varName is the binding of the workflow, can be an special string too so this was disabled.
+            //for (String varName : varList) { 
+            //    if (!(hypothesisBindings.containsKey(varName.substring(1)) || dataQuery.contains(varName) ))
+            //        return false;
+            //}
         }
         return true;
     }
@@ -1161,6 +1165,8 @@ public class DiskRepository extends WriteKBRepository {
                         results.put(loi, new ArrayList<Map<String, String>>());
                     List<Map<String, String>> curList = results.get(loi);
                     curList.add(hBindings);
+                } else {
+                    System.out.println("Invalid:" + hBindings.toString());
                 }
             }
         }
@@ -1214,11 +1220,29 @@ public class DiskRepository extends WriteKBRepository {
             // for-loop handles that
             for (Map<String, String> values : matchingBindings.get(loi)) {
                 // Creating query
+                //TODO: work here to allow csv file and other stuff
+
                 String dq = getQueryBindings(loi.getDataQuery(), varPattern, values);
                 String query = this.getAllPrefixes() + "SELECT DISTINCT ";
-                for (String qVar : loi.getAllWorkflowVariables())
-                    query += qVar + " ";
-                query += "{\n" + dq + "}";
+
+                Set<String> setSelect = new HashSet<String>();
+                boolean attachCSV = false;
+                for (String qVar : loi.getAllWorkflowVariables()) {
+                    if (qVar.startsWith("?"))
+                        setSelect.add(qVar);
+                    else if (qVar.equals("_CSV_")) {
+                        attachCSV = true;
+                        for (String inVar: getDataQueryVariables(dq)) {
+                            setSelect.add(inVar);
+                        }
+                    }
+                }
+                String selectedVars = "";
+                for (String inVar: setSelect) {
+                    selectedVars += inVar + " ";
+                }
+
+                query += selectedVars + " WHERE {\n" + dq + "}";
 
                 // Prevents executing the same query several times.
                 Boolean cached = queryCache.containsKey(query);
@@ -1231,7 +1255,6 @@ public class DiskRepository extends WriteKBRepository {
 
                 if (solutions.size() > 0) {
                     System.out.println("LOI " + loi.getId() + " got " + solutions.size() + " results");
-
                     // Store solutions in dataVarBindings
                     // Varname -> [value, value, value]
                     Map<String, List<String>> dataVarBindings = new HashMap<String, List<String>>();
@@ -1273,6 +1296,15 @@ public class DiskRepository extends WriteKBRepository {
                         }
                     }
 
+                    // Attach CSV
+                    if (attachCSV) {
+                        //send query again
+                        dataVarBindings.put("_CSV_", new ArrayList<String>());
+                        //dataVarBindings.get("_CSV_").add(createCSVFromQuerySolutions(solutions));
+                        //System.out.println("CSV: " + dataVarBindings.get("_CSV_").get(0));
+                        dataAdapter.queryCSV(query);
+                    }
+
                     TriggeredLOI tloi = new TriggeredLOI(loi, id);
                     tloi.setWorkflows(
                             this.getTLOIBindings(username, loi.getWorkflows(), dataVarBindings, dataAdapter));
@@ -1290,6 +1322,39 @@ public class DiskRepository extends WriteKBRepository {
 
         return checkExistingTLOIs(username, tlois);
     }
+
+    private Set<String> getDataQueryVariables(String wherePart) {
+        Pattern varPattern = Pattern.compile("\\?(.+?)\\b");
+        Set<String> l = new HashSet<String>();
+        Matcher a = varPattern.matcher(wherePart);
+        while (a.find()) {
+            String var = a.group();
+            if (var.charAt(1) != '_')
+                l.add(var);
+            else
+                System.out.println("DISCARTED: " + var);
+        }
+        return l;
+    }
+
+    //private String createCSVFromQuerySolutions(List<DataResult> solutions) {
+    //    String csv = "";
+    //    Set<String> varNames = solutions.get(0).getVariableNames();
+    //    for (String varName : varNames)
+    //        csv +=  escapeToCSV(varName) + ",";
+    //    for (DataResult solution : solutions) {
+    //        csv += "\n";
+    //        for (String varname : varNames) {
+    //            String cur = solution.getValue(varname);
+    //            csv += escapeToCSV(cur) + ",";
+    //        }
+    //    }
+    //    return csv;
+    //}
+
+    //private String escapeToCSV (String text) {
+    //    return "\"" + text + "\"";
+    //}
 
     // This replaces all triggered lines of inquiry already executed.
     private List<TriggeredLOI> checkExistingTLOIs(String username, List<TriggeredLOI> tlois) {
@@ -1354,6 +1419,8 @@ public class DiskRepository extends WriteKBRepository {
                     isCollection = true;
                 } else if (mat.find() && dataVarBindings.containsKey(mat.group(1))) {
                     sparqlVar = mat.group(1);
+                } else if (binding.equals("_CSV_")) {
+                    sparqlVar = "_CSV_";
                 }
 
                 if (sparqlVar == null)
@@ -1773,7 +1840,7 @@ public class DiskRepository extends WriteKBRepository {
         return methodAdapter.getRunStatus(id);
     }
 
-    public byte[] getOutputData(String source, String id) {
+    public FileAndMeta getOutputData(String source, String id) {
         MethodAdapter methodAdapter = getMethodAdapterByName(source);
         if (methodAdapter == null)
             return null;
@@ -1838,8 +1905,9 @@ public class DiskRepository extends WriteKBRepository {
                         for (String rid: runIds) {
                             WorkflowRun run = new WorkflowRun();
                             run.setId(rid);
+                            run.setAsPending();
                             System.out.println("[R]   ID: " + rid);
-                            bindings.setRun(run);
+                            bindings.addRun(run);
                         }
                     } else {
                         allOk = false;
@@ -1863,56 +1931,98 @@ public class DiskRepository extends WriteKBRepository {
         }
     }
 
+    private void addConfidenceToTLOI (TriggeredLOI tloi, WorkflowRun run, MethodAdapter methodAdapter) {
+        // Search for p-value on the outputs
+        // TODO: change this to allow any output.
+        Map<String, RunBinding> outputs = run.getOutputs();
+        if (outputs != null) {
+            for (String outname : outputs.keySet()) {
+                if (outname.equals("p_value") || outname.equals("pval") || outname.equals("p_val")) {
+                    String dataid = outputs.get(outname).id;
+                    FileAndMeta fm = methodAdapter.fetchData(dataid);
+                    byte[] byteConf  = fm.data;
+                    String wingsP = byteConf != null ? new String(byteConf, StandardCharsets.UTF_8) : null;
+                    Double pVal = null;
+                    try {
+                        String strPVal = wingsP != null ? wingsP.split("\n", 2)[0] : "";
+                        pVal = Double.valueOf(strPVal);
+                    } catch (Exception e) {
+                        System.err.println("[M] Error: " + dataid + " is a non valid p-value: " + wingsP);
+                    }
+                    if (pVal != null) {
+                        System.out.println("[M] Detected p-value: " + pVal);
+                        tloi.setConfidenceValue(pVal);
+                        tloi.setConfidenceType("P-VALUE");
+                    }
+                }
+            }
+        }
+    }
+
+    private Status getOverallRunStatus (TriggeredLOI tloi, boolean metamode) {
+        List<WorkflowBindings> wfList = metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows();
+        // Fist check if theres some pending, queued or running run.
+        for (WorkflowBindings wf: wfList) {
+            for (WorkflowRun run: wf.getRuns().values()) {
+                RuntimeInfo exec = run.getExecutionInfo();
+                Status runStatus = exec.status;
+                if (runStatus == Status.PENDING || runStatus == Status.RUNNING || runStatus == Status.QUEUED) {
+                    return Status.RUNNING;
+                }
+            }
+        }
+        // If theres an error return failed:
+        for (WorkflowBindings wf: wfList) {
+            for (WorkflowRun run: wf.getRuns().values()) {
+                RuntimeInfo exec = run.getExecutionInfo();
+                Status runStatus = exec.status;
+                if (runStatus == Status.FAILED) {
+                    return Status.FAILED;
+                }
+            }
+        }
+        return Status.SUCCESSFUL;
+    }
+
     class TLOIMonitoringThread implements Runnable {
         String username;
-        boolean metamode;
+        boolean metamode, error;
         TriggeredLOI tloi;
-        Map<String, Map<String, Status>> runs;
-        boolean error;
+        Map<String, Map<String, WorkflowRun>> queuedRuns;
 
         public TLOIMonitoringThread(String username, TriggeredLOI tloi, boolean metamode) {
             this.username = username;
             this.tloi = tloi;
-            this.error = false;
             this.metamode = metamode;
-            this.runs = new HashMap<String, Map<String, Status>>();
+            this.error = false;
+            this.queuedRuns = new HashMap<String, Map<String, WorkflowRun>>();
+            //this.pendingIds = new HashMap<String, Set<String>>();
             for (WorkflowBindings bindings : (metamode ? this.tloi.getMetaWorkflows() : this.tloi.getWorkflows())) {
-                Map<String, Status> curMap = new HashMap<String,Status>();
-                for (String runId: bindings.getRuns().keySet()){
-                    curMap.put(runId, Status.QUEUED);
+                Map<String, WorkflowRun> curMap = new HashMap<String,WorkflowRun>();
+                //Set<String> curSet = new HashSet<String>();
+                for (WorkflowRun run: bindings.getRuns().values()){
+                    RuntimeInfo exec = run.getExecutionInfo();
+                    Status st = exec.status;
+                    if (st == Status.PENDING || st == Status.QUEUED || st == Status.RUNNING) {
+                        curMap.put(run.getId(), run);
+                    }
                 }
-                this.runs.put(bindings.getWorkflow(), curMap);
+                this.queuedRuns.put(bindings.getWorkflow(), curMap);
             }
         }
 
-        private String getRandomRunId (String wfName) {
-            Map<String, Status> s = this.runs.get(wfName);
-            List<String> queued = new ArrayList<String>();
-            for (String key: s.keySet()) {
-                if (s.get(key) == Status.QUEUED)
-                    queued.add(key);
-            }
+        private WorkflowRun getRandomRun (String wfName) {
+            Map<String, WorkflowRun> queued = queuedRuns.get(wfName);
             int size = queued.size();
             if (size == 0) return null;
 
+            System.out.println("[M] Pending runs: " + size);
             int rnd = new Random().nextInt(size);
-            Iterator<String> iter = queued.iterator();
+            Iterator<WorkflowRun> iter = queued.values().iterator();
             for (int i = 0; i < rnd; i++) {
                 iter.next();
             }
             return iter.next();
-        }
-
-        private void removeFromQueue (String wfName, String id, Status s) {
-            this.runs.get(wfName).put(id, s);
-        }
-
-        private boolean isFinished () {
-            for (WorkflowBindings wf  : (metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows())) {
-                if (getRandomRunId(wf.getWorkflow()) != null)
-                    return false;
-            }
-            return true;
         }
 
         @Override
@@ -1921,88 +2031,70 @@ public class DiskRepository extends WriteKBRepository {
                 System.out.println("[M] Running monitoring thread");
                 // Check workflow runs from tloi
                 List<WorkflowBindings> wflowBindings = this.metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows();
+                List<WorkflowBindings> updatedBindings = new ArrayList<WorkflowBindings>();
 
-                Status overallStatus = tloi.getStatus();
                 for (WorkflowBindings bindings : wflowBindings) {
-                    String wfName = bindings.getWorkflow();
-                    String runId = getRandomRunId(wfName);
-                    System.out.println("[M] Pending runs: " + bindings.getRuns().size());
                     MethodAdapter methodAdapter = getMethodAdapterByName(bindings.getSource());
-                    if (runId == null) { // lets assume thats is bc we have finished.
+                    String wfName = bindings.getWorkflow();
+                    WorkflowRun curRun = getRandomRun(wfName);
+                    String runUri = curRun == null ? null : curRun.getId();
+                    if (runUri == null || curRun == null) { // lets assume this is not critical.
                         continue;
                     }
-                    String rName = runId.replaceAll("^.*#", "");
-                    WorkflowRun wStatus = methodAdapter.getRunStatus(rName);
-                    bindings.setRun(wStatus);
+                    String runId = runUri.replaceAll("^.*#", "");
+                    WorkflowRun newRun = methodAdapter.getRunStatus(runId);
 
-                    if (wStatus.getStatus() == null || wStatus.getStatus().equals("FAILURE")) {
-                        if (wStatus.getStatus() == null)
-                            System.out.println("[E] Cannot get status for " + tloi.getId() + " - RUN " + rName);
-                        overallStatus = Status.FAILED;
-                        this.error = true;
-                        removeFromQueue(wfName, runId, Status.FAILED);
-                        continue;
+                    RuntimeInfo newExec = newRun != null ? newRun.getExecutionInfo() : null;
+                    RuntimeInfo oldExec = curRun.getExecutionInfo();
+                    
+                    // If we cannot get the status but the run was pending, maybe is not an error TODO: check how wings works.
+                    if (newRun == null || newExec == null || newExec.status == null) {
+                        System.out.println("[E] Cannot get status for " + tloi.getId() + " - RUN " + runId);
+                        if (newRun == null) newRun = curRun;
+                        newExec = oldExec;
+                        if (oldExec.status == Status.PENDING) {
+                            newExec.status = Status.SUCCESSFUL;
+                        } else {
+                            newExec.status = Status.FAILED;
+                            this.error = true;
+                        }
+                        //newStatus = newRun.getStatus();
                     }
-                    if (wStatus.getStatus().equals("RUNNING")) {
-                        if (overallStatus != Status.FAILED)
-                            overallStatus = Status.RUNNING;
-                        continue;
-                    }
-                    if (wStatus.getStatus().equals("SUCCESS")) {
-                        removeFromQueue(wfName, runId, Status.SUCCESSFUL);
-
-                        // Search for p-value on the outputs
-                        // TODO: change this to allow any output.
-                        Map<String, String> outputs = wStatus.getOutputs();
-                        if (outputs != null) {
-                            for (String outname : outputs.keySet()) {
-                                if (outname.equals("p_value") || outname.equals("pval") || outname.equals("p_val")) {
-                                    String dataid = outputs.get(outname);
-                                    byte[] byteConf = methodAdapter.fetchData(dataid);
-                                    String wingsP = byteConf != null ? new String(byteConf, StandardCharsets.UTF_8) : null;
-                                    Double pVal = null;
-                                    try {
-                                        String strPVal = wingsP != null ? wingsP.split("\n",2)[0] : "";
-                                        pVal = Double.valueOf(strPVal);
-                                    } catch (Exception e) {
-                                        System.err.println("[M] Error: " + dataid + " is a non valid p-value: " + wingsP);
-                                    }
-                                    if (pVal != null) {
-                                        System.out.println("[M] Detected p-value: " + pVal);
-                                        tloi.setConfidenceValue(pVal);
-                                        tloi.setConfidenceType("P-VALUE");
-                                    }
-                                }
-                            }
+                    if (newExec.status == Status.SUCCESSFUL || newExec.status == Status.FAILED) {
+                        if (newExec.status == Status.FAILED) {
+                            this.error = true;
+                        } else {
+                            addConfidenceToTLOI(tloi, newRun, methodAdapter);
                         }
                     }
+                    newRun.setExecutionInfo(newExec);
+                    bindings.addRun(newRun);
+                    updatedBindings.add(bindings);
+                    this.queuedRuns.get(wfName).put(runUri, newRun);
                 }
-                // Check runs
-                if (isFinished()) {
+                tloi.setStatus(getOverallRunStatus(tloi, metamode));
+                if (metamode) tloi.setMetaWorkflows(updatedBindings);
+                else tloi.setWorkflows(updatedBindings);
+                Status overallStatus = tloi.getStatus();
+
+                if (overallStatus == Status.SUCCESSFUL) {
                     if (metamode) {
-                        if (error) {
-                            overallStatus = Status.FAILED;
-                            System.out.println("[M] " + this.tloi.getId() + " was executed with errors.");
-                        } else {
-                            overallStatus = Status.SUCCESSFUL;
-                            System.out.println("[M] " + this.tloi.getId() + " was successfully executed.");
-                        }
+                        System.out.println("[M] " + this.tloi.getId() + " was successfully executed.");
                     } else {
-                        if (error) {
-                            overallStatus = Status.FAILED;
-                            System.out.println("[M] " + this.tloi.getId() + " will not initialice metamode as some runs failed.");
-                        } else {
-                            overallStatus = Status.RUNNING;
-                            System.out.println("[M] Starting metamode after n workflows.");
-                            // Start meta workflows TODO: should pass workflow results.
-                            TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, true);
-                            executor.execute(wflowThread);
-                        }
+                        System.out.println("[M] Starting metamode after n workflows.");
+                        tloi.setStatus(Status.RUNNING);
+                        TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, true);
+                        executor.execute(wflowThread);
+                    }
+                } else if (overallStatus == Status.FAILED) {
+                    if (metamode) {
+                        System.out.println("[M] " + this.tloi.getId() + " was executed with errors.");
+                    } else {
+                        System.out.println("[M] " + this.tloi.getId() + " will not initialice metamode as some runs failed.");
                     }
                 } else {
-                    monitor.schedule(this, 20, TimeUnit.SECONDS);
+                    monitor.schedule(this, 30, TimeUnit.SECONDS);
                 }
-                tloi.setStatus(overallStatus);
                 updateTriggeredLOI(username, tloi.getId(), tloi);
             } catch (Exception e) {
                 e.printStackTrace();

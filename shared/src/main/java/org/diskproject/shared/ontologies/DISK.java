@@ -51,4 +51,10 @@ public class DISK {
     public static final String HAS_OPTIONAL_PARAMETER = "hasOptionalParameter";
     public static final String HAS_HYPOTHESIS_VARIABLE = "hasHypothesisVariable";
     public static final String HAS_REVISED_HYPOTHESIS_VARIABLE = "hasRevisedHypothesisVariable";
+
+    public static final String HAS_TYPE = "hasType";
+    public static final String HAS_DATATYPE = "hasDatatype";
+    public static final String HAS_LOG = "hasLog";
+    public static final String HAS_STEP = "hasStep";
+    public static final String EXEC_INFO = "ExecutionInfo";
 }

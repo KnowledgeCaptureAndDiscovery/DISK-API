@@ -2,13 +2,11 @@ package org.diskproject.shared.classes.hypothesis;
 
 import java.util.List;
 
+import org.diskproject.shared.classes.DISKResource;
 import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 
-public class Hypothesis {
-  String id, name, description;
-  String dateCreated, dateModified;
-  String author, notes;
+public class Hypothesis extends DISKResource {
   //For revised hypotheses
   String parentId;
   // The graph (for server) and question bindings (for UI)
@@ -17,9 +15,7 @@ public class Hypothesis {
   Graph graph; // The actual hypothesis.
 
   public Hypothesis (String id, String name, String description, String parentId, Graph graph){
-	  this.id = id;
-	  this.name = name;
-	  this.description = description;
+    super(id,name,description);
 	  this.parentId = parentId;
 	  this.graph = graph;
   }
@@ -34,83 +30,27 @@ public class Hypothesis {
     return this.questionId;
   }
 
-  public List<VariableBinding> getQuestionBindings () {
-	  return this.questionBindings;
-  }
-  
   public void setQuestionBindings (List<VariableBinding> bindings) {
 	  this.questionBindings = bindings;
   }
   
-  public String getId() {
-    return id;
+  public List<VariableBinding> getQuestionBindings () {
+	  return this.questionBindings;
   }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public String getNotes() {
-    return notes;
-  }
-
-  public void setNotes(String notes) {
-    this.notes = notes;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
+  
+  public void setParentId(String parentId) {
+    this.parentId = parentId;
   }
 
   public String getParentId() {
     return parentId;
   }
 
-  public void setParentId(String parentId) {
-    this.parentId = parentId;
-  }
-
-  public Graph getGraph() {
-    return graph;
-  }
-
   public void setGraph(Graph graph) {
     this.graph = graph;
   }
 
-  public void setDateCreated(String date) {
-	  this.dateCreated = date;
-  }
-
-  public void setAuthor (String author) {
-	  this.author = author;
-  }
-
-  public String getDateCreated () {
-	  return this.dateCreated;
-  }
-
-  public String getAuthor () {
-	  return this.author;
-  }
-
-  public void setDateModified (String date) {
-	  this.dateModified = date;
-  }
-
-  public String getDateModified () {
-	  return dateModified;
+  public Graph getGraph() {
+    return graph;
   }
 }
