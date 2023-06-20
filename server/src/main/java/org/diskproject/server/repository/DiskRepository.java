@@ -28,6 +28,7 @@ import org.apache.jena.query.QueryParseException;
 import org.diskproject.server.adapters.AirFlowAdapter;
 import org.diskproject.server.adapters.GraphDBAdapter;
 import org.diskproject.server.adapters.SparqlAdapter;
+import org.diskproject.server.adapters.StorageManager;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.ConfigKeys;
 import org.diskproject.server.util.KBCache;
@@ -35,6 +36,7 @@ import org.diskproject.server.util.KBUtils;
 import org.diskproject.server.util.VocabularyConfiguration;
 import org.diskproject.server.util.Config.DataAdapterConfig;
 import org.diskproject.server.util.Config.MethodAdapterConfig;
+import org.diskproject.server.util.Config.StorageConfig;
 import org.diskproject.server.util.Config.VocabularyConfig;
 import org.diskproject.shared.classes.adapters.DataAdapter;
 import org.diskproject.shared.classes.adapters.DataResult;
@@ -93,6 +95,7 @@ public class DiskRepository extends WriteKBRepository {
     ScheduledExecutorService monitor, monitorData;
     ExecutorService executor;
     static DataMonitor dataThread;
+    StorageManager externalStorage;
 
     private Map<String, List<VariableOption>> optionsCache;
     private Map<String, VocabularyConfiguration> externalVocabularies;
@@ -166,6 +169,16 @@ public class DiskRepository extends WriteKBRepository {
         loadQuestionTemplates();
         this.loadVocabulariesFromConfig();
         this.initializeVocabularies();
+        this.initializeExternalStorage();
+    }
+
+    private void initializeExternalStorage() throws Exception {
+        StorageConfig cfg = Config.get().storage;
+        this.externalStorage = null;
+        if (cfg.external != null && cfg.username !=null&& cfg.password!= null) {
+            this.externalStorage = new StorageManager(cfg.external, cfg.username, cfg.password);
+            //this.externalStorage.init();
+        }
     }
 
     private void loadVocabulariesFromConfig() throws Exception {

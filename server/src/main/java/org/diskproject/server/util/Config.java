@@ -15,11 +15,14 @@ public class Config {
   PropertyListConfiguration props = null;
   //This is the configuration
   public class StorageConfig {
-    public String local, tdb, db;
-    public StorageConfig (String local, String tdb, String db) {
+    public String local, tdb, db, external, username, password;
+    public StorageConfig (String local, String tdb, String db, String external, String username, String password) {
       this.local = local;
       this.tdb = tdb;
       this.db = db;
+      this.external = external;
+      this.username = username;
+      this.password = password;
     }
   }
 
@@ -201,7 +204,16 @@ public class Config {
     String storageLocal = props.getString("storage.local");
     String storageTdb = props.getString("storage.tdb");
     String storageDb = props.getString("storage.db");
-    this.storage = new StorageConfig(storageLocal, storageTdb, storageDb);
+
+    String external = props.getString("storage.external");
+    String ex_user = props.getString("storage.username");
+    String ex_pass = props.getString("storage.password");
+
+    this.storage = new StorageConfig(storageLocal, storageTdb, storageDb, external, ex_user, ex_pass);
+    System.out.println(external);
+    System.out.println(ex_user);
+    System.out.println(ex_pass);
+
     String keycloakUrl = props.getString("keycloak.url");
     String keycloakRealm = props.getString("keycloak.realm");
     this.keycloak = new KeycloakConfig(keycloakUrl, keycloakRealm);
