@@ -1251,7 +1251,7 @@ public class WingsAdapter extends MethodAdapter {
 					String curBinding = "\"" + wfName + v.getName() + "\":[";
 					String bindingValue = vb.getBinding();
 
-					if (v.getDimensionality() ==  0) { // && !bindingValue.startsWith("[")) {
+					if (v.getDimensionality() ==  0) { // && !bindingValue.startsWith("[")) { FIXME!
 						curBinding += "\"" + bindingValue + "\"";
 					} else {
 						if (v.getDimensionality() == 0) {

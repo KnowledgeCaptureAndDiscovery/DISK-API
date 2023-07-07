@@ -756,43 +756,11 @@ public class DiskRepository extends WriteKBRepository {
         return new ArrayList<Question>(this.allQuestions.values());
     }
 
-    public List<VariableOption> listVariableOptions(String sid) throws Exception {
-        if (!optionsCache.containsKey(sid)) {
-            optionsCache.put(sid, this.loadVariableOptions(sid));
-        }
-        return optionsCache.get(sid);
-    }
-
-    private List<VariableOption> loadVariableOptions(String sid) throws Exception {
-        QuestionVariable variable = null;
-        // FIXME: Find a better way to handle url prefix or change the request to
-        // include the full URI
-        if (allVariables.containsKey("http://disk-project.org/resources/enigma/variable/" + sid)) {
-            variable = allVariables.get("http://disk-project.org/resources/enigma/variable/" + sid);
-        } else if (allVariables.containsKey("http://disk-project.org/resources/question/" + sid)) {
-            variable = allVariables.get("http://disk-project.org/resources/question/" + sid);
-        } else if (allVariables.containsKey("https://w3id.org/sqo/resource/" + sid)) {
-            variable = allVariables.get("https://w3id.org/sqo/resource/" + sid);
-        }
-        // -----
-        //QuestionVariable variable = allVariables.containsKey(sid) ? allVariables.get(sid) : null;
-        if (variable != null) {
-            String varname = variable.getVariableName();
-            if (variable.getSubType() == QuestionVariable.QuestionSubtype.DYNAMIC_OPTIONS) {
-                String optionsQuery = ((DynamicOptionsQuestionVariable) variable).getOptionsQuery();
-                if (optionsQuery != null)
-                    return queryForOptions(varname, optionsQuery);
-            }
-            if (variable.getSubType() == QuestionVariable.QuestionSubtype.STATIC_OPTIONS) {
-                List<VariableOption> fixedOptions = ((StaticOptionsQuestionVariable) variable).getOptions();
-                if (fixedOptions != null)
-                    return fixedOptions;
-            }
-        }
-        return null;
-    }
-
+    // OPTIONS: 
     private List<VariableOption> queryForOptions (String varName, String query) throws Exception {
+        if (optionsCache.containsKey(varName + query))
+            return optionsCache.get(varName + query);
+
         List<VariableOption> options = new ArrayList<VariableOption>();
         // If there is a constraint query, send it to all data providers;
         Map<String, List<DataResult>> solutions = new HashMap<String, List<DataResult>>();
@@ -856,14 +824,15 @@ public class DiskRepository extends WriteKBRepository {
                 }
             }
         }
+        optionsCache.put(varName + query, options);
         return options;
     }
 
-    public String createQuestionOptionsQuery (Question q) {
+    public String createQuestionOptionsQuery (Question q, List<QuestionVariable> includedVariables) {
         if (q != null) {
             String queryConstraint = q.getConstraint();
             String query = queryConstraint != null ? queryConstraint : "";
-            for (QuestionVariable qv: q.getVariables()) {
+            for (QuestionVariable qv: includedVariables) {
                 QuestionSubtype t = qv.getSubType();
                 if (t == QuestionSubtype.DYNAMIC_OPTIONS || t == QuestionSubtype.BOUNDING_BOX || t == QuestionSubtype.TIME_INTERVAL) {
                     String queryFragment = ((DynamicOptionsQuestionVariable) qv).getOptionsQuery();
@@ -877,58 +846,78 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     public Map<String,List<VariableOption>> listDynamicOptions (QuestionOptionsRequest cfg) throws Exception {
+        // Returns a map[var.name] -> [option, option2, ...]
         Map<String, String> bindings = cfg.getBindings();
         Question q = allQuestions.get(cfg.getId());
-        String query = createQuestionOptionsQuery(q);
-        if (q == null) return null;
+        if (q == null) {
+            System.err.println("Question not found: " + cfg.getId());
+            return null;
+        }
 
-        // Create map variableName -> filter
-        Map<String, String> filters = new HashMap<String, String>();
-        if (bindings != null && query != null) {
-            for (String varUrl: bindings.keySet()) {
-                QuestionVariable curVar = allVariables.get(varUrl);
+        Map<String, String> queries = new HashMap<String, String>();
+        Map<String, List<VariableOption>> options = new HashMap<String, List<VariableOption>>();
+        if (bindings == null || bindings.size() == 0) {
+            // If there are no bindings, we can just send the base query + the constraint for this variable
+            for (QuestionVariable qv: q.getVariables()) {
+                QuestionSubtype t = qv.getSubType();
+                if (t == QuestionSubtype.DYNAMIC_OPTIONS || t == QuestionSubtype.BOUNDING_BOX || t == QuestionSubtype.TIME_INTERVAL ) { 
+                    String curQuery = (q.getConstraint() != null ? q.getConstraint() : "") + ((DynamicOptionsQuestionVariable) qv).getOptionsQuery();
+                    queries.put(qv.getId(), curQuery);
+                }
+            }
+        } else {
+            // If we have at leas one binding, we need to create filters for all queries:
+            Map<String, String> filters = new HashMap<String, String>();
+            for (String varId: bindings.keySet()) {
+                QuestionVariable curVar = allVariables.get(varId); // Should be the same as question.getVariables.
                 if (curVar != null) {
-                    String value = bindings.get(varUrl);
-                    String name = curVar.getVariableName();
+                    String value = bindings.get(varId);
                     String sparqlValue = value.startsWith("http") ? "<" + value + ">" : "\"" + value + "\"";
-                    String line = "VALUES " + name + " { " + sparqlValue + " }";
-                    filters.put(name, line);
+                    String line = "VALUES " + curVar.getVariableName() + " { " + sparqlValue + " }";
+                    filters.put(varId, line);
                 } else {
-                    System.err.println("Cannot find variable ID: " + varUrl);
+                    System.err.println("Cannot find variable with ID: " + varId);
+                }
+            }
+
+            String baseQuery = createQuestionOptionsQuery(q, q.getVariables());
+            for (QuestionVariable qv: q.getVariables()) {
+                QuestionSubtype t = qv.getSubType();
+                if (t == QuestionSubtype.DYNAMIC_OPTIONS || t == QuestionSubtype.BOUNDING_BOX || t == QuestionSubtype.TIME_INTERVAL ) { 
+                    String varId = qv.getId();
+                    String curQuery = baseQuery;
+                    // We need to add all filters that ARE NOT THIS ONE
+                    for (String filterId: filters.keySet()) {
+                        if (!filterId.equals(varId)) {
+                            curQuery += "\n" + filters.get(filterId);
+                        }
+                    }
+                    queries.put(varId, curQuery);
                 }
             }
         }
 
-        Map<String, List<VariableOption>> varNameToOptions = new HashMap<String, List<VariableOption>>();
+        // Now run the queries and load results.
         for (QuestionVariable qv: q.getVariables()) {
             QuestionSubtype t = qv.getSubType();
             String varName = qv.getVariableName();
             if (t == QuestionSubtype.STATIC_OPTIONS) {
-                varNameToOptions.put(varName, ((StaticOptionsQuestionVariable) qv).getOptions());
+                options.put(varName, ((StaticOptionsQuestionVariable) qv).getOptions());
             } else if (t == QuestionSubtype.DYNAMIC_OPTIONS) {
                 // We add all the filter except the value for the queried variable
-                if (query == null) {
-                    System.err.println("WARN: Could not find suitable query for " + qv.getId());
-                } else {
-                    String curQuery = query;
-                    if (filters != null && filters.size() > 0) {
-                        for (String filterVarName: filters.keySet()) {
-                            if (!filterVarName.equals(qv.getVariableName())) {
-                                curQuery += "\n" + filters.get(filterVarName);
-                            }
-                        }
-                    }
-                    varNameToOptions.put(varName, queryForOptions(varName, curQuery));
-                    if (varNameToOptions.get(varName).size() == 0) {
+                if (queries.containsKey(qv.getId())) {
+                    String curQuery = queries.get(qv.getId());
+                    options.put(varName, queryForOptions(varName, curQuery));
+                    if (options.get(varName).size() == 0) {
                         System.out.println(qv.getId() + " got 0 results:");
                         System.out.println(curQuery);
                     } else {
-                        System.out.println(qv.getId() + " got " + varNameToOptions.get(varName).size() + " results.");
+                        System.out.println(qv.getId() + " got " + options.get(varName).size() + " results.");
                     }
                 }
             }
         }
-        return varNameToOptions;
+        return options;
     }
 
     /*
@@ -1310,7 +1299,9 @@ public class DiskRepository extends WriteKBRepository {
                     }
 
                     // Attach CSV
-                    if (attachCSV && this.externalStorage != null) {
+                    if (this.externalStorage == null) {
+                        System.out.println("Warning: External storage not found. Can not upload file.");
+                    } else if (attachCSV) {
                         //run the query again, this time get the bits to create csv file.
                         byte[] csvFile = dataAdapter.queryCSV(query);
                         String csvHash = KBUtils.SHAsum(csvFile);
@@ -1437,6 +1428,7 @@ public class DiskRepository extends WriteKBRepository {
                     sparqlVar = "_CSV_";
                 }
 
+                System.out.println("keys:" + dataVarBindings.keySet());
                 if (sparqlVar == null)
                     continue;
 
@@ -2116,6 +2108,7 @@ public class DiskRepository extends WriteKBRepository {
         }
     }
 
+    // All of this needs to be reworked to clear caches and re run queries.
     public class DataMonitor implements Runnable {
         boolean stop;
         ScheduledFuture<?> scheduledFuture;

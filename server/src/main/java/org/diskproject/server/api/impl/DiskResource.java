@@ -547,15 +547,12 @@ public class DiskResource implements DiskService {
   @Override
   public Response getOutputData(@JsonProperty("request") ExternalDataRequest r) {
     FileAndMeta result = this.repo.getOutputData(r.getSource(), r.getDataId());
-    System.out.println("<< " + r.getSource() + " -- " + r.getDataId());
     if (result == null) {
       ResponseBuilder rBuilder = Response.status(Response.Status.NOT_FOUND);
-      System.out.println("ERROR !!");
       return rBuilder.type(MediaType.TEXT_PLAIN)
           .entity("Could not find file")
           .build();
     } 
-    System.out.println(">> " + result.contentType + " -- " + result.data.length);
 
     ResponseBuilder rBuild = Response.ok(result.data, result.contentType);
     return rBuild.build();

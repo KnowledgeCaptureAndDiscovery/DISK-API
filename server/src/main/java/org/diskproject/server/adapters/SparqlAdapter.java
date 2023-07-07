@@ -3,6 +3,7 @@ package org.diskproject.server.adapters;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -69,14 +70,22 @@ public class SparqlAdapter extends DataAdapter {
 
     @Override
     public byte[] queryCSV(String queryString) throws Exception, QueryParseException, QueryExceptionHTTP {
-        String url = getEndpointUrl() + "sparql";
+        String url = getEndpointUrl() + "/query";
         try {
             URIBuilder builder = new URIBuilder(url);
             builder.setParameter("query", queryString);
             HttpGet get = new HttpGet(builder.build());
-            get.setHeader("Content-Type", "text/csv");
+            get.setHeader("Content-Type", "application/x-www-form-urlencoded");
+            get.setHeader("Accept", "text/csv");
+            if (this.getUsername() != null && this.getPassword() != null) {
+                String pwd = Base64.getEncoder().encodeToString((this.getUsername() + ":" + this.getPassword()).getBytes());
+                get.setHeader(HttpHeaders.AUTHORIZATION, "Basic " + pwd);
+            }
+
             HttpResponse response = httpClient.execute(get);
             HttpEntity entity = response.getEntity();
+            System.out.println("URL>   " + url);
+            System.out.println("SL>   " + response.getStatusLine());
 			ByteArrayOutputStream rawBytes = new ByteArrayOutputStream(); 
     		entity.writeTo(rawBytes);
 			return rawBytes.toByteArray();
@@ -99,6 +108,7 @@ public class SparqlAdapter extends DataAdapter {
             }
         } catch (Exception e) {
             System.err.println("Error querying SPARQL endpoint: " + e.getMessage());
+            System.err.println(" query: " + queryString);
             throw e;
         }
         List<DataResult> results = new ArrayList<DataResult>();
