@@ -204,15 +204,10 @@ public class Config {
     String storageLocal = props.getString("storage.local");
     String storageTdb = props.getString("storage.tdb");
     String storageDb = props.getString("storage.db");
-
     String external = props.getString("storage.external");
     String ex_user = props.getString("storage.username");
     String ex_pass = props.getString("storage.password");
-
     this.storage = new StorageConfig(storageLocal, storageTdb, storageDb, external, ex_user, ex_pass);
-    System.out.println(external);
-    System.out.println(ex_user);
-    System.out.println(ex_pass);
 
     String keycloakUrl = props.getString("keycloak.url");
     String keycloakRealm = props.getString("keycloak.realm");

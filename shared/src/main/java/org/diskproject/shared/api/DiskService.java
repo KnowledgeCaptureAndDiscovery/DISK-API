@@ -179,11 +179,6 @@ public interface DiskService {
   @GET
   @Path("questions")
   public List<Question> listQuestions();
-  
-  @GET
-  @Path("question/{id}/options")
-  public List<VariableOption> listOptions(
-      @PathParam("id") String id);
 
   @POST
   @Path("question/options")

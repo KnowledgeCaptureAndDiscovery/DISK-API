@@ -71,7 +71,7 @@ public abstract class DataAdapter {
     }
 
     public abstract List<DataResult> query (String queryString) throws Exception;
-    public abstract void queryCSV(String queryString) throws Exception;
+    public abstract byte[] queryCSV(String queryString) throws Exception;
 
     //This data query must return two variable names:
     static public String VARURI = "uri";

@@ -177,7 +177,7 @@ public class DiskRepository extends WriteKBRepository {
         this.externalStorage = null;
         if (cfg.external != null && cfg.username !=null&& cfg.password!= null) {
             this.externalStorage = new StorageManager(cfg.external, cfg.username, cfg.password);
-            //this.externalStorage.init();
+            this.externalStorage.init();
         }
     }
 
@@ -1310,12 +1310,15 @@ public class DiskRepository extends WriteKBRepository {
                     }
 
                     // Attach CSV
-                    if (attachCSV) {
-                        //send query again
+                    if (attachCSV && this.externalStorage != null) {
+                        //run the query again, this time get the bits to create csv file.
+                        byte[] csvFile = dataAdapter.queryCSV(query);
+                        String csvHash = KBUtils.SHAsum(csvFile);
+                        String csvUri = this.externalStorage.upload(csvHash, "text/csv", csvFile);
+
                         dataVarBindings.put("_CSV_", new ArrayList<String>());
-                        //dataVarBindings.get("_CSV_").add(createCSVFromQuerySolutions(solutions));
-                        //System.out.println("CSV: " + dataVarBindings.get("_CSV_").get(0));
-                        dataAdapter.queryCSV(query);
+                        dataVarBindings.get("_CSV_").add(csvUri);
+                        System.out.println("CSV: " + csvUri);
                     }
 
                     TriggeredLOI tloi = new TriggeredLOI(loi, id);
@@ -1344,8 +1347,6 @@ public class DiskRepository extends WriteKBRepository {
             String var = a.group();
             if (var.charAt(1) != '_')
                 l.add(var);
-            else
-                System.out.println("DISCARTED: " + var);
         }
         return l;
     }

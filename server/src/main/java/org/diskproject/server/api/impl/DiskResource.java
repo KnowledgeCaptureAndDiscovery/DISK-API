@@ -435,36 +435,6 @@ public class DiskResource implements DiskService {
     return this.repo.listHypothesesQuestions();
   }
 
-  @GET
-  @Path("question/{id}/options")
-  @Override
-  public List<VariableOption> listOptions(
-      @PathParam("id") String id) {
-    try {
-      // return WingsAdapter.get().getWorkflowList();
-      return this.repo.listVariableOptions(id);
-    } catch (Exception e) {
-      try {
-        // Create Json error response
-        Gson gson = new Gson();
-        ErrorMessage error = new ErrorMessage(e.getMessage());
-        String jsonData = gson.toJson(error);
-
-        // Prepare the response
-        response.setContentType("application/json");
-        response.setCharacterEncoding("utf-8");
-        response.setStatus(500);
-
-        // Send the response
-        response.getWriter().print(jsonData.toString());
-        response.getWriter().flush();
-      } catch (IOException e1) {
-        e1.printStackTrace();
-      }
-    }
-    return null;
-  };
-
   @POST
   @Path("question/options")
   public Map<String, List<VariableOption>> listDynamicOptions(

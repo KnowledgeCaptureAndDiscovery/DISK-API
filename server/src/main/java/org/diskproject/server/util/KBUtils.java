@@ -6,6 +6,10 @@ import org.diskproject.shared.classes.vocabulary.Property;
 import org.diskproject.shared.classes.vocabulary.Type;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Formatter;
+
 import edu.isi.kcap.ontapi.KBAPI;
 import edu.isi.kcap.ontapi.KBObject;
 import edu.isi.kcap.ontapi.KBTriple;
@@ -125,4 +129,17 @@ public class KBUtils {
         }
     }
 
+    public static String SHAsum(byte[] data) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-1");
+        return byteArray2Hex(md.digest(data));
+    }
+
+    private static String byteArray2Hex(final byte[] hash) {
+        try (Formatter formatter = new Formatter()) {
+            for (byte b : hash) {
+                formatter.format("%02x", b);
+            }
+            return formatter.toString();
+        }
+    }
 }

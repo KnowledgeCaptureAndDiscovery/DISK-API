@@ -5,11 +5,13 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
+import org.apache.commons.net.imap.IMAPClient.STATUS_DATA_ITEMS;
+
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
+import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
-import io.minio.UploadObjectArgs;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
 import io.minio.errors.InternalException;
@@ -19,6 +21,7 @@ import io.minio.errors.ServerException;
 import io.minio.errors.XmlParserException;
 
 public class StorageManager {
+    static String BUCKET_NAME = "disk";
     String url, username, password;
     MinioClient client;
 
@@ -39,12 +42,12 @@ public class StorageManager {
 
             boolean found = false;
             try {
-                found = client.bucketExists(BucketExistsArgs.builder().bucket("disk").build());
+                found = client.bucketExists(BucketExistsArgs.builder().bucket(StorageManager.BUCKET_NAME).build());
                 if (!found) {
                     // Make a new bucket called 'disk'.
-                    client.makeBucket(MakeBucketArgs.builder().bucket("disk").build());
+                    client.makeBucket(MakeBucketArgs.builder().bucket(StorageManager.BUCKET_NAME).build());
                 } else {
-                    System.out.println("Bucket 'disk' already exists.");
+                    System.out.println("Bucket '" + StorageManager.BUCKET_NAME + "' already exists.");
                 }
             } catch (InvalidKeyException | NoSuchAlgorithmException | IllegalArgumentException | IOException e) {
                 System.out.println("ERROR 1: " + e.toString());
@@ -59,10 +62,11 @@ public class StorageManager {
         return true;
     }
 
-    public void upload (String filename, String datatype, byte[] bytes) {
-        if (client == null) return;
+    public String upload (String filename, String datatype, byte[] bytes) {
+        System.out.println("Trying to upload " + filename + " -- " + bytes.length);
+        if (client == null) return null;
         try {
-            client.putObject(
+            ObjectWriteResponse resp = client.putObject(
                 PutObjectArgs.builder()
                 .bucket("disk")
                 .contentType(datatype)
@@ -70,13 +74,15 @@ public class StorageManager {
                 .stream(new ByteArrayInputStream(bytes), bytes.length, -1)
                 .build()
             );
+            System.out.println("Upload complete - ETAG: " + resp.etag());
+            return this.url + "/" + StorageManager.BUCKET_NAME + "/" + filename;
         } catch (InvalidKeyException | ErrorResponseException | InsufficientDataException | InternalException
                 | InvalidResponseException | NoSuchAlgorithmException | ServerException | XmlParserException
                 | IllegalArgumentException | IOException e) {
             System.err.println("ERROR 2: " + e.toString());
             e.printStackTrace();
         }
-
+        return null;
     }
     
 }

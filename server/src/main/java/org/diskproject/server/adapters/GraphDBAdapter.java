@@ -1,5 +1,6 @@
 package org.diskproject.server.adapters;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -207,7 +208,7 @@ public class GraphDBAdapter extends DataAdapter {
     }
 
     @Override
-    public void queryCSV(String queryString) throws Exception {
+    public byte[] queryCSV(String queryString) throws Exception {
         String url = getEndpointUrl() + "repositories/" + this.repository;
         URIBuilder builder = new URIBuilder(url);
         builder.setParameter("query", queryString);
@@ -219,14 +220,12 @@ public class GraphDBAdapter extends DataAdapter {
 
         try (CloseableHttpResponse response = httpClient.execute(get)) {
             HttpEntity entity = response.getEntity();
-            String strResponse = EntityUtils.toString(entity);
-            System.out.println(get.getURI());
-            System.out.println(entity.getContentType());
-            System.out.println(entity.getContentLength());
-            EntityUtils.consume(entity);
-            System.out.println(strResponse);
+			ByteArrayOutputStream rawBytes = new ByteArrayOutputStream(); 
+    		entity.writeTo(rawBytes);
+			return rawBytes.toByteArray();
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return null;
     }
 }
