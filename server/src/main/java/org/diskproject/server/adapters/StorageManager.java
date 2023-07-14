@@ -10,6 +10,7 @@ import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
+import io.minio.StatObjectArgs;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
 import io.minio.errors.InternalException;
@@ -61,8 +62,31 @@ public class StorageManager {
     }
 
     public String upload (String filename, String datatype, byte[] bytes) {
+        if (datatype.equals("text/csv") && !filename.endsWith(".csv"))
+            filename += ".csv";
+
         System.out.println("Trying to upload " + filename + " -- " + bytes.length);
         if (client == null) return null;
+
+        //Check if the file is already in minio.
+        boolean exists = false;
+        try {
+            client.statObject(StatObjectArgs.builder()
+                .bucket(StorageManager.BUCKET_NAME)
+                .object(filename).build());
+            exists = true;
+        } catch (ErrorResponseException e) {
+            exists = false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e.getMessage());
+        }
+        if (exists) {
+            String newUrl = this.url + "/" + StorageManager.BUCKET_NAME + "/" + filename;
+            System.out.println("File already on bucket: " + newUrl);
+            return newUrl;
+        }
+
         try {
             ObjectWriteResponse resp = client.putObject(
                 PutObjectArgs.builder()

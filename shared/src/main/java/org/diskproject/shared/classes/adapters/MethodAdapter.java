@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.diskproject.shared.classes.workflow.Variable;
+import org.diskproject.shared.classes.workflow.WorkflowVariable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
@@ -76,7 +76,7 @@ public abstract class MethodAdapter {
     
 	public abstract List<Workflow> getWorkflowList();
 
-	public abstract List<Variable> getWorkflowVariables(String id);
+	public abstract List<WorkflowVariable> getWorkflowVariables(String id);
 
 	public abstract String getWorkflowId(String id);
 
@@ -86,13 +86,13 @@ public abstract class MethodAdapter {
 
 	public abstract String getDataUri (String id);
 
-	public abstract List<String> areFilesAvailable (Set<String> fileList, String dType);
+	public abstract Map<String, String> areFilesAvailable (Set<String> fileList, String dType);
 
 	public abstract String addData (String url, String name, String dType) throws Exception;
 
-	public abstract Map<String, Variable> getWorkflowInputs (String id);
+	public abstract Map<String, WorkflowVariable> getWorkflowInputs (String id);
 
-	public abstract List<String> runWorkflow (String wfId, List<VariableBinding> vBindings, Map<String, Variable> inputVariables);
+	public abstract List<String> runWorkflow (String wfId, List<VariableBinding> vBindings, Map<String, WorkflowVariable> inputVariables);
 
 	public abstract WorkflowRun getRunStatus (String runId);
 

@@ -66,7 +66,7 @@ import org.diskproject.shared.classes.util.DataAdapterResponse;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.util.QuestionOptionsRequest;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
-import org.diskproject.shared.classes.workflow.Variable;
+import org.diskproject.shared.classes.workflow.WorkflowVariable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
@@ -345,7 +345,7 @@ public class DiskRepository extends WriteKBRepository {
         return list;
     }
 
-    public List<Variable> getWorkflowVariables(String source, String id) {
+    public List<WorkflowVariable> getWorkflowVariables(String source, String id) {
         for (MethodAdapter adapter : this.methodAdapters.values()) {
             if (adapter.getName().equals(source)) {
                 return adapter.getWorkflowVariables(id);
@@ -514,8 +514,8 @@ public class DiskRepository extends WriteKBRepository {
             tloi.setDateModified(dateformatter.format(new Date()));
         }
         writeTLOI(username, tloi);
-
-        TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, false);
+        LineOfInquiry loi = getLOI(username, tloi.getParentLoiId());
+        TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, loi, false);
         executor.execute(wflowThread);
         return tloi;
     }
@@ -1309,7 +1309,6 @@ public class DiskRepository extends WriteKBRepository {
 
                         dataVarBindings.put("_CSV_", new ArrayList<String>());
                         dataVarBindings.get("_CSV_").add(csvUri);
-                        System.out.println("CSV: " + csvUri);
                     }
 
                     TriggeredLOI tloi = new TriggeredLOI(loi, id);
@@ -1406,7 +1405,7 @@ public class DiskRepository extends WriteKBRepository {
             tloiBindings.add(tloiBinding);
             MethodAdapter methodAdapter = getMethodAdapterByName(bindings.getSource());
 
-            List<Variable> allVars = methodAdapter.getWorkflowVariables(bindings.getWorkflow());
+            List<WorkflowVariable> allVars = methodAdapter.getWorkflowVariables(bindings.getWorkflow());
 
             for (VariableBinding vBinding : bindings.getBindings()) { // Normal variable bindings.
                 // For each Variable binding, check :
@@ -1428,7 +1427,6 @@ public class DiskRepository extends WriteKBRepository {
                     sparqlVar = "_CSV_";
                 }
 
-                System.out.println("keys:" + dataVarBindings.keySet());
                 if (sparqlVar == null)
                     continue;
 
@@ -1450,7 +1448,8 @@ public class DiskRepository extends WriteKBRepository {
                 if (bindingsAreFiles) {
                     String varName = vBinding.getVariable();
                     String dType = null;
-                    for (Variable v: allVars) {
+                    for (WorkflowVariable v: allVars) {
+                        //This does not have in consideration output variables.
                         if (varName.equals(v.getName())) {
                             List<String> classes = v.getType();
                             if (classes != null && classes.size() > 0) {
@@ -1518,11 +1517,10 @@ public class DiskRepository extends WriteKBRepository {
     private Map<String, String> addData(List<String> dsUrls, MethodAdapter methodAdapter, DataAdapter dataAdapter, String dType)
             throws Exception {
         // To add files to wings and not replace anything, we need to get the hash from the wiki.
-        // TODO: here connect with minio.
+        // TODO: We should upload all files to minio
         Map<String, String> nameToUrl = new HashMap<String, String>();
         Map<String, String> urlToName = new HashMap<String, String>();
         Map<String, String> filesETag = dataAdapter.getFileHashesByETag(dsUrls);  // File -> ETag
-        boolean allOk = true; // All is OK if we have all file ETags.
 
         for (String fileUrl: dsUrls) {
             if (filesETag.containsKey(fileUrl)) {
@@ -1533,23 +1531,6 @@ public class DiskRepository extends WriteKBRepository {
                 urlToName.put(fileUrl, uniqueName);
             } else {
                 System.err.println("ETag not found: " + fileUrl);
-                allOk = false;
-            }
-        }
-
-        if (!allOk) { // Get hashes from the data-adapter (SPARQL)
-            Map<String, String> hashes = dataAdapter.getFileHashes(dsUrls); // File -> SHA1
-            for (String fileUrl : dsUrls) {
-                if (hashes.containsKey(fileUrl)) {
-                    if (!urlToName.containsKey(fileUrl)) {
-                        String hash = hashes.get(fileUrl);
-                        String uniqueName = "SHA" + hash.substring(0, 6) + "_" + fileUrl.replaceAll("^.*\\/", "");
-                        nameToUrl.put(uniqueName, fileUrl);
-                        urlToName.put(fileUrl, uniqueName);
-                    }
-                } else {
-                    System.err.println("HASH not found: " + fileUrl);
-                }
             }
         }
 
@@ -1563,14 +1544,27 @@ public class DiskRepository extends WriteKBRepository {
 
         // avoid to duplicate files
         Set<String> names = nameToUrl.keySet();
-        List<String> availableFiles = methodAdapter.areFilesAvailable(names, dType);
-        names.removeAll(availableFiles);
+        Map<String, String> availableFiles = methodAdapter.areFilesAvailable(names, dType);
+        names.removeAll(availableFiles.keySet());
 
         // upload the files
         for (String newFilename : names) {
             String newFile = nameToUrl.get(newFilename);
-            System.out.println("Uploading to " + methodAdapter.getName() + ": " + newFile + " as " + newFilename + "(" + dType + ")");
-            methodAdapter.addData(newFile, newFilename, dType);
+            System.out.println("Uploading to " + methodAdapter.getName() + ": " + newFile + " as " + newFilename + " (" + dType + ")");
+            String dataId = methodAdapter.addData(newFile, newFilename, dType);
+            urlToName.put(newFile, dataId);
+        }
+
+        // Set current available urls
+        for (String existingFilename: availableFiles.keySet()) {
+            for (String newName: urlToName.keySet()) {
+                if (urlToName.get(newName).equals(existingFilename)) {
+                    String newFile = availableFiles.get(existingFilename);
+                    System.out.println("Replaced " + existingFilename + " -> " + newFile);
+                    urlToName.put(newName, newFile);
+                }
+            }
+
         }
 
         return urlToName;
@@ -1861,10 +1855,12 @@ public class DiskRepository extends WriteKBRepository {
         String username;
         boolean metamode;
         TriggeredLOI tloi;
+        LineOfInquiry loi;
 
-        public TLOIExecutionThread(String username, TriggeredLOI tloi, boolean metamode) {
+        public TLOIExecutionThread(String username, TriggeredLOI tloi, LineOfInquiry loi, boolean metamode) {
             this.username = username;
             this.tloi = tloi;
+            this.loi = loi;
             this.metamode = metamode;
         }
 
@@ -1887,7 +1883,7 @@ public class DiskRepository extends WriteKBRepository {
                         break; // This could be `continue`, so to execute the other workflows...
                     }
                     // Get workflow input details
-                    Map<String, Variable> inputs = methodAdapter.getWorkflowInputs(bindings.getWorkflow());
+                    Map<String, WorkflowVariable> inputs = methodAdapter.getWorkflowInputs(bindings.getWorkflow());
                     List<VariableBinding> vBindings = bindings.getBindings();
                     List<VariableBinding> sendbindings = new ArrayList<VariableBinding>(vBindings);
 
@@ -1926,7 +1922,7 @@ public class DiskRepository extends WriteKBRepository {
 
                 // Start monitoring
                 if (allOk) {
-                    TLOIMonitoringThread monitorThread = new TLOIMonitoringThread(username, tloi, metamode);
+                    TLOIMonitoringThread monitorThread = new TLOIMonitoringThread(username, tloi, loi, metamode);
                     monitor.schedule(monitorThread, 15, TimeUnit.SECONDS);
                 } else {
                     System.out.println("[E] Finished: Something when wrong.");
@@ -1937,7 +1933,67 @@ public class DiskRepository extends WriteKBRepository {
         }
     }
 
-    private void addConfidenceToTLOI (TriggeredLOI tloi, WorkflowRun run, MethodAdapter methodAdapter) {
+    private void processWorkflowOutputs (TriggeredLOI tloi, LineOfInquiry loi, WorkflowBindings workflow, WorkflowRun run, MethodAdapter methodAdapter, boolean meta) {
+        Map<String, RunBinding> outputs = run.getOutputs();
+        if (outputs == null) return;
+
+        Map<String,String> outputAssignations = new HashMap<String,String>();
+        for (WorkflowVariable wb: methodAdapter.getWorkflowVariables(workflow.getWorkflow())) {
+            if (!wb.isInput() || wb.isOutput()) { // This could be more strict
+                outputAssignations.put(wb.getName(), "DO_NO_STORE");
+            }
+        }
+        // We need to get the loi var assignations
+        String id = workflow.getWorkflow();
+        for (WorkflowBindings wb: (meta? loi.getMetaWorkflows() : loi.getWorkflows())) {
+            if (id.contains(wb.getWorkflow())) {
+                for (VariableBinding b: wb.getBindings()) {
+                    String varName = b.getVariable();
+                    System.out.println("> " + varName);
+                    if (outputAssignations.containsKey(varName)) {
+                        outputAssignations.put(varName, b.getBinding());
+                    }
+                }
+            }
+        }
+
+        System.out.println("OUT VARS: ");
+        System.out.println(outputAssignations);
+
+        // Now process generated outputs.
+        for (String outname : outputs.keySet()) {
+            for (String varName: outputAssignations.keySet()) {
+                String varBinding = outputAssignations.get(varName);
+                if (varBinding.contains("DO_NO_STORE") ||
+                    varBinding.contains("DOWNLOAD_ONLY") ||
+                    varBinding.contains("IMAGE") ||
+                    varBinding.contains("VISUALIZE")) {
+                    // DO NOTHING, some of these should be upload to MINIO
+                } else if (varBinding.contains("CONFIDENCE_VALUE")) {
+                    String dataid = outputs.get(outname).id;
+                    FileAndMeta fm = methodAdapter.fetchData(dataid);
+                    byte[] byteConf = fm.data;
+                    String wingsP = byteConf != null ? new String(byteConf, StandardCharsets.UTF_8) : null;
+                    Double pVal = null;
+                    try {
+                        String strPVal = wingsP != null ? wingsP.split("\n", 2)[0] : "";
+                        pVal = Double.valueOf(strPVal);
+                    } catch (Exception e) {
+                        System.err.println("[M] Error: " + dataid + " is a non valid p-value: " + wingsP);
+                    }
+                    if (pVal != null) {
+                        System.out.println("[M] Detected p-value: " + pVal);
+                        tloi.setConfidenceValue(pVal);
+                        tloi.setConfidenceType("P-VALUE");
+                    }
+                } else {
+                    System.out.println("Output information not found");
+                }
+            }
+        }
+    }
+
+    /*private void addConfidenceToTLOI (TriggeredLOI tloi, WorkflowRun run, MethodAdapter methodAdapter) {
         // Search for p-value on the outputs
         // TODO: change this to allow any output.
         Map<String, RunBinding> outputs = run.getOutputs();
@@ -1963,7 +2019,7 @@ public class DiskRepository extends WriteKBRepository {
                 }
             }
         }
-    }
+    }*/
 
     private Status getOverallRunStatus (TriggeredLOI tloi, boolean metamode) {
         List<WorkflowBindings> wfList = metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows();
@@ -1994,11 +2050,13 @@ public class DiskRepository extends WriteKBRepository {
         String username;
         boolean metamode, error;
         TriggeredLOI tloi;
+        LineOfInquiry loi;
         Map<String, Map<String, WorkflowRun>> queuedRuns;
 
-        public TLOIMonitoringThread(String username, TriggeredLOI tloi, boolean metamode) {
+        public TLOIMonitoringThread(String username, TriggeredLOI tloi, LineOfInquiry loi, boolean metamode) {
             this.username = username;
             this.tloi = tloi;
+            this.loi = loi;
             this.metamode = metamode;
             this.error = false;
             this.queuedRuns = new HashMap<String, Map<String, WorkflowRun>>();
@@ -2066,13 +2124,14 @@ public class DiskRepository extends WriteKBRepository {
                         }
                         //newStatus = newRun.getStatus();
                     }
-                    if (newExec.status == Status.SUCCESSFUL || newExec.status == Status.FAILED) {
-                        if (newExec.status == Status.FAILED) {
-                            this.error = true;
-                        } else {
-                            addConfidenceToTLOI(tloi, newRun, methodAdapter);
-                        }
+
+                    if (newExec.status == Status.SUCCESSFUL) {
+                        processWorkflowOutputs(tloi, loi, bindings, newRun, methodAdapter, metamode);
+                        //addConfidenceToTLOI(tloi, newRun, methodAdapter); /// HERE
+                    } else if (newExec.status == Status.FAILED) {
+                        this.error = true;
                     }
+
                     newRun.setExecutionInfo(newExec);
                     bindings.addRun(newRun);
                     updatedBindings.add(bindings);
@@ -2089,7 +2148,7 @@ public class DiskRepository extends WriteKBRepository {
                     } else {
                         System.out.println("[M] Starting metamode after n workflows.");
                         tloi.setStatus(Status.RUNNING);
-                        TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, true);
+                        TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, loi, true);
                         executor.execute(wflowThread);
                     }
                 } else if (overallStatus == Status.FAILED) {

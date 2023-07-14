@@ -41,7 +41,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.util.KBConstants;
-import org.diskproject.shared.classes.workflow.Variable;
+import org.diskproject.shared.classes.workflow.WorkflowVariable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
@@ -161,29 +161,49 @@ public class WingsAdapter extends MethodAdapter {
 		return wList;
 	}
 
-	public List<Variable> getWorkflowVariables(String id) {
-		List<Variable> vList = new ArrayList<Variable>();
-		String fullId = this.DOMURI() + "/workflows/" + id + ".owl#" + id;
+	public List<WorkflowVariable> getWorkflowVariables (String templateId) {
+		List<WorkflowVariable> vList = new ArrayList<WorkflowVariable>();
+		String fullId = this.DOMURI() + "/workflows/" + templateId + ".owl#" + templateId;
 		String getVariablesUrl = "users/" + this.getUsername() + "/" + this.domain +"/workflows/getViewerJSON"; 
 		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
 		formdata.add(new BasicNameValuePair("template_id", fullId));
 		String resp = this.get(getVariablesUrl, formdata);
 		try {
 			JsonObject obj = (JsonObject) jsonParser.parse(resp);
-			JsonArray variables = obj.get("inputs").getAsJsonArray();
-			int len = variables.size();
-			for (int i = 0; i < len; i++) {
-				JsonObject varObj = variables.get(i).getAsJsonObject();
-				String name = varObj.get("name").getAsString();
-				String dType = (varObj.has("dtype")) ? varObj.get("dtype").getAsString() : null;
-				String param = varObj.get("type").getAsString();
-				JsonElement dObj = varObj.get("dim");
-				int dim = dObj != null ? dObj.getAsInt() : 0;
-
-				List<String> type = getSubClasses(dType);
-				vList.add(new Variable(name, type, dim, param.equals("param"), true));
+			if (obj.has("inputs")) {
+				JsonArray variables = obj.getAsJsonArray("inputs");
+				int len = variables.size();
+				for (int i = 0; i < len; i++) {
+					JsonObject varObj = variables.get(i).getAsJsonObject();
+					String name = varObj.get("name").getAsString();
+					String dType = (varObj.has("dtype")) ? varObj.get("dtype").getAsString() : null;
+					String param = varObj.get("type").getAsString();
+					int dim = varObj.has("dim") ? varObj.get("dim").getAsInt() : 0;
+					List<String> type = getSubClasses(dType); // This queries the WINGs DB
+					vList.add(new WorkflowVariable(name, type, dim, param.equals("param"), true));
+				}
+			} else {
+				System.out.println("Warning: " + templateId + " does not have input variables.");
 			}
 
+			// try to get outputs.
+			if (obj.has("template")) {
+				JsonObject templateEl = obj.getAsJsonObject("template");
+				if (templateEl.has("outputRoles")) {
+					JsonObject outRoles = templateEl.getAsJsonObject("outputRoles");
+					for (Entry<String, JsonElement> outRol: outRoles.entrySet()) {
+						JsonObject outputVariable = outRol.getValue().getAsJsonObject();
+						String name = outputVariable.get("roleid").getAsString();
+						WorkflowVariable v = new WorkflowVariable(name, null, 0, false, false);
+						v.setOutput(true);
+						vList.add(v);
+					}
+				} else {
+					System.out.println("Warning: " + templateId + " does not have outputs.");
+				}
+			} else {
+				System.out.println("Warning: " + templateId + " does not have template.");
+			}
 		} catch (Exception e) {
 			System.err.println("Error decoding " + resp);
 			e.printStackTrace();
@@ -258,7 +278,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public Map<String, Variable> getWorkflowInputs(String id) {
+	public Map<String, WorkflowVariable> getWorkflowInputs(String id) {
 		String pageId = "users/" + getUsername() + "/" + this.domain + "/workflows/getInputsJSON";
 
 		String wflowid = this.WFLOWID(id);
@@ -271,9 +291,9 @@ public class WingsAdapter extends MethodAdapter {
 		}.getType();
 		List<Map<String, Object>> list = json.fromJson(inputsjson, type);
 
-		Map<String, Variable> inputs = new HashMap<String, Variable>();
+		Map<String, WorkflowVariable> inputs = new HashMap<String, WorkflowVariable>();
 		for (Map<String, Object> inputitem : list) {
-			Variable var = new Variable();
+			WorkflowVariable var = new WorkflowVariable();
 			String varId = (String) inputitem.get("id");
 			var.setName(varId.replaceAll("^.*#", ""));
 			if (inputitem.containsKey("dim"))
@@ -602,7 +622,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public List<String> runWorkflow(String workflowName, List<VariableBinding> vBindings, Map<String, Variable> inputVariables) {
+	public List<String> runWorkflow(String workflowName, List<VariableBinding> vBindings, Map<String, WorkflowVariable> inputVariables) {
 		workflowName = WFLOWID(workflowName);
 		String toPost = null, getData = null, getParams = null, getExpansions = null;
 		JsonObject response = null;
@@ -642,7 +662,9 @@ public class WingsAdapter extends MethodAdapter {
 			response = (JsonObject) jsonParser.parse(getParams);
 			boolean ok = response.get("success").getAsBoolean();
 			if (!ok) {
-				System.err.println("Error planning parameters for workflow run:");
+				System.err.println("Error planning parameters for workflow run:\nRequest:");
+				System.err.println(toPost);
+				System.err.println("\nResponse:");
 				System.err.println(response);
 				return null;
 			}
@@ -883,12 +905,6 @@ public class WingsAdapter extends MethodAdapter {
 
 
 	public String addDataToWingsAsFile(String id, byte[] contents, String type) {
-		// Compute the hash of the contents and check it agains filename.
-		String sha = DigestUtils.sha1Hex(contents);
-		String correctName = "SHA" + sha.substring(0, 6);
-		if (!id.contains(correctName))
-			System.out.println("File " + id + " does not have the same hash: " + sha);
-
 		// Create temporary file and upload to WINGS
 		String uploadPage = "users/" + getUsername() + "/" + domain + "/upload";
 		String location = null;
@@ -935,7 +951,6 @@ public class WingsAdapter extends MethodAdapter {
 			data.add(new BasicNameValuePair("data_id", dataid));
 			data.add(new BasicNameValuePair("location", location));
 			String response = this.post(postDataLocation, data);
-			System.out.println("RESP: " + response);
 			if (response == null || !response.equals("OK"))
 				return null;
 		} catch (Exception e) {
@@ -983,7 +998,7 @@ public class WingsAdapter extends MethodAdapter {
 		return dataid;
 	}
 
-	public List<String> isFileListOnWings(Set<String> filelist, String filetype) {
+	public Map<String, String> isFileListOnWings(Set<String> filelist, String filetype) {
 		List<String> returnValue = new ArrayList<String>();
 		//String filetype = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
 		String fileprefix = "<" + this.internal_server + "/export/users/" + getUsername() + "/" + domain
@@ -1030,7 +1045,7 @@ public class WingsAdapter extends MethodAdapter {
 			formdata.add(new BasicNameValuePair("format", "json"));
 			String resultjson = get(pageId, formdata);
 			if (resultjson == null || resultjson.equals(""))
-				return returnValue;
+				return createFilesUrl(returnValue);
 
 			JsonObject result = null;
 			try {
@@ -1054,8 +1069,15 @@ public class WingsAdapter extends MethodAdapter {
 			}
 		}
 
-		return returnValue;
+		return createFilesUrl(returnValue);
+	}
 
+	private Map<String,String> createFilesUrl (List<String> names) {
+		Map<String,String> r = new HashMap<String,String>();
+		for (String name: names) {
+			r.put(name, this.DATAID(name));
+		}
+		return r;
 	}
 
 	public boolean isFileOnWings(String url) {
@@ -1125,7 +1147,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	private List<VariableBinding> addDataBindings(
-			Map<String, Variable> inputVariables, List<VariableBinding> vbl,
+			Map<String, WorkflowVariable> inputVariables, List<VariableBinding> vbl,
 			String data, boolean param) {
 
 		JsonObject expobj = null;
@@ -1165,7 +1187,7 @@ public class WingsAdapter extends MethodAdapter {
 		}
 
 		for (String key : inputVariables.keySet()) {
-			Variable v = inputVariables.get(key);
+			WorkflowVariable v = inputVariables.get(key);
 			boolean existing = false;
 			if (!v.isParam() && !param) {
 				for (int i = 0; i < vbl.size(); i++) {
@@ -1211,7 +1233,7 @@ public class WingsAdapter extends MethodAdapter {
 		return vbl;
 	}
 
-	private String toPlanAcceptableFormat(String wfName, List<VariableBinding> vbl, Map<String, Variable> ivm) {
+	private String toPlanAcceptableFormat(String wfName, List<VariableBinding> vbl, Map<String, WorkflowVariable> ivm) {
 		// We are creating a json here, should be a better way to do it.
 		String output = "";
 
@@ -1225,7 +1247,7 @@ public class WingsAdapter extends MethodAdapter {
 		// Set Parameter Types
 		String paramTypes = "";
 		for (String key : ivm.keySet()) {
-			Variable var = ivm.get(key);
+			WorkflowVariable var = ivm.get(key);
 			if (var.isParam()) {
 				List<String> types = var.getType();
 				String type = types != null && types.size() > 0 ? types.get(0) : KBConstants.XSD_NS + "string";
@@ -1244,7 +1266,7 @@ public class WingsAdapter extends MethodAdapter {
 		String dataID = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/library.owl#";
 
 		for (String key : ivm.keySet()) {
-			Variable v = ivm.get(key);
+			WorkflowVariable v = ivm.get(key);
 			for (int i = 0; i < vbl.size(); i++) {
 				VariableBinding vb = vbl.get(i);
 				if (vb.getVariable().equals(v.getName())) {
@@ -1405,7 +1427,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public List<String> areFilesAvailable(Set<String> filelist, String dType) {
+	public Map<String, String> areFilesAvailable(Set<String> filelist, String dType) {
 		return this.isFileListOnWings(filelist, dType);
 	}
 

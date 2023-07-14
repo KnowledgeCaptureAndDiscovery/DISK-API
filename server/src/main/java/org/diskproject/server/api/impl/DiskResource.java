@@ -37,7 +37,7 @@ import org.diskproject.shared.classes.util.DataAdapterResponse;
 import org.diskproject.shared.classes.util.ExternalDataRequest;
 import org.diskproject.shared.classes.util.QuestionOptionsRequest;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
-import org.diskproject.shared.classes.workflow.Variable;
+import org.diskproject.shared.classes.workflow.WorkflowVariable;
 import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 
@@ -378,7 +378,7 @@ public class DiskResource implements DiskService {
   @GET
   @Override
   @Path("workflows/{source}/{id}")
-  public List<Variable> getWorkflowVariables(
+  public List<WorkflowVariable> getWorkflowVariables(
       @PathParam("source") String source,
       @PathParam("id") String id) {
     return this.repo.getWorkflowVariables(source, id);

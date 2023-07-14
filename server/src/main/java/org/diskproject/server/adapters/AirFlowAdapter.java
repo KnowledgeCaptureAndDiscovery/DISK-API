@@ -18,7 +18,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
-import org.diskproject.shared.classes.workflow.Variable;
+import org.diskproject.shared.classes.workflow.WorkflowVariable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
@@ -64,7 +64,7 @@ public class AirFlowAdapter extends MethodAdapter {
         return list;
     }
 
-    public List<Variable> getWorkflowVariables(String id) {
+    public List<WorkflowVariable> getWorkflowVariables(String id) {
         return null;
     }
 
@@ -87,7 +87,7 @@ public class AirFlowAdapter extends MethodAdapter {
     }
 
     @Override
-    public List<String> areFilesAvailable(Set<String> filelist, String dType) {
+    public Map<String, String> areFilesAvailable(Set<String> filelist, String dType) {
         // Auto-generated method stub
         return null;
     }
@@ -99,13 +99,13 @@ public class AirFlowAdapter extends MethodAdapter {
     }
 
     @Override
-    public Map<String, Variable> getWorkflowInputs(String id) {
+    public Map<String, WorkflowVariable> getWorkflowInputs(String id) {
         // Auto-generated method stub
         return null;
     }
 
     @Override
-    public List<String> runWorkflow(String wfId, List<VariableBinding> vBindings, Map<String, Variable> inputVariables) {
+    public List<String> runWorkflow(String wfId, List<VariableBinding> vBindings, Map<String, WorkflowVariable> inputVariables) {
         // Auto-generated method stub
         return null;
     }

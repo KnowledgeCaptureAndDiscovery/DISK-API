@@ -84,8 +84,6 @@ public class SparqlAdapter extends DataAdapter {
 
             HttpResponse response = httpClient.execute(get);
             HttpEntity entity = response.getEntity();
-            System.out.println("URL>   " + url);
-            System.out.println("SL>   " + response.getStatusLine());
 			ByteArrayOutputStream rawBytes = new ByteArrayOutputStream(); 
     		entity.writeTo(rawBytes);
 			return rawBytes.toByteArray();
