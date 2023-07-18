@@ -998,7 +998,7 @@ public class WingsAdapter extends MethodAdapter {
 		return dataid;
 	}
 
-	public Map<String, String> isFileListOnWings(Set<String> filelist, String filetype) {
+	public List<String> isFileListOnWings(Set<String> filelist, String filetype) {
 		List<String> returnValue = new ArrayList<String>();
 		//String filetype = this.internal_server + "/export/users/" + getUsername() + "/" + domain + "/data/ontology.owl#File";
 		String fileprefix = "<" + this.internal_server + "/export/users/" + getUsername() + "/" + domain
@@ -1045,7 +1045,7 @@ public class WingsAdapter extends MethodAdapter {
 			formdata.add(new BasicNameValuePair("format", "json"));
 			String resultjson = get(pageId, formdata);
 			if (resultjson == null || resultjson.equals(""))
-				return createFilesUrl(returnValue);
+				return returnValue;
 
 			JsonObject result = null;
 			try {
@@ -1069,15 +1069,7 @@ public class WingsAdapter extends MethodAdapter {
 			}
 		}
 
-		return createFilesUrl(returnValue);
-	}
-
-	private Map<String,String> createFilesUrl (List<String> names) {
-		Map<String,String> r = new HashMap<String,String>();
-		for (String name: names) {
-			r.put(name, this.DATAID(name));
-		}
-		return r;
+		return returnValue;
 	}
 
 	public boolean isFileOnWings(String url) {
@@ -1274,7 +1266,7 @@ public class WingsAdapter extends MethodAdapter {
 					String bindingValue = vb.getBinding();
 
 					if (v.getDimensionality() ==  0) { // && !bindingValue.startsWith("[")) { FIXME!
-						curBinding += "\"" + bindingValue + "\"";
+						curBinding += "\"" + (v.isParam() ? "" : dataID) + bindingValue + "\"";
 					} else {
 						if (v.getDimensionality() == 0) {
 							System.err.println("WARNING: Variable " + v.getName() + " has dimensionality 0 but the binding is an array");
@@ -1427,7 +1419,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public Map<String, String> areFilesAvailable(Set<String> filelist, String dType) {
+	public List<String> areFilesAvailable(Set<String> filelist, String dType) {
 		return this.isFileListOnWings(filelist, dType);
 	}
 

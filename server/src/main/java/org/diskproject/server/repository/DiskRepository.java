@@ -1544,27 +1544,14 @@ public class DiskRepository extends WriteKBRepository {
 
         // avoid to duplicate files
         Set<String> names = nameToUrl.keySet();
-        Map<String, String> availableFiles = methodAdapter.areFilesAvailable(names, dType);
-        names.removeAll(availableFiles.keySet());
+        List<String> availableFiles = methodAdapter.areFilesAvailable(names, dType);
+        names.removeAll(availableFiles);
 
         // upload the files
         for (String newFilename : names) {
             String newFile = nameToUrl.get(newFilename);
             System.out.println("Uploading to " + methodAdapter.getName() + ": " + newFile + " as " + newFilename + " (" + dType + ")");
-            String dataId = methodAdapter.addData(newFile, newFilename, dType);
-            urlToName.put(newFile, dataId);
-        }
-
-        // Set current available urls
-        for (String existingFilename: availableFiles.keySet()) {
-            for (String newName: urlToName.keySet()) {
-                if (urlToName.get(newName).equals(existingFilename)) {
-                    String newFile = availableFiles.get(existingFilename);
-                    System.out.println("Replaced " + existingFilename + " -> " + newFile);
-                    urlToName.put(newName, newFile);
-                }
-            }
-
+            methodAdapter.addData(newFile, newFilename, dType);
         }
 
         return urlToName;
@@ -1896,8 +1883,16 @@ public class DiskRepository extends WriteKBRepository {
                     System.out.println("[R] Executing " + bindings.getWorkflow() + " with:");
                     for (VariableBinding v : vBindings) {
                         String[] l = v.isCollection() ? v.getBindingAsArray() : null;
-                        System.out.println("[R] - " + v.getVariable() + ": "
-                                + (l == null ? v.getBinding() : l[0] + " (" + l.length + ")"));
+                        int i = 0;
+                        if (l != null) {
+                            System.out.println("[R] - " + v.getVariable() + ": ");
+                            for (String b: l) {
+                                System.out.println("[R]    " + String.valueOf(i) + ") " + b);
+                                i++;
+                            }
+                        } else {
+                            System.out.println("[R] - " + v.getVariable() + ": " + v.getBinding());
+                        }
                     }
 
                     List<String> runIds = methodAdapter.runWorkflow(bindings.getWorkflow(), sendbindings, inputs);
@@ -1949,7 +1944,6 @@ public class DiskRepository extends WriteKBRepository {
             if (id.contains(wb.getWorkflow())) {
                 for (VariableBinding b: wb.getBindings()) {
                     String varName = b.getVariable();
-                    System.out.println("> " + varName);
                     if (outputAssignations.containsKey(varName)) {
                         outputAssignations.put(varName, b.getBinding());
                     }
