@@ -1427,8 +1427,10 @@ public class DiskRepository extends WriteKBRepository {
                     sparqlVar = "_CSV_";
                 }
 
-                if (sparqlVar == null)
+                if (sparqlVar == null) {
+                    tloiBinding.addBinding(vBinding);
                     continue;
+                }
 
                 // Get the data bindings for the sparql variable
                 List<String> dsUrls = dataVarBindings.get(sparqlVar);
@@ -1951,19 +1953,23 @@ public class DiskRepository extends WriteKBRepository {
             }
         }
 
-        System.out.println("OUT VARS: ");
-        System.out.println(outputAssignations);
-
         // Now process generated outputs.
         for (String outname : outputs.keySet()) {
-            for (String varName: outputAssignations.keySet()) {
-                String varBinding = outputAssignations.get(varName);
-                if (varBinding.contains("DO_NO_STORE") ||
-                    varBinding.contains("DOWNLOAD_ONLY") ||
-                    varBinding.contains("IMAGE") ||
-                    varBinding.contains("VISUALIZE")) {
+            String varBinding = outputAssignations.get(outname);
+            //for (String varName: outputAssignations.keySet()) {
+                //String varBinding = outputAssignations.get(varName);
+                if (varBinding == null) {
+                    System.out.println("[M] Variable binding not found for " + outname);
+                } else if (varBinding.contains("_DO_NO_STORE_") ||
+                    varBinding.contains("_DOWNLOAD_ONLY_") ||
+                    varBinding.contains("_IMAGE_") ||
+                    varBinding.contains("_VISUALIZE_")) {
                     // DO NOTHING, some of these should be upload to MINIO
-                } else if (varBinding.contains("CONFIDENCE_VALUE")) {
+                } else if (varBinding.contains("_CONFIDENCE_VALUE_")) {
+                    System.out.println("OUT: " + outname);
+                    //System.out.println("var: " + varName);
+                    System.out.println("bin: " + varBinding);
+
                     String dataid = outputs.get(outname).id;
                     FileAndMeta fm = methodAdapter.fetchData(dataid);
                     byte[] byteConf = fm.data;
@@ -1983,7 +1989,7 @@ public class DiskRepository extends WriteKBRepository {
                 } else {
                     System.out.println("Output information not found");
                 }
-            }
+            //}
         }
     }
 
