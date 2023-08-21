@@ -1032,7 +1032,7 @@ public class DiskRepository extends WriteKBRepository {
      */
 
     private Boolean isValid(LineOfInquiry loi) {
-        // Mandatory fields for Lines of Inquiry
+        // Mandatory fields for Lnes of Inquiry
         String hq = loi.getHypothesisQuery();
         if (hq == null || hq.equals(""))
             return false;
@@ -1067,8 +1067,6 @@ public class DiskRepository extends WriteKBRepository {
         // All variables used on both, the hypothesis query and data query, must have
         // valid values in this point.
         Set<String> inVars = interceptVariables(loi.getHypothesisQuery(), dataQuery);
-        if (inVars.size() == 0)
-            return false;
         for (String variable : inVars) {
             if (!hypothesisBindings.containsKey(variable.substring(1)))
                 return false;
@@ -1080,11 +1078,6 @@ public class DiskRepository extends WriteKBRepository {
             List<String> varList = wb.getAllVariables();
             if (varList.size() == 0)
                 return false;
-            // This varName is the binding of the workflow, can be an special string too so this was disabled.
-            //for (String varName : varList) { 
-            //    if (!(hypothesisBindings.containsKey(varName.substring(1)) || dataQuery.contains(varName) ))
-            //        return false;
-            //}
         }
         return true;
     }
