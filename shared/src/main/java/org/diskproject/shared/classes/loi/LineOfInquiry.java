@@ -54,14 +54,6 @@ public class LineOfInquiry extends DISKResource {
 	    return this.dataSource;
     }
 
-    public String getExplanation () {
-	    return this.dataQueryExplanation;
-    }
-
-    public void setExplanation (String e) {
-	    this.dataQueryExplanation = e;
-    }
-
     public Set<String> getAllWorkflowVariables () {
         Set<String> allVars = new HashSet<String>();
         List<WorkflowBindings> wfs = new ArrayList<WorkflowBindings>(workflows);

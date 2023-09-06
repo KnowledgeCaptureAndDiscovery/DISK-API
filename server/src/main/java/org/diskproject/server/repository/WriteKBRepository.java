@@ -500,9 +500,9 @@ public class WriteKBRepository extends KBRepository {
         if (loi.getQuestionId() != null)
             userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION),
                     userKB.createLiteral(loi.getQuestionId()));
-        if (loi.getExplanation() != null)
+        if (loi.getDataQueryExplanation() != null)
             userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION),
-                    userKB.createLiteral(loi.getExplanation()));
+                    userKB.createLiteral(loi.getDataQueryExplanation()));
 
         this.save(userKB);
         this.end();
@@ -576,7 +576,7 @@ public class WriteKBRepository extends KBRepository {
 
         KBObject explanationObj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION));
         if (explanationObj != null) {
-            loi.setExplanation(explanationObj.getValueAsString());
+            loi.setDataQueryExplanation(explanationObj.getValueAsString());
         }
 
         this.end();
