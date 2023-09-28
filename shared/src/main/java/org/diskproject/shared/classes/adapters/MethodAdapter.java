@@ -100,6 +100,8 @@ public abstract class MethodAdapter {
 
 	public abstract Map<String, String> getRunVariableBindings (String runId);
 
+	public abstract boolean registerData (String dataid, String type);
+
     // Test connection with source
     public abstract boolean ping ();
 }

@@ -1441,4 +1441,27 @@ public class WingsAdapter extends MethodAdapter {
 	public FileAndMeta fetchData(String dataId) {
 		return this.fetchDataFromWings(dataId);
 	}
+
+
+
+  //data_id=http://datascience4all.org/wings-portal-new/export/users/dkhider/ClimateDisk/data/library.owl#Output-9xo020zkzzlut84luu7bp1z16
+  //newname=Output-9xo020zkzzlut84luu7bp1z16
+  //metadata_json={
+  //  "type":["http://datascience4all.org/wings-portal-new/export/users/dkhider/ClimateDisk/data/ontology.owl#TimeSeries"]
+  //}'
+
+	@Override
+	public boolean registerData (String id, String type) {
+		String fullId = getDataUri(id);
+		String registerFileUrl = "users/" + this.getUsername() + "/" + this.domain +"/data/registerData"; 
+		List<NameValuePair> formdata = new ArrayList<NameValuePair>();
+		formdata.add(new BasicNameValuePair("data_id", fullId));
+		formdata.add(new BasicNameValuePair("newname", id));
+		if (type != null) {
+			String jsonFile = "{\"type\":[\"" + type + "\"]}";
+			formdata.add(new BasicNameValuePair("metadata_json", jsonFile));
+		}
+		String resp = this.post(registerFileUrl, formdata);
+		return resp.equals("OK");
+	}
 }

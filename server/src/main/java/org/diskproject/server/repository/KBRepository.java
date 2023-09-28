@@ -4,10 +4,10 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
+import org.diskproject.server.adapters.MethodAdapterManager;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.KBCache;
 import org.diskproject.shared.classes.adapters.DataAdapter;
-import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.util.KBConstants;
 
 import edu.isi.kcap.ontapi.KBAPI;
@@ -26,7 +26,8 @@ public class KBRepository implements TransactionsAPI {
   protected KBCache DISKOnt;
 
   protected Map<String, DataAdapter> dataAdapters;
-  protected Map<String, MethodAdapter> methodAdapters;
+  //protected Map<String, MethodAdapter> methodAdapters;
+  public MethodAdapterManager methodAdapters;
 
   protected void setConfiguration() {
     Config currentConfig =  Config.get();
@@ -65,17 +66,16 @@ public class KBRepository implements TransactionsAPI {
     } else {
       return;
     }
-
   }
 
-  public MethodAdapter getMethodAdapterByName(String source) {
-    for (MethodAdapter adapter : this.methodAdapters.values()) {
-      if (adapter.getName().equals(source))
-        return adapter;
-    }
-    System.err.println("Error: Method adapter not found " + source);
-    return null;
-  }
+  //public MethodAdapter getMethodAdapterByName(String source) {
+  //  for (MethodAdapter adapter : this.methodAdapters.values()) {
+  //    if (adapter.getName().equals(source))
+  //      return adapter;
+  //  }
+  //  System.err.println("Error: Method adapter not found " + source);
+  //  return null;
+  //}
 
   // TransactionsAPI functions
   private void acquire() {

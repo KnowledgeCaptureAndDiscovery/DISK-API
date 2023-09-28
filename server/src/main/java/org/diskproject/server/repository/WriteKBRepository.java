@@ -907,7 +907,7 @@ public class WriteKBRepository extends KBRepository {
             for (WorkflowBindings bindings : bindingsList) {
                 String source = bindings.getSource();
                 String description = bindings.getDescription();
-                MethodAdapter methodAdapter = this.getMethodAdapterByName(source);
+                MethodAdapter methodAdapter = this.methodAdapters.getMethodAdapterByName(source);
                 if (methodAdapter == null) {
                     System.out.println("Method adapter not found " + source);
                     continue;
@@ -1075,7 +1075,7 @@ public class WriteKBRepository extends KBRepository {
                 if (sourceObj != null) {
                     String source = sourceObj.getValueAsString();
                     bindings.setSource(source);
-                    methodAdapter = this.getMethodAdapterByName(source);
+                    methodAdapter = this.methodAdapters.getMethodAdapterByName(source);
                 }
 
                 String description = kb.getComment(wbObj);

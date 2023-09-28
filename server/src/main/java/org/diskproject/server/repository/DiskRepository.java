@@ -27,8 +27,10 @@ import org.apache.commons.lang.SerializationUtils;
 import org.apache.jena.query.QueryParseException;
 import org.diskproject.server.adapters.AirFlowAdapter;
 import org.diskproject.server.adapters.GraphDBAdapter;
+import org.diskproject.server.adapters.MethodAdapterManager;
 import org.diskproject.server.adapters.SparqlAdapter;
 import org.diskproject.server.adapters.StorageManager;
+import org.diskproject.server.threads.ThreadManager;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.ConfigKeys;
 import org.diskproject.server.util.KBCache;
@@ -92,10 +94,11 @@ public class DiskRepository extends WriteKBRepository {
     protected KBCache SQOnt;
 
     Map<String, Vocabulary> vocabularies;
-    ScheduledExecutorService monitor, monitorData;
-    ExecutorService executor;
-    static DataMonitor dataThread;
     StorageManager externalStorage;
+    ThreadManager threadManager;
+    ////ScheduledExecutorService monitor, monitorData;
+    ////ExecutorService executor;
+    ////static DataMonitor dataThread;
 
     private Map<String, List<VariableOption>> optionsCache;
     private Map<String, VocabularyConfiguration> externalVocabularies;
@@ -121,12 +124,13 @@ public class DiskRepository extends WriteKBRepository {
         // Set domain for writing the KB
         setConfiguration();
         this.setDomain(this.server);
+        this.methodAdapters = new MethodAdapterManager();
 
         // Initialize
         this.dataAdapters = new HashMap<String, DataAdapter>();
-        this.methodAdapters = new HashMap<String, MethodAdapter>();
         this.initializeDataAdapters();
-        this.initializeMethodAdapters();
+        //this.methodAdapters = new HashMap<String, MethodAdapter>();
+        //this.initializeMethodAdapters();
         try {
             initializeKB();
         } catch (Exception e) {
@@ -134,20 +138,22 @@ public class DiskRepository extends WriteKBRepository {
             System.exit(1);
         }
         // Threads
-        monitor = Executors.newScheduledThreadPool(0);
-        executor = Executors.newFixedThreadPool(2);
-        dataThread = new DataMonitor();
+        threadManager = new ThreadManager(methodAdapters, this);
+        ////monitor = Executors.newScheduledThreadPool(0);
+        ////executor = Executors.newFixedThreadPool(2);
+        ////dataThread = new DataMonitor();
     }
 
     public void shutdownExecutors() {
-        if (monitor != null)
-            monitor.shutdownNow();
-        if (executor != null)
-            executor.shutdownNow();
-        if (dataThread != null)
-            dataThread.stop();
-        if (monitorData != null)
-            monitorData.shutdownNow();
+        threadManager.shutdownExecutors();
+        ////if (monitor != null)
+        ////    monitor.shutdownNow();
+        ////if (executor != null)
+        ////    executor.shutdownNow();
+        ////if (dataThread != null)
+        ////    dataThread.stop();
+        ////if (monitorData != null)
+        ////    monitorData.shutdownNow();
     }
 
     /********************
@@ -297,62 +303,62 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     // -- Method adapters
-    private void initializeMethodAdapters() {
-        for (MethodAdapterConfig ma: Config.get().methodAdapters) {
-            MethodAdapter curAdapter = null;
-            switch (ma.type) {
-                case ConfigKeys.METHOD_TYPE_WINGS:
-                    curAdapter = new WingsAdapter(ma.name, ma.endpoint, ma.username, ma.password, ma.domain, ma.internalServer);
-                    break;
-                case ConfigKeys.METHOD_TYPE_AIRFLOW:
-                    curAdapter = new AirFlowAdapter(ma.name, ma.endpoint, ma.username, ma.password);
-                    break;
-                default:
-                    System.out.println("Error: Method adapter type not found: '" + ma.type + "'");
-                    break;
-            }
-            if (curAdapter != null) {
-                if (ma.version != null)
-                    curAdapter.setVersion(ma.version);
-                this.methodAdapters.put(ma.endpoint, curAdapter);
-            }
-        }
+    //private void initializeMethodAdapters() {
+    //    for (MethodAdapterConfig ma: Config.get().methodAdapters) {
+    //        MethodAdapter curAdapter = null;
+    //        switch (ma.type) {
+    //            case ConfigKeys.METHOD_TYPE_WINGS:
+    //                curAdapter = new WingsAdapter(ma.name, ma.endpoint, ma.username, ma.password, ma.domain, ma.internalServer);
+    //                break;
+    //            case ConfigKeys.METHOD_TYPE_AIRFLOW:
+    //                curAdapter = new AirFlowAdapter(ma.name, ma.endpoint, ma.username, ma.password);
+    //                break;
+    //            default:
+    //                System.out.println("Error: Method adapter type not found: '" + ma.type + "'");
+    //                break;
+    //        }
+    //        if (curAdapter != null) {
+    //            if (ma.version != null)
+    //                curAdapter.setVersion(ma.version);
+    //            this.methodAdapters.put(ma.endpoint, curAdapter);
+    //        }
+    //    }
 
-        // Check method adapters:
-        if (this.methodAdapters.size() == 0) {
-            System.err.println("WARNING: No method adapters found on configuration file.");
-        } else
-            for (MethodAdapter curAdp : this.methodAdapters.values()) {
-                if (!curAdp.ping()) {
-                    System.err.println("ERROR: Could not connect with " + curAdp.getEndpointUrl());
-                }
-            }
-    }
+    //    // Check method adapters:
+    //    if (this.methodAdapters.size() == 0) {
+    //        System.err.println("WARNING: No method adapters found on configuration file.");
+    //    } else
+    //        for (MethodAdapter curAdp : this.methodAdapters.values()) {
+    //            if (!curAdp.ping()) {
+    //                System.err.println("ERROR: Could not connect with " + curAdp.getEndpointUrl());
+    //            }
+    //        }
+    //}
 
-    public MethodAdapter getMethodAdapter(String url) {
-        if (this.methodAdapters.containsKey(url))
-            return this.methodAdapters.get(url);
-        return null;
-    }
+    //public MethodAdapter getMethodAdapter(String url) {
+    //    if (this.methodAdapters.containsKey(url))
+    //        return this.methodAdapters.get(url);
+    //    return null;
+    //}
 
-    public List<Workflow> getWorkflowList() {
-        List<Workflow> list = new ArrayList<Workflow>();
-        for (MethodAdapter adapter : this.methodAdapters.values()) {
-            for (Workflow wf : adapter.getWorkflowList()) {
-                list.add(wf);
-            }
-        }
-        return list;
-    }
+    //public List<Workflow> getWorkflowList() {
+    //    List<Workflow> list = new ArrayList<Workflow>();
+    //    for (MethodAdapter adapter : this.methodAdapters.values()) {
+    //        for (Workflow wf : adapter.getWorkflowList()) {
+    //            list.add(wf);
+    //        }
+    //    }
+    //    return list;
+    //}
 
-    public List<WorkflowVariable> getWorkflowVariables(String source, String id) {
-        for (MethodAdapter adapter : this.methodAdapters.values()) {
-            if (adapter.getName().equals(source)) {
-                return adapter.getWorkflowVariables(id);
-            }
-        }
-        return null;
-    }
+    //public List<WorkflowVariable> getWorkflowVariables(String source, String id) {
+    //    for (MethodAdapter adapter : this.methodAdapters.values()) {
+    //        if (adapter.getName().equals(source)) {
+    //            return adapter.getWorkflowVariables(id);
+    //        }
+    //    }
+    //    return null;
+    //}
 
     // -- Vocabulary Initialization
     private void initializeVocabularies() {
@@ -457,6 +463,7 @@ public class DiskRepository extends WriteKBRepository {
         String desc = loi.getDescription();
         String question = loi.getQuestionId();
         String dateCreated = loi.getDateCreated();
+        System.out.println(">>> " + loi.getDataQueryExplanation());
         // Set or update date
         if (dateCreated == null || dateCreated.equals("")) {
             loi.setDateCreated(dateformatter.format(new Date()));
@@ -514,9 +521,9 @@ public class DiskRepository extends WriteKBRepository {
             tloi.setDateModified(dateformatter.format(new Date()));
         }
         writeTLOI(username, tloi);
-        LineOfInquiry loi = getLOI(username, tloi.getParentLoiId());
-        TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, loi, false);
-        executor.execute(wflowThread);
+        threadManager.executeTLOI(tloi);
+        //TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, loi, false);
+        //executor.execute(wflowThread);
         return tloi;
     }
 
@@ -528,7 +535,7 @@ public class DiskRepository extends WriteKBRepository {
         return loadTLOI(username, id);
     }
 
-    private TriggeredLOI updateTriggeredLOI(String username, String id, TriggeredLOI tloi) {
+    public TriggeredLOI updateTriggeredLOI(String username, String id, TriggeredLOI tloi) {
         if (tloi.getId() != null && this.deleteTLOI(username, id) && this.writeTLOI(username, tloi))
             return tloi;
         return null;
@@ -1191,7 +1198,7 @@ public class DiskRepository extends WriteKBRepository {
                 boolean allOk = true;
                 for (WorkflowBindings wb: loi.getWorkflows()) {
                     String source =  wb.getSource();
-                    if (source == null || getMethodAdapterByName(source) == null) {
+                    if (source == null || methodAdapters.getMethodAdapterByName(source) == null) {
                         allOk = false;
                         System.out.println("Warning: " + loi.getId() + " uses an unknown method adapter: " + source);
                         break;
@@ -1200,7 +1207,7 @@ public class DiskRepository extends WriteKBRepository {
                 if (allOk)
                     for (WorkflowBindings wb: loi.getMetaWorkflows()) {
                         String source =  wb.getSource();
-                        if (source == null || getMethodAdapterByName(source) == null) {
+                        if (source == null || methodAdapters.getMethodAdapterByName(source) == null) {
                             allOk = false;
                             System.out.println("Warning: " + loi.getId() + " uses an unknown method adapter: " + source);
                             break;
@@ -1384,23 +1391,49 @@ public class DiskRepository extends WriteKBRepository {
         return checked;
     }
 
-    @SuppressWarnings("unchecked")
-    private List<WorkflowBindings> getTLOIBindings(String username, List<WorkflowBindings> wflowBindings,
+    private List<WorkflowBindings> getTLOIBindings(String username, List<WorkflowBindings> workflowList,
             Map<String, List<String>> dataVarBindings, DataAdapter dataAdapter) throws Exception {
-        List<WorkflowBindings> tloiBindings = new ArrayList<WorkflowBindings>();
-        for (WorkflowBindings bindings : wflowBindings) { // FOR EACH WORKFLOW
+        List<WorkflowBindings> tloiWorkflowList = new ArrayList<WorkflowBindings>();
+
+        for (WorkflowBindings workflowDef : workflowList) { // FOR EACH WORKFLOW
             // For each Workflow, create an empty copy to set the values
-            WorkflowBindings tloiBinding = new WorkflowBindings(
-                    bindings.getWorkflow(),
-                    bindings.getWorkflowLink());
-            tloiBinding.setSource(bindings.getSource());
-            tloiBinding.setMeta(bindings.getMeta());
-            tloiBindings.add(tloiBinding);
-            MethodAdapter methodAdapter = getMethodAdapterByName(bindings.getSource());
+            WorkflowBindings tloiWorkflowDef = new WorkflowBindings(
+                    workflowDef.getWorkflow(),
+                    workflowDef.getWorkflowLink());
+            tloiWorkflowDef.setSource(workflowDef.getSource());
+            tloiWorkflowDef.setMeta(workflowDef.getMeta());
+            tloiWorkflowList.add(tloiWorkflowDef);
+            MethodAdapter methodAdapter = methodAdapters.getMethodAdapterByName(workflowDef.getSource());
+            List<WorkflowVariable> allVars = methodAdapter.getWorkflowVariables(workflowDef.getWorkflow());
+            Map<VariableBinding, Integer> binSize = new HashMap<VariableBinding, Integer>();
 
-            List<WorkflowVariable> allVars = methodAdapter.getWorkflowVariables(bindings.getWorkflow());
+            // We need to order bindings by the number of datasets.
+            for (VariableBinding vBinding : workflowDef.getBindings()) { // Normal variable bindings.
+                String binding = vBinding.getBinding();
+                Matcher collmat = varCollPattern.matcher(binding);
+                Matcher mat = varPattern.matcher(binding);
+                // Get the sparql variable
+                String sparqlVar = null;
+                if (collmat.find() && dataVarBindings.containsKey(collmat.group(1))) {
+                    sparqlVar = collmat.group(1);
+                } else if (mat.find() && dataVarBindings.containsKey(mat.group(1))) {
+                    sparqlVar = mat.group(1);
+                } else if (binding.equals("_CSV_")) {
+                    sparqlVar = "_CSV_";
+                }
 
-            for (VariableBinding vBinding : bindings.getBindings()) { // Normal variable bindings.
+                if (sparqlVar == null) {
+                    binSize.put(vBinding, 0);
+                } else {
+                    //List<String> dsUrls = dataVarBindings.get(sparqlVar);
+                    binSize.put(vBinding, dataVarBindings.containsKey(sparqlVar) ? dataVarBindings.get(sparqlVar).size() : 0);
+                }
+            }
+            List<VariableBinding> LIST = workflowDef.getBindings();
+            LIST.sort((VariableBinding b1, VariableBinding b2) -> binSize.get(b1) - binSize.get(b2));
+
+            for (VariableBinding vBinding : LIST) { // Normal variable bindings.
+            //for (VariableBinding vBinding : LIST) {
                 // For each Variable binding, check :
                 // - If this variable expects a collection or single values
                 // - Check the binding values on the data store
@@ -1421,7 +1454,7 @@ public class DiskRepository extends WriteKBRepository {
                 }
 
                 if (sparqlVar == null) {
-                    tloiBinding.addBinding(vBinding);
+                    tloiWorkflowDef.addBinding(vBinding);
                     continue;
                 }
 
@@ -1475,37 +1508,54 @@ public class DiskRepository extends WriteKBRepository {
                 if (isCollection) {
                     // This variable expects a collection. Modify the existing tloiBinding values,
                     // collections of non-files are send as comma separated values:
-                    tloiBinding.addBinding(new VariableBinding(vBinding.getVariable(), dsNames.toString()));
+                    VariableBinding cur = new VariableBinding(vBinding.getVariable(), dsNames.toString());
+                    cur.setType(vBinding.getType());
+                    tloiWorkflowDef.addBinding(cur);
                 } else {
                     if (dsNames.size() == 1) {
-                        tloiBinding.addBinding(new VariableBinding(vBinding.getVariable(), dsNames.get(0)));
+                        VariableBinding cur = new VariableBinding(vBinding.getVariable(), dsNames.get(0));
+                        cur.setType(vBinding.getType());
+                        tloiWorkflowDef.addBinding(cur);
                     } else {
-                        System.out.println("IS MORE THAN ONE VALUE BUT NOT COLLECTION!");
+                        System.out.println("IS MORE THAN ONE VALUE BUT NOT COLLECTION! Creating new workflow runs");
+                        System.out.println("Variable: " + vBinding.getVariable());
+                        System.out.println("Binding: " + vBinding.getBinding());
+                        System.out.println("datasets: " + dsNames);
                         // This variable expects a single file. Add new tloi bindings for each dataset
+                        // FIXME: if the variable with multiple values gets here first. Other variable bindings are not added!
                         List<WorkflowBindings> newTloiBindings = new ArrayList<WorkflowBindings>();
-                        for (WorkflowBindings tmpBinding : tloiBindings) { // For all already processed workflow
-                                                                           // bindings
+                        for (WorkflowBindings tmpWorkflow : tloiWorkflowList) { // For all already processed workflows
                             for (String dsName : dsNames) {
-                                ArrayList<VariableBinding> newBindings = (ArrayList<VariableBinding>) SerializationUtils
-                                        .clone((Serializable) tmpBinding.getBindings());
+                                //List<VariableBinding> newBindings = 
+                                //(ArrayList<VariableBinding>) SerializationUtils.clone((Serializable) tmpBinding.getBindings());
+                                List<VariableBinding> newBindings = new ArrayList<VariableBinding>();
+                                for (VariableBinding cur: tmpWorkflow.getBindings()) {
+                                    VariableBinding newV = new VariableBinding(cur.getVariable(), cur.getBinding());
+                                    newV.setType(cur.getType());
+                                    newBindings.add(newV);
+                                }
 
-                                WorkflowBindings newWorkflowBindings = new WorkflowBindings(
-                                        bindings.getWorkflow(),
-                                        bindings.getWorkflowLink(),
+                                WorkflowBindings newWorkflow = new WorkflowBindings(
+                                        workflowDef.getWorkflow(),
+                                        workflowDef.getWorkflowLink(),
                                         newBindings);
-                                newWorkflowBindings.addBinding(new VariableBinding(vBinding.getVariable(), dsName));
-                                newWorkflowBindings.setMeta(bindings.getMeta());
-                                newWorkflowBindings.setSource(bindings.getSource());
-                                newTloiBindings.add(newWorkflowBindings);
+
+                                VariableBinding cur = new VariableBinding(vBinding.getVariable(), dsName);
+                                cur.setType(vBinding.getType());
+                                newWorkflow.addBinding(cur);
+
+                                newWorkflow.setMeta(workflowDef.getMeta());
+                                newWorkflow.setSource(workflowDef.getSource());
+                                newTloiBindings.add(newWorkflow);
                             }
                         }
-                        tloiBindings = newTloiBindings;
+                        tloiWorkflowList = newTloiBindings;
                     }
                 }
             }
         }
 
-        return tloiBindings;
+        return tloiWorkflowList;
     }
 
     //This adds dsUrls to the data-repository, returns filename -> URL
@@ -1816,14 +1866,14 @@ public class DiskRepository extends WriteKBRepository {
      */
 
     public WorkflowRun getWorkflowRunStatus(String source, String id) {
-        MethodAdapter methodAdapter = getMethodAdapterByName(source);
+        MethodAdapter methodAdapter = this.methodAdapters.getMethodAdapterByName(source);
         if (methodAdapter == null)
             return null;
         return methodAdapter.getRunStatus(id);
     }
 
     public FileAndMeta getOutputData(String source, String id) {
-        MethodAdapter methodAdapter = getMethodAdapterByName(source);
+        MethodAdapter methodAdapter = this.methodAdapters.getMethodAdapterByName(source);
         if (methodAdapter == null)
             return null;
         return methodAdapter.fetchData(methodAdapter.getDataUri(id));
@@ -1833,7 +1883,7 @@ public class DiskRepository extends WriteKBRepository {
      * Threads
      */
 
-    class TLOIExecutionThread implements Runnable {
+    /*class TLOIExecutionThread implements Runnable {
         String username;
         boolean metamode;
         TriggeredLOI tloi;
@@ -1921,9 +1971,9 @@ public class DiskRepository extends WriteKBRepository {
                 e.printStackTrace();
             }
         }
-    }
+    }*/
 
-    private void processWorkflowOutputs (TriggeredLOI tloi, LineOfInquiry loi, WorkflowBindings workflow, WorkflowRun run, MethodAdapter methodAdapter, boolean meta) {
+    public void processWorkflowOutputs (TriggeredLOI tloi, LineOfInquiry loi, WorkflowBindings workflow, WorkflowRun run, MethodAdapter methodAdapter, boolean meta) {
         Map<String, RunBinding> outputs = run.getOutputs();
         if (outputs == null) return;
 
@@ -2014,7 +2064,7 @@ public class DiskRepository extends WriteKBRepository {
         }
     }*/
 
-    private Status getOverallRunStatus (TriggeredLOI tloi, boolean metamode) {
+    /*private Status getOverallRunStatus (TriggeredLOI tloi, boolean metamode) {
         List<WorkflowBindings> wfList = metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows();
         // Fist check if theres some pending, queued or running run.
         for (WorkflowBindings wf: wfList) {
@@ -2022,6 +2072,8 @@ public class DiskRepository extends WriteKBRepository {
                 RuntimeInfo exec = run.getExecutionInfo();
                 Status runStatus = exec.status;
                 if (runStatus == Status.PENDING || runStatus == Status.RUNNING || runStatus == Status.QUEUED) {
+                    System.out.println(wf);
+                    System.out.println(runStatus);
                     return Status.RUNNING;
                 }
             }
@@ -2130,10 +2182,12 @@ public class DiskRepository extends WriteKBRepository {
                     updatedBindings.add(bindings);
                     this.queuedRuns.get(wfName).put(runUri, newRun);
                 }
-                tloi.setStatus(getOverallRunStatus(tloi, metamode));
                 if (metamode) tloi.setMetaWorkflows(updatedBindings);
                 else tloi.setWorkflows(updatedBindings);
+                tloi.setStatus(getOverallRunStatus(tloi, metamode));
                 Status overallStatus = tloi.getStatus();
+        System.out.println("OVERALL");
+        System.out.println(overallStatus);
 
                 if (overallStatus == Status.SUCCESSFUL) {
                     if (metamode) {
@@ -2203,5 +2257,5 @@ public class DiskRepository extends WriteKBRepository {
                 Thread.currentThread().interrupt();
             }
         }
-    }
+    }*/
 }

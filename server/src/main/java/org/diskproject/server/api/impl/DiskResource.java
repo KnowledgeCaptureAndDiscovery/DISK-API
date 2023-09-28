@@ -353,7 +353,7 @@ public class DiskResource implements DiskService {
   public List<Workflow> listWorkflows() {
     Gson response_error = new Gson();
     try {
-      return this.repo.getWorkflowList();
+      return this.repo.methodAdapters.getWorkflowList();
     } catch (Exception e) {
       try {
         // Create Json error response
@@ -381,7 +381,7 @@ public class DiskResource implements DiskService {
   public List<WorkflowVariable> getWorkflowVariables(
       @PathParam("source") String source,
       @PathParam("id") String id) {
-    return this.repo.getWorkflowVariables(source, id);
+    return this.repo.methodAdapters.getWorkflowVariablesByName(source, id);
   }
 
   @GET

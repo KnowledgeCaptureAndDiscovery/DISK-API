@@ -133,4 +133,10 @@ public class AirFlowAdapter extends MethodAdapter {
         // Auto-generated method stub
         return null;
     }
+
+	@Override
+	public boolean registerData (String id, String type) {
+        // Auto-generated method stub
+        return false;
+    }
 }
