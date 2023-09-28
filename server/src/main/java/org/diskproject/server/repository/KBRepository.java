@@ -1,13 +1,12 @@
 package org.diskproject.server.repository;
 
 import java.io.File;
-import java.util.Map;
 import java.util.concurrent.Semaphore;
 
+import org.diskproject.server.adapters.DataAdapterManager;
 import org.diskproject.server.adapters.MethodAdapterManager;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.KBCache;
-import org.diskproject.shared.classes.adapters.DataAdapter;
 import org.diskproject.shared.classes.util.KBConstants;
 
 import edu.isi.kcap.ontapi.KBAPI;
@@ -25,8 +24,7 @@ public class KBRepository implements TransactionsAPI {
   private Semaphore mutex;
   protected KBCache DISKOnt;
 
-  protected Map<String, DataAdapter> dataAdapters;
-  //protected Map<String, MethodAdapter> methodAdapters;
+  public DataAdapterManager dataAdapters;
   public MethodAdapterManager methodAdapters;
 
   protected void setConfiguration() {

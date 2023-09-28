@@ -1,6 +1,5 @@
 package org.diskproject.server.repository;
 
-import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -9,35 +8,22 @@ import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.WeakHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.SerializationUtils;
 import org.apache.jena.query.QueryParseException;
-import org.diskproject.server.adapters.AirFlowAdapter;
-import org.diskproject.server.adapters.GraphDBAdapter;
+import org.diskproject.server.adapters.DataAdapterManager;
 import org.diskproject.server.adapters.MethodAdapterManager;
-import org.diskproject.server.adapters.SparqlAdapter;
 import org.diskproject.server.adapters.StorageManager;
 import org.diskproject.server.threads.ThreadManager;
 import org.diskproject.server.util.Config;
-import org.diskproject.server.util.ConfigKeys;
 import org.diskproject.server.util.KBCache;
 import org.diskproject.server.util.KBUtils;
 import org.diskproject.server.util.VocabularyConfiguration;
-import org.diskproject.server.util.Config.DataAdapterConfig;
-import org.diskproject.server.util.Config.MethodAdapterConfig;
 import org.diskproject.server.util.Config.StorageConfig;
 import org.diskproject.server.util.Config.VocabularyConfig;
 import org.diskproject.shared.classes.adapters.DataAdapter;
@@ -52,7 +38,6 @@ import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.WorkflowBindings;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.workflow.WorkflowRun.RunBinding;
-import org.diskproject.shared.classes.workflow.WorkflowRun.RuntimeInfo;
 import org.diskproject.shared.classes.workflow.WorkflowRun.Status;
 import org.diskproject.shared.classes.question.BoundingBoxQuestionVariable;
 import org.diskproject.shared.classes.question.DynamicOptionsQuestionVariable;
@@ -70,7 +55,6 @@ import org.diskproject.shared.classes.util.QuestionOptionsRequest;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
-import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 import org.diskproject.shared.ontologies.DISK;
 import org.diskproject.shared.ontologies.SQO;
@@ -96,9 +80,6 @@ public class DiskRepository extends WriteKBRepository {
     Map<String, Vocabulary> vocabularies;
     StorageManager externalStorage;
     ThreadManager threadManager;
-    ////ScheduledExecutorService monitor, monitorData;
-    ////ExecutorService executor;
-    ////static DataMonitor dataThread;
 
     private Map<String, List<VariableOption>> optionsCache;
     private Map<String, VocabularyConfiguration> externalVocabularies;
@@ -124,13 +105,9 @@ public class DiskRepository extends WriteKBRepository {
         // Set domain for writing the KB
         setConfiguration();
         this.setDomain(this.server);
-        this.methodAdapters = new MethodAdapterManager();
-
         // Initialize
-        this.dataAdapters = new HashMap<String, DataAdapter>();
-        this.initializeDataAdapters();
-        //this.methodAdapters = new HashMap<String, MethodAdapter>();
-        //this.initializeMethodAdapters();
+        this.methodAdapters = new MethodAdapterManager();
+        this.dataAdapters = new DataAdapterManager();
         try {
             initializeKB();
         } catch (Exception e) {
@@ -139,21 +116,10 @@ public class DiskRepository extends WriteKBRepository {
         }
         // Threads
         threadManager = new ThreadManager(methodAdapters, this);
-        ////monitor = Executors.newScheduledThreadPool(0);
-        ////executor = Executors.newFixedThreadPool(2);
-        ////dataThread = new DataMonitor();
     }
 
     public void shutdownExecutors() {
         threadManager.shutdownExecutors();
-        ////if (monitor != null)
-        ////    monitor.shutdownNow();
-        ////if (executor != null)
-        ////    executor.shutdownNow();
-        ////if (dataThread != null)
-        ////    dataThread.stop();
-        ////if (monitorData != null)
-        ////    monitorData.shutdownNow();
     }
 
     /********************
@@ -245,53 +211,8 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     // -- Data adapters
-    private void initializeDataAdapters() {
-        for (DataAdapterConfig da: Config.get().dataAdapters) {
-            DataAdapter curAdapter = null;
-            switch (da.type) {
-                case ConfigKeys.DATA_TYPE_SPARQL:
-                    curAdapter = new SparqlAdapter(da.endpoint, da.name, da.username, da.password);
-                    break;
-                case ConfigKeys.DATA_TYPE_GRAPH_DB:
-                    GraphDBAdapter ga = new GraphDBAdapter(da.endpoint, da.name, da.username, da.password);
-                    if (da.repository != null)
-                        ga.setRepository(da.repository);
-                    curAdapter = ga;
-                    break;
-                default:
-                    System.out.println("Error: Data adapter type not found: '" + da.type + "'");
-                    break;
-            }
-            if (da.type != null && curAdapter != null) {
-                if (da.namespace != null && da.prefix != null) {
-                    curAdapter.setPrefix(da.prefix, da.namespace);
-                }
-                if (da.prefixResolution != null) {
-                    curAdapter.setPrefixResolution(da.prefixResolution);
-                }
-                if (da.description != null) {
-                    curAdapter.setDescription(da.description);
-                }
-                this.dataAdapters.put(da.endpoint, curAdapter);
-            }
-        }
-
-        // Check data adapters:
-        if (this.dataAdapters.size() == 0) {
-            System.err.println("WARNING: No data adapters found on configuration file.");
-        } else {
-            for (DataAdapter curAdp : this.dataAdapters.values()) {
-                if (!curAdp.ping()) {
-                    System.err.println("ERROR: Could not connect with " + curAdp.getEndpointUrl());
-                }
-            }
-        }
-    }
-
     private DataAdapter getDataAdapter(String url) {
-        if (this.dataAdapters.containsKey(url))
-            return this.dataAdapters.get(url);
-        return null;
+        return this.dataAdapters.getDataAdapterByUrl(url);
     }
 
     public List<DataAdapterResponse> getDataAdapters() {
@@ -301,64 +222,6 @@ public class DiskRepository extends WriteKBRepository {
         }
         return adapters;
     }
-
-    // -- Method adapters
-    //private void initializeMethodAdapters() {
-    //    for (MethodAdapterConfig ma: Config.get().methodAdapters) {
-    //        MethodAdapter curAdapter = null;
-    //        switch (ma.type) {
-    //            case ConfigKeys.METHOD_TYPE_WINGS:
-    //                curAdapter = new WingsAdapter(ma.name, ma.endpoint, ma.username, ma.password, ma.domain, ma.internalServer);
-    //                break;
-    //            case ConfigKeys.METHOD_TYPE_AIRFLOW:
-    //                curAdapter = new AirFlowAdapter(ma.name, ma.endpoint, ma.username, ma.password);
-    //                break;
-    //            default:
-    //                System.out.println("Error: Method adapter type not found: '" + ma.type + "'");
-    //                break;
-    //        }
-    //        if (curAdapter != null) {
-    //            if (ma.version != null)
-    //                curAdapter.setVersion(ma.version);
-    //            this.methodAdapters.put(ma.endpoint, curAdapter);
-    //        }
-    //    }
-
-    //    // Check method adapters:
-    //    if (this.methodAdapters.size() == 0) {
-    //        System.err.println("WARNING: No method adapters found on configuration file.");
-    //    } else
-    //        for (MethodAdapter curAdp : this.methodAdapters.values()) {
-    //            if (!curAdp.ping()) {
-    //                System.err.println("ERROR: Could not connect with " + curAdp.getEndpointUrl());
-    //            }
-    //        }
-    //}
-
-    //public MethodAdapter getMethodAdapter(String url) {
-    //    if (this.methodAdapters.containsKey(url))
-    //        return this.methodAdapters.get(url);
-    //    return null;
-    //}
-
-    //public List<Workflow> getWorkflowList() {
-    //    List<Workflow> list = new ArrayList<Workflow>();
-    //    for (MethodAdapter adapter : this.methodAdapters.values()) {
-    //        for (Workflow wf : adapter.getWorkflowList()) {
-    //            list.add(wf);
-    //        }
-    //    }
-    //    return list;
-    //}
-
-    //public List<WorkflowVariable> getWorkflowVariables(String source, String id) {
-    //    for (MethodAdapter adapter : this.methodAdapters.values()) {
-    //        if (adapter.getName().equals(source)) {
-    //            return adapter.getWorkflowVariables(id);
-    //        }
-    //    }
-    //    return null;
-    //}
 
     // -- Vocabulary Initialization
     private void initializeVocabularies() {
@@ -1190,7 +1053,7 @@ public class DiskRepository extends WriteKBRepository {
 
         for (LineOfInquiry loi : matchingBindings.keySet()) {
             // Check that the adapters are configured.
-            DataAdapter dataAdapter = this.dataAdapters.get(loi.getDataSource());
+            DataAdapter dataAdapter = this.getDataAdapter(loi.getDataSource());
             if (dataAdapter == null) {
                 System.out.println("Warning: " + loi.getId() + " uses an unknown data adapter: " + loi.getDataSource());
                 continue;
@@ -1340,25 +1203,6 @@ public class DiskRepository extends WriteKBRepository {
         }
         return l;
     }
-
-    //private String createCSVFromQuerySolutions(List<DataResult> solutions) {
-    //    String csv = "";
-    //    Set<String> varNames = solutions.get(0).getVariableNames();
-    //    for (String varName : varNames)
-    //        csv +=  escapeToCSV(varName) + ",";
-    //    for (DataResult solution : solutions) {
-    //        csv += "\n";
-    //        for (String varname : varNames) {
-    //            String cur = solution.getValue(varname);
-    //            csv += escapeToCSV(cur) + ",";
-    //        }
-    //    }
-    //    return csv;
-    //}
-
-    //private String escapeToCSV (String text) {
-    //    return "\"" + text + "\"";
-    //}
 
     // This replaces all triggered lines of inquiry already executed.
     private List<TriggeredLOI> checkExistingTLOIs(String username, List<TriggeredLOI> tlois) {
@@ -1526,8 +1370,6 @@ public class DiskRepository extends WriteKBRepository {
                         List<WorkflowBindings> newTloiBindings = new ArrayList<WorkflowBindings>();
                         for (WorkflowBindings tmpWorkflow : tloiWorkflowList) { // For all already processed workflows
                             for (String dsName : dsNames) {
-                                //List<VariableBinding> newBindings = 
-                                //(ArrayList<VariableBinding>) SerializationUtils.clone((Serializable) tmpBinding.getBindings());
                                 List<VariableBinding> newBindings = new ArrayList<VariableBinding>();
                                 for (VariableBinding cur: tmpWorkflow.getBindings()) {
                                     VariableBinding newV = new VariableBinding(cur.getVariable(), cur.getBinding());
@@ -1861,10 +1703,6 @@ public class DiskRepository extends WriteKBRepository {
         return getTLOIsForHypothesisAndLOI(username, hypId, loiId);
     }
 
-    /*
-     * Threads helpers
-     */
-
     public WorkflowRun getWorkflowRunStatus(String source, String id) {
         MethodAdapter methodAdapter = this.methodAdapters.getMethodAdapterByName(source);
         if (methodAdapter == null)
@@ -1882,96 +1720,6 @@ public class DiskRepository extends WriteKBRepository {
     /*
      * Threads
      */
-
-    /*class TLOIExecutionThread implements Runnable {
-        String username;
-        boolean metamode;
-        TriggeredLOI tloi;
-        LineOfInquiry loi;
-
-        public TLOIExecutionThread(String username, TriggeredLOI tloi, LineOfInquiry loi, boolean metamode) {
-            this.username = username;
-            this.tloi = tloi;
-            this.loi = loi;
-            this.metamode = metamode;
-        }
-
-        @Override
-        public void run() {
-            try {
-                if (this.metamode)
-                    System.out.println("[R] Running execution thread on META mode");
-                else
-                    System.out.println("[R] Running execution thread");
-
-                List<WorkflowBindings> wflowBindings = this.metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows();
-
-                boolean allOk = true;
-                // Start workflows from tloi
-                for (WorkflowBindings bindings : wflowBindings) {
-                    MethodAdapter methodAdapter = getMethodAdapterByName(bindings.getSource());
-                    if (methodAdapter == null) {
-                        allOk = false;
-                        break; // This could be `continue`, so to execute the other workflows...
-                    }
-                    // Get workflow input details
-                    Map<String, WorkflowVariable> inputs = methodAdapter.getWorkflowInputs(bindings.getWorkflow());
-                    List<VariableBinding> vBindings = bindings.getBindings();
-                    List<VariableBinding> sendbindings = new ArrayList<VariableBinding>(vBindings);
-
-                    // Special processing for Meta Workflows
-                    if (this.metamode) {
-                        // TODO: Here we should map workflow outputs to metaworkflow inputs.
-                    }
-
-                    // Execute workflow
-                    System.out.println("[R] Executing " + bindings.getWorkflow() + " with:");
-                    for (VariableBinding v : vBindings) {
-                        String[] l = v.isCollection() ? v.getBindingAsArray() : null;
-                        int i = 0;
-                        if (l != null) {
-                            System.out.println("[R] - " + v.getVariable() + ": ");
-                            for (String b: l) {
-                                System.out.println("[R]    " + String.valueOf(i) + ") " + b);
-                                i++;
-                            }
-                        } else {
-                            System.out.println("[R] - " + v.getVariable() + ": " + v.getBinding());
-                        }
-                    }
-
-                    List<String> runIds = methodAdapter.runWorkflow(bindings.getWorkflow(), sendbindings, inputs);
-
-                    if (runIds != null) {
-                        System.out.println("[R] Workflow send: ");
-                        for (String rid: runIds) {
-                            WorkflowRun run = new WorkflowRun();
-                            run.setId(rid);
-                            run.setAsPending();
-                            System.out.println("[R]   ID: " + rid);
-                            bindings.addRun(run);
-                        }
-                    } else {
-                        allOk = false;
-                        System.out.println("[R] Error: Could not run workflow");
-                    }
-                }
-
-                tloi.setStatus(allOk ? Status.RUNNING : Status.FAILED);
-                updateTriggeredLOI(username, tloi.getId(), tloi);
-
-                // Start monitoring
-                if (allOk) {
-                    TLOIMonitoringThread monitorThread = new TLOIMonitoringThread(username, tloi, loi, metamode);
-                    monitor.schedule(monitorThread, 15, TimeUnit.SECONDS);
-                } else {
-                    System.out.println("[E] Finished: Something when wrong.");
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }*/
 
     public void processWorkflowOutputs (TriggeredLOI tloi, LineOfInquiry loi, WorkflowBindings workflow, WorkflowRun run, MethodAdapter methodAdapter, boolean meta) {
         Map<String, RunBinding> outputs = run.getOutputs();
@@ -2035,227 +1783,4 @@ public class DiskRepository extends WriteKBRepository {
             //}
         }
     }
-
-    /*private void addConfidenceToTLOI (TriggeredLOI tloi, WorkflowRun run, MethodAdapter methodAdapter) {
-        // Search for p-value on the outputs
-        // TODO: change this to allow any output.
-        Map<String, RunBinding> outputs = run.getOutputs();
-        if (outputs != null) {
-            for (String outname : outputs.keySet()) {
-                if (outname.equals("p_value") || outname.equals("pval") || outname.equals("p_val")) {
-                    String dataid = outputs.get(outname).id;
-                    FileAndMeta fm = methodAdapter.fetchData(dataid);
-                    byte[] byteConf  = fm.data;
-                    String wingsP = byteConf != null ? new String(byteConf, StandardCharsets.UTF_8) : null;
-                    Double pVal = null;
-                    try {
-                        String strPVal = wingsP != null ? wingsP.split("\n", 2)[0] : "";
-                        pVal = Double.valueOf(strPVal);
-                    } catch (Exception e) {
-                        System.err.println("[M] Error: " + dataid + " is a non valid p-value: " + wingsP);
-                    }
-                    if (pVal != null) {
-                        System.out.println("[M] Detected p-value: " + pVal);
-                        tloi.setConfidenceValue(pVal);
-                        tloi.setConfidenceType("P-VALUE");
-                    }
-                }
-            }
-        }
-    }*/
-
-    /*private Status getOverallRunStatus (TriggeredLOI tloi, boolean metamode) {
-        List<WorkflowBindings> wfList = metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows();
-        // Fist check if theres some pending, queued or running run.
-        for (WorkflowBindings wf: wfList) {
-            for (WorkflowRun run: wf.getRuns().values()) {
-                RuntimeInfo exec = run.getExecutionInfo();
-                Status runStatus = exec.status;
-                if (runStatus == Status.PENDING || runStatus == Status.RUNNING || runStatus == Status.QUEUED) {
-                    System.out.println(wf);
-                    System.out.println(runStatus);
-                    return Status.RUNNING;
-                }
-            }
-        }
-        // If theres an error return failed:
-        for (WorkflowBindings wf: wfList) {
-            for (WorkflowRun run: wf.getRuns().values()) {
-                RuntimeInfo exec = run.getExecutionInfo();
-                Status runStatus = exec.status;
-                if (runStatus == Status.FAILED) {
-                    return Status.FAILED;
-                }
-            }
-        }
-        return Status.SUCCESSFUL;
-    }
-
-    class TLOIMonitoringThread implements Runnable {
-        String username;
-        boolean metamode, error;
-        TriggeredLOI tloi;
-        LineOfInquiry loi;
-        Map<String, Map<String, WorkflowRun>> queuedRuns;
-
-        public TLOIMonitoringThread(String username, TriggeredLOI tloi, LineOfInquiry loi, boolean metamode) {
-            this.username = username;
-            this.tloi = tloi;
-            this.loi = loi;
-            this.metamode = metamode;
-            this.error = false;
-            this.queuedRuns = new HashMap<String, Map<String, WorkflowRun>>();
-            //this.pendingIds = new HashMap<String, Set<String>>();
-            for (WorkflowBindings bindings : (metamode ? this.tloi.getMetaWorkflows() : this.tloi.getWorkflows())) {
-                Map<String, WorkflowRun> curMap = new HashMap<String,WorkflowRun>();
-                //Set<String> curSet = new HashSet<String>();
-                for (WorkflowRun run: bindings.getRuns().values()){
-                    RuntimeInfo exec = run.getExecutionInfo();
-                    Status st = exec.status;
-                    if (st == Status.PENDING || st == Status.QUEUED || st == Status.RUNNING) {
-                        curMap.put(run.getId(), run);
-                    }
-                }
-                this.queuedRuns.put(bindings.getWorkflow(), curMap);
-            }
-        }
-
-        private WorkflowRun getRandomRun (String wfName) {
-            Map<String, WorkflowRun> queued = queuedRuns.get(wfName);
-            int size = queued.size();
-            if (size == 0) return null;
-
-            System.out.println("[M] Pending runs: " + size);
-            int rnd = new Random().nextInt(size);
-            Iterator<WorkflowRun> iter = queued.values().iterator();
-            for (int i = 0; i < rnd; i++) {
-                iter.next();
-            }
-            return iter.next();
-        }
-
-        @Override
-        public void run() {
-            try {
-                System.out.println("[M] Running monitoring thread");
-                // Check workflow runs from tloi
-                List<WorkflowBindings> wflowBindings = this.metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows();
-                List<WorkflowBindings> updatedBindings = new ArrayList<WorkflowBindings>();
-
-                for (WorkflowBindings bindings : wflowBindings) {
-                    MethodAdapter methodAdapter = getMethodAdapterByName(bindings.getSource());
-                    String wfName = bindings.getWorkflow();
-                    WorkflowRun curRun = getRandomRun(wfName);
-                    String runUri = curRun == null ? null : curRun.getId();
-                    if (runUri == null || curRun == null) { // lets assume this is not critical.
-                        continue;
-                    }
-                    String runId = runUri.replaceAll("^.*#", "");
-                    WorkflowRun newRun = methodAdapter.getRunStatus(runId);
-
-                    RuntimeInfo newExec = newRun != null ? newRun.getExecutionInfo() : null;
-                    RuntimeInfo oldExec = curRun.getExecutionInfo();
-                    
-                    // If we cannot get the status but the run was pending, maybe is not an error TODO: check how wings works.
-                    if (newRun == null || newExec == null || newExec.status == null) {
-                        System.out.println("[E] Cannot get status for " + tloi.getId() + " - RUN " + runId);
-                        if (newRun == null) newRun = curRun;
-                        newExec = oldExec;
-                        if (oldExec.status == Status.PENDING) {
-                            newExec.status = Status.SUCCESSFUL;
-                        } else {
-                            newExec.status = Status.FAILED;
-                            this.error = true;
-                        }
-                        //newStatus = newRun.getStatus();
-                    }
-
-                    if (newExec.status == Status.SUCCESSFUL) {
-                        processWorkflowOutputs(tloi, loi, bindings, newRun, methodAdapter, metamode);
-                        //addConfidenceToTLOI(tloi, newRun, methodAdapter); /// HERE
-                    } else if (newExec.status == Status.FAILED) {
-                        this.error = true;
-                    }
-
-                    newRun.setExecutionInfo(newExec);
-                    bindings.addRun(newRun);
-                    updatedBindings.add(bindings);
-                    this.queuedRuns.get(wfName).put(runUri, newRun);
-                }
-                if (metamode) tloi.setMetaWorkflows(updatedBindings);
-                else tloi.setWorkflows(updatedBindings);
-                tloi.setStatus(getOverallRunStatus(tloi, metamode));
-                Status overallStatus = tloi.getStatus();
-        System.out.println("OVERALL");
-        System.out.println(overallStatus);
-
-                if (overallStatus == Status.SUCCESSFUL) {
-                    if (metamode) {
-                        System.out.println("[M] " + this.tloi.getId() + " was successfully executed.");
-                    } else {
-                        System.out.println("[M] Starting metamode after n workflows.");
-                        tloi.setStatus(Status.RUNNING);
-                        TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, loi, true);
-                        executor.execute(wflowThread);
-                    }
-                } else if (overallStatus == Status.FAILED) {
-                    if (metamode) {
-                        System.out.println("[M] " + this.tloi.getId() + " was executed with errors.");
-                    } else {
-                        System.out.println("[M] " + this.tloi.getId() + " will not initialice metamode as some runs failed.");
-                    }
-                } else {
-                    monitor.schedule(this, 30, TimeUnit.SECONDS);
-                }
-                updateTriggeredLOI(username, tloi.getId(), tloi);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    // All of this needs to be reworked to clear caches and re run queries.
-    public class DataMonitor implements Runnable {
-        boolean stop;
-        ScheduledFuture<?> scheduledFuture;
-
-        public DataMonitor() {
-            stop = false;
-            scheduledFuture = monitor.scheduleWithFixedDelay(this, 0, 1, TimeUnit.DAYS);
-        }
-
-        public void run() {
-            System.out.println("[D] Running data monitor thread");
-            try {
-                Thread.sleep(5000);
-                if (stop) {
-                    scheduledFuture.cancel(false);
-                    while (!Thread.currentThread().isInterrupted()) {
-                        Thread.currentThread().interrupt();
-                    }
-                } else if (!this.equals(dataThread)) {
-                    stop();
-                    return;
-                } else {
-                    // Re-run all hypothesis FIXME:
-                    // runAllHypotheses("admin");
-                }
-            } catch (Exception e) {
-                scheduledFuture.cancel(false);
-                while (!Thread.interrupted()) {
-                    stop = true;
-                    Thread.currentThread().interrupt();
-                }
-            }
-
-        }
-
-        public void stop() {
-            while (!Thread.interrupted()) {
-                stop = true;
-                scheduledFuture.cancel(false);
-                Thread.currentThread().interrupt();
-            }
-        }
-    }*/
 }
