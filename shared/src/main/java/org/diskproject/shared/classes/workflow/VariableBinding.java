@@ -1,27 +1,53 @@
 package org.diskproject.shared.classes.workflow;
 
-
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class VariableBinding implements Serializable, Comparable<VariableBinding> {
   private static final long serialVersionUID = -847994634505985728L;
+
+  public static enum BindingTypes {
+    DEFAULT, FREEFORM, DATA_QUERY, QUERY_VARIABLE, WORKFLOW_VARIABLE, DISK_DATA, // Inputs
+    DROP, SAVE, PROCESS // Outputs
+  }
   
-  String variable;
-  String binding;
-  String type;
+  String variable;        // Variable NAME
+  List<String> binding;   // Binding VALUE
+  boolean isArray;        // This binding is an array, if false bindings list will only have one value.
+  String datatype;        // Binding datatype. This one should be an xsd value. Does not require to be defined on the ontology TODO
+  String filetype;        // When datatype=anyURI and bindings is some url file.
+  BindingTypes type;      // This is for the type of selector used to set this binding.
+
+  public VariableBinding(){}
    
-  public VariableBinding(String v, String b) {
+  public VariableBinding (String v, String b) {
 	  variable = v;
-	  binding = b;
+    binding = new ArrayList<String>();
+    binding.add(b);
+    isArray = false;
   }
 
-  public VariableBinding(String v, String b, String t) {
+  public VariableBinding (String v, String b, String t) {
 	  variable = v;
-	  binding = b;
-    type = t;
+    binding = new ArrayList<String>();
+    binding.add(b);
+    datatype = t;
+    isArray = false;
   }
-  
-  public VariableBinding(){}
+
+  public VariableBinding (String v, List<String> b) {
+	  variable = v;
+    binding = b;
+    isArray = true;
+  }
+
+  public VariableBinding (String v, List<String> b, String t) {
+	  variable = v;
+    binding = b;
+    datatype = t;
+    isArray = true;
+  }
   
   public String getVariable() {
     return variable;
@@ -31,29 +57,62 @@ public class VariableBinding implements Serializable, Comparable<VariableBinding
     this.variable = variable;
   }
 
-  public String getBinding() {
-    return binding;
+  public boolean isArray() {
+    return isArray;
   }
 
-  public void setBinding(String binding) {
-    this.binding = binding;
+  public void setIsArray (boolean b) {
+    this.isArray = b;
+  }
+
+  public String getBinding () {
+    return isArray || binding.size() == 0 ? null : binding.get(0);
+  }
+
+  public void setBinding (String binding) {
+    if (!isArray) {
+      this.binding = new ArrayList<String>();
+      this.binding.add(binding);
+    }
+  }
+
+  public List<String> getBindings () {
+    return isArray ? this.binding : null;
+  }
+
+  public void setBindings (List<String> bindings) {
+    if (isArray) {
+      this.binding = bindings;
+    }
   }
   
-  public String getType () {
+  public String getDatatype () {
+    return datatype;
+  }
+
+  public void setDatatype (String t) {
+    this.datatype = t;
+  }
+
+  public String getFiletype () {
+    return filetype;
+  }
+
+  public void setFiletype (String t) {
+    this.filetype = t;
+  }
+
+  public BindingTypes getType () {
     return type;
   }
 
-  public void setType (String t) {
+  public void setType (BindingTypes t) {
     this.type = t;
   }
 
-  public String[] getBindingAsArray () {
-	String b = getBinding().replace("]", "").replace("[", "").replaceAll(" ", "");
-    return b.split(",");
-  }
-  
-  public boolean isCollection () {
-    return (binding.charAt(0) == '[' && binding.charAt(binding.length()-1) == ']');
+  public void setType (String t) {
+    //TODO: check how the types are stored on the RDF
+    this.type = null;
   }
 
   public String toString () {

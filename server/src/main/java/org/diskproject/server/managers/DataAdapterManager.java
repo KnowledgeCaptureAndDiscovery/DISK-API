@@ -1,9 +1,11 @@
-package org.diskproject.server.adapters;
+package org.diskproject.server.managers;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.diskproject.server.adapters.GraphDBAdapter;
+import org.diskproject.server.adapters.SparqlAdapter;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.Config.DataAdapterConfig;
 import org.diskproject.server.util.ConfigKeys;

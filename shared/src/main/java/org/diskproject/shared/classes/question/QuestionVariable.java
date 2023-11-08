@@ -11,6 +11,7 @@ public class QuestionVariable {
 
   String id, variableName;
   Double minCardinality, maxCardinality;
+  boolean conjunction; // Uses multiple values as AND when is set to true; otherwise uses OR. (When cardinality > 1);
   String representation, explanation;
   List<Triple> patternFragment;
   QuestionSubtype subType;
@@ -22,6 +23,7 @@ public class QuestionVariable {
 	  this.id = id;
 	  this.variableName = varName;
     this.subType = QuestionSubtype.NONE;
+    this.conjunction = false;
   }
 
   public String toString () {
@@ -90,5 +92,13 @@ public class QuestionVariable {
 
   public List<Triple> getPatternFragment () {
     return this.patternFragment;
+  }
+
+  public void setConjunction (boolean b) {
+    this.conjunction = b;
+  }
+
+  public boolean getConjunction () {
+    return this.conjunction;
   }
 }

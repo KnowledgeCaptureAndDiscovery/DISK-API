@@ -1,13 +1,18 @@
-package org.diskproject.server.repository;
+package org.diskproject.server.db;
 
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.diskproject.server.managers.MethodAdapterManager;
+import org.diskproject.server.repository.DiskRDF;
+import org.diskproject.server.util.KBCache;
+import org.diskproject.server.util.KBUtils;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.common.Triple;
@@ -21,6 +26,7 @@ import org.diskproject.shared.classes.util.GUID;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
+import org.diskproject.shared.classes.workflow.VariableBinding.BindingTypes;
 import org.diskproject.shared.classes.workflow.WorkflowRun.RunBinding;
 import org.diskproject.shared.classes.workflow.WorkflowRun.RuntimeInfo;
 import org.diskproject.shared.classes.workflow.WorkflowRun.Status;
@@ -31,35 +37,65 @@ import edu.isi.kcap.ontapi.KBObject;
 import edu.isi.kcap.ontapi.KBTriple;
 import edu.isi.kcap.ontapi.OntSpec;
 
-public class WriteKBRepository extends KBRepository {
-    protected String _domain;
-
+public class DiskDB {
     private static SimpleDateFormat dateformatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX");
+    private String domain;
+    private DiskRDF rdf;
+    private KBAPI ontKB;
+    private KBCache DISKOnt;
+    public MethodAdapterManager methodAdapters;
 
-    public void setDomain(String url) {
-        this._domain = url;
+    public DiskDB (String domain, DiskRDF rdf, MethodAdapterManager methodAdapters) {
+        this.domain = domain;
+        this.rdf = rdf;
+        this.methodAdapters = methodAdapters;
+        this.loadKB();
     }
 
-    public String DOMURI(String username) {
-        return this._domain + "/" + username;
+    private void loadKB () {
+        try {
+            this.ontKB = this.rdf.getFactory().getKB(KBConstants.DISK_URI, OntSpec.PELLET, false, true);
+        } catch (Exception e) {
+            System.out.println("Error reading KB: " + KBConstants.DISK_URI);
+            return;
+        }
+
+        if (this.ontKB != null) {
+            this.rdf.startRead();
+            this.DISKOnt = new KBCache(ontKB);
+            this.rdf.end();
+        }
+    }
+
+    public void reloadKB () {
+        KBUtils.clearKB(this.ontKB, this.rdf);
+        this.loadKB();
+    }
+
+    public KBAPI getKB () {
+        return this.ontKB;
+    }
+
+    public KBCache getOnt () {
+        return this.DISKOnt;
     }
 
     public String HYPURI(String username) {
-        return this.DOMURI(username) + "/hypotheses";
+        return this.domain + "/" + username + "/hypotheses";
     }
 
     public String LOIURI(String username) {
-        return this.DOMURI(username) + "/lois";
+        return this.domain + "/" + username + "/lois";
     }
 
     public String TLOIURI(String username) {
-        return this.DOMURI(username) + "/tlois";
+        return this.domain + "/" + username + "/tlois";
     }
 
     private KBAPI getOrCreateKB(String url) {
         KBAPI kb = null;
         try {
-            kb = this.fac.getKB(url, OntSpec.PLAIN, true);
+            kb = this.rdf.getFactory().getKB(url, OntSpec.PLAIN, true);
         } catch (Exception e) {
             System.err.print("Could not open or create KB: " + url);
         }
@@ -69,7 +105,7 @@ public class WriteKBRepository extends KBRepository {
     private KBAPI getKB(String url) {
         KBAPI kb = null;
         try {
-            kb = this.fac.getKB(url, OntSpec.PLAIN, false);
+            kb = this.rdf.getFactory().getKB(url, OntSpec.PLAIN, false);
         } catch (Exception e) {
             System.err.print("Could not open KB: " + url);
         }
@@ -128,7 +164,7 @@ public class WriteKBRepository extends KBRepository {
         KBObject pre = kb.getResource(triple.getPredicate());
         KBObject obj = createKBObjectFromValue(triple.getObject(), kb);
         if (sub != null && pre != null && obj != null)
-            return this.fac.getTriple(sub, pre, obj);
+            return this.rdf.getFactory().getTriple(sub, pre, obj);
         return null;
     }
 
@@ -178,7 +214,31 @@ public class WriteKBRepository extends KBRepository {
     }
 
     // --- Hypothesis
-    protected boolean writeHypothesis(String username, Hypothesis hypothesis) {
+    public Hypothesis AddOrUpdateHypothesis (String username, Hypothesis hypothesis, String id) {
+        // Check required inputs
+        String name = hypothesis.getName();
+        String desc = hypothesis.getDescription();
+        String question = hypothesis.getQuestionId();
+        boolean isCreating = id == null || id.equals("");
+        // Set or update date
+        String now = dateformatter.format(new Date());
+        if (isCreating) {
+            hypothesis.setDateCreated(now);
+        } else {
+            hypothesis.setDateModified(now);
+        }
+        if (name == null || desc == null || question == null || "".equals(name) || "".equals(desc) || "".equals(question)) {
+            // These are necessary fields, should send an appropriate exception here.
+            return null;
+        } else {
+            if ((isCreating || (hypothesis.getId().equals(id) && deleteHypothesis(username, id))) && writeHypothesis(username, hypothesis)) {
+                return isCreating ? hypothesis : loadHypothesis(username, id);
+            }
+        }
+        return null;
+    }
+
+    public boolean writeHypothesis(String username, Hypothesis hypothesis) {
         Boolean newHyp = hypothesis.getId() == null || hypothesis.getId().equals("");
         if (newHyp) {
             hypothesis.setId(GUID.randomId("Hypothesis"));
@@ -190,7 +250,7 @@ public class WriteKBRepository extends KBRepository {
 
         if (userKB == null)
             return false;
-        this.start_write();
+        this.rdf.startWrite();
 
         // Insert hypothesis info on user's graph
         KBObject hypitem = userKB.createObjectOfClass(hypothesisId, DISKOnt.getClass(DISK.HYPOTHESIS));
@@ -226,20 +286,25 @@ public class WriteKBRepository extends KBRepository {
         List<VariableBinding> questionBindings = hypothesis.getQuestionBindings();
         if (questionBindings != null) {
             for (VariableBinding vb : questionBindings) {
-                String ID = hypothesisId + "/bindings/";
                 String[] sp = vb.getVariable().split("/");
-                ID += sp[sp.length - 1];
+                String ID = hypothesisId + "/bindings/" + sp[sp.length - 1];
                 KBObject binding = userKB.createObjectOfClass(ID, DISKOnt.getClass(DISK.VARIABLE_BINDING));
+                userKB.addPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING), binding);
+                String bindingValue = vb.isArray() ? "[" + String.join(",", vb.getBindings()) + "]" : vb.getBinding();
                 userKB.setPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_VARIABLE),
                         userKB.createLiteral(vb.getVariable()));
                 userKB.setPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE),
-                        userKB.createLiteral(vb.getBinding()));
-                userKB.addPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING), binding);
+                        userKB.createLiteral(bindingValue));
+                
+                BindingTypes type = vb.getType(); //datatype nor filetype are used on questions i think TODO
+                if (type != null) 
+                    userKB.setPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_TYPE),
+                            userKB.createLiteral(type));
             }
         }
 
-        this.save(userKB);
-        this.end();
+        this.rdf.save(userKB);
+        this.rdf.end();
 
         // Store hypothesis as a graph
         KBAPI hypKb = getOrCreateKB(hypothesisId);
@@ -249,21 +314,21 @@ public class WriteKBRepository extends KBRepository {
             return false;
         }
 
-        this.start_write();
+        this.rdf.startWrite();
         for (Triple triple : completeGraphWithDomains(hypothesis.getGraph(), hypothesisId, "goal")) {
             KBTriple curTriple = tripleToKBTriple(triple, hypKb);
             if (curTriple != null) {
                 hypKb.addTriple(curTriple);
             }
         }
-        this.save(hypKb);
-        this.end();
+        this.rdf.save(hypKb);
+        this.rdf.end();
 
         // TODO: I've removed the old provenance code that was here.
         return true;
     }
 
-    protected Hypothesis loadHypothesis(String username, String id) {
+    public Hypothesis loadHypothesis(String username, String id) {
         String userDomain = this.HYPURI(username);
         String hypothesisId = userDomain + "/" + id;
 
@@ -271,12 +336,12 @@ public class WriteKBRepository extends KBRepository {
         if (userKB == null)
             return null;
 
-        this.start_read();
+        this.rdf.startRead();
 
         KBObject hypitem = userKB.getIndividual(hypothesisId);
         Graph graph = this.loadGraphFromKB(hypothesisId);
         if (hypitem == null || graph == null) {
-            this.end();
+            this.rdf.end();
             return null;
         }
 
@@ -319,19 +384,32 @@ public class WriteKBRepository extends KBRepository {
             for (KBObject binding : questionBindings) {
                 KBObject kbVar = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_VARIABLE));
                 KBObject kbVal = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
+                KBObject kbType = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_TYPE));
                 if (kbVar != null && kbVal != null) {
+                    VariableBinding curVarBinding = null;
                     String var = kbVar.getValueAsString();
                     String val = kbVal.getValueAsString();
-                    variableBindings.add(new VariableBinding(var, val));
+                    if (val.startsWith("[") && val.endsWith("]")) {
+                        String[] x = val.substring(1, val.length()-1).split(",");
+                        curVarBinding = new VariableBinding(var, new ArrayList<String>(Arrays.asList(x)));
+                    } else {
+                        curVarBinding = new VariableBinding(var, val);
+                    }
+                    if (curVarBinding != null) {
+                        if (kbType != null) {
+                            curVarBinding.setType(kbType.getValueAsString());
+                        }
+                        variableBindings.add(curVarBinding);
+                    } 
                 }
             }
         }
         hypothesis.setQuestionBindings(variableBindings);
-        this.end();
+        this.rdf.end();
         return hypothesis;
     }
 
-    protected boolean deleteHypothesis(String username, String id) {
+    public boolean deleteHypothesis(String username, String id) {
         if (id == null)
             return false;
 
@@ -342,45 +420,45 @@ public class WriteKBRepository extends KBRepository {
         KBAPI hypKB = getKB(hypothesisId);
 
         if (userKB != null && hypKB != null) {
-            this.start_read();
+            this.rdf.startRead();
             KBObject hypitem = userKB.getIndividual(hypothesisId);
             if (hypitem != null) {
                 ArrayList<KBTriple> childHypotheses = userKB.genericTripleQuery(null,
                         DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS), hypitem);
                 ArrayList<KBObject> questionBindings = userKB.getPropertyValues(hypitem,
                         DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING));
-                this.end();
+                this.rdf.end();
 
                 // Remove question template bindings
-                this.start_write();
+                this.rdf.startWrite();
                 if (questionBindings != null)
                     for (KBObject binding : questionBindings) {
                         userKB.deleteObject(binding, true, true);
                     }
                 userKB.deleteObject(hypitem, true, true);
-                this.save(userKB);
-                this.end();
+                this.rdf.save(userKB);
+                this.rdf.end();
 
                 // Remove all child hypotheses
                 for (KBTriple t : childHypotheses) {
                     this.deleteHypothesis(username, t.getSubject().getName());
                 }
             } else {
-                this.end();
+                this.rdf.end();
             }
 
-            return this.start_write() && hypKB.delete() && this.save(hypKB) && this.end();
+            return this.rdf.startWrite() && hypKB.delete() && this.rdf.save(hypKB) && this.rdf.end();
         }
         return false;
     }
 
-    protected List<Hypothesis> listHypothesesPreviews(String username) {
+    public List<Hypothesis> listHypothesesPreviews(String username) {
         List<Hypothesis> list = new ArrayList<Hypothesis>();
         String userDomain = this.HYPURI(username);
 
         KBAPI userKB = getKB(userDomain);
         if (userKB != null) {
-            this.start_read();
+            this.rdf.startRead();
             KBObject hypCls = DISKOnt.getClass(DISK.HYPOTHESIS);
             KBObject typeProp = userKB.getProperty(KBConstants.RDF_NS + "type");
             for (KBTriple t : userKB.genericTripleQuery(null, typeProp, hypCls)) {
@@ -443,13 +521,37 @@ public class WriteKBRepository extends KBRepository {
 
                 list.add(item);
             }
-            this.end();
+            this.rdf.end();
         }
         return list;
     }
 
     // -- Line of inquiry
-    protected boolean writeLOI(String username, LineOfInquiry loi) {
+    public LineOfInquiry AddOrUpdateLOI (String username, LineOfInquiry loi, String id) {
+        // Check required inputs
+        String name = loi.getName();
+        String desc = loi.getDescription();
+        String question = loi.getQuestionId();
+        boolean isCreating = id == null || id.equals("");
+        // Set or update date
+        String now = dateformatter.format(new Date());
+        if (isCreating) {
+            loi.setDateCreated(now);
+        } else {
+            loi.setDateModified(now);
+        }
+        if (name == null || desc == null || question == null || "".equals(name) || "".equals(desc) || "".equals(question)) {
+            // These are necessary fields, should send an appropriate exception here.
+            return null;
+        } else {
+            if ((isCreating || (loi.getId().equals(id) && deleteLOI(username, id))) && writeLOI(username, loi)) {
+                return isCreating ? loi : loadLOI(username, id);
+            }
+        }
+        return null;
+    }
+
+    public boolean writeLOI(String username, LineOfInquiry loi) {
         Boolean newLOI = loi.getId() == null || loi.getId().equals("");
         if (newLOI) {
             loi.setId(GUID.randomId("LOI"));
@@ -462,7 +564,7 @@ public class WriteKBRepository extends KBRepository {
         if (userKB == null)
             return false;
 
-        this.start_write();
+        this.rdf.startWrite();
 
         KBObject loiItem = userKB.createObjectOfClass(loiId, DISKOnt.getClass(DISK.LOI));
         if (loi.getName() != null)
@@ -488,6 +590,9 @@ public class WriteKBRepository extends KBRepository {
         if (loi.getDataSource() != null)
             userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE),
                     userKB.createLiteral(loi.getDataSource()));
+        if (loi.getDataSourceURL() != null)
+            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE_URL),
+                    userKB.createLiteral(loi.getDataSourceURL()));
         if (loi.getNotes() != null)
             userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES),
                     userKB.createLiteral(loi.getNotes()));
@@ -504,8 +609,8 @@ public class WriteKBRepository extends KBRepository {
             userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION),
                     userKB.createLiteral(loi.getDataQueryExplanation()));
 
-        this.save(userKB);
-        this.end();
+        this.rdf.save(userKB);
+        this.rdf.end();
 
         writeWorkflowsBindings(username, loi);
         writeMetaWorkflowsBindings(username, loi);
@@ -513,7 +618,7 @@ public class WriteKBRepository extends KBRepository {
         return true;
     }
 
-    protected LineOfInquiry loadLOI(String username, String id) {
+    public LineOfInquiry loadLOI(String username, String id) {
         String userDomain = this.LOIURI(username);
         String loiId = userDomain + "/" + id;
 
@@ -521,11 +626,11 @@ public class WriteKBRepository extends KBRepository {
         if (userKB == null)
             return null;
 
-        this.start_read();
+        this.rdf.startRead();
 
         KBObject loiItem = userKB.getIndividual(loiId);
         if (loiItem == null) {
-            this.end();
+            this.rdf.end();
             return null;
         }
 
@@ -541,6 +646,10 @@ public class WriteKBRepository extends KBRepository {
         KBObject datasourceobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE));
         if (datasourceobj != null)
             loi.setDataSource(datasourceobj.getValueAsString());
+
+        KBObject datasourceurlobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE_URL));
+        if (datasourceurlobj != null)
+            loi.setDataSourceURL(datasourceurlobj.getValueAsString());
 
         KBObject dateModifiedObj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.DATE_MODIFIED));
         if (dateModifiedObj != null)
@@ -579,7 +688,7 @@ public class WriteKBRepository extends KBRepository {
             loi.setDataQueryExplanation(explanationObj.getValueAsString());
         }
 
-        this.end();
+        this.rdf.end();
 
         loi.setWorkflows(loadWorkflowsBindings(userDomain, loi.getId()));
         loi.setMetaWorkflows(loadMetaWorkflowsBindings(userDomain, loi.getId()));
@@ -587,7 +696,7 @@ public class WriteKBRepository extends KBRepository {
         return loi;
     }
 
-    protected boolean deleteLOI(String username, String id) {
+    public boolean deleteLOI(String username, String id) {
         if (id == null)
             return false;
 
@@ -598,21 +707,21 @@ public class WriteKBRepository extends KBRepository {
         if (userKB == null)
             return false;
 
-        this.start_write();
+        this.rdf.startWrite();
         KBObject hypitem = userKB.getIndividual(loiId);
         if (hypitem != null)
             userKB.deleteObject(hypitem, true, true);
 
-        return this.save(userKB) && this.end();
+        return this.rdf.save(userKB) && this.rdf.end();
     }
 
-    protected List<LineOfInquiry> listLOIPreviews(String username) {
+    public List<LineOfInquiry> listLOIPreviews(String username) {
         List<LineOfInquiry> list = new ArrayList<LineOfInquiry>();
         String userDomain = this.LOIURI(username);
         KBAPI userKB = getKB(userDomain);
 
         if (userKB != null) {
-            this.start_read();
+            this.rdf.startRead();
             KBObject loiCls = DISKOnt.getClass(DISK.LOI);
             KBObject typeprop = userKB.getProperty(KBConstants.RDF_NS + "type");
             for (KBTriple t : userKB.genericTripleQuery(null, typeprop, loiCls)) {
@@ -649,14 +758,38 @@ public class WriteKBRepository extends KBRepository {
 
                 list.add(item);
             }
-            this.end();
+            this.rdf.end();
         }
         return list;
     }
 
     // -- Triggered Lines of Inquiry
-    protected boolean writeTLOI(String username, TriggeredLOI tloi) {
+    public TriggeredLOI addOrUpdateTLOI (String username, TriggeredLOI tloi, String id) {
+        boolean isCreating = id == null || id.equals("");
+        // Set or update date
+        String now = dateformatter.format(new Date());
+        if (isCreating) {
+            tloi.setStatus(Status.QUEUED);
+            tloi.setDateCreated(now);
+        } else {
+            tloi.setDateModified(now);
+        }
 
+        if (!isCreating) {
+            //Updates only notes
+            TriggeredLOI orig = loadTLOI(username, id);
+            if (orig != null) {
+                orig.setNotes(tloi.getNotes());
+                tloi = orig;
+            }
+        }
+        if ((isCreating || deleteTLOI(username, id)) && writeTLOI(username, tloi)) {
+            return tloi;
+        }
+        return null;
+    }
+
+    public boolean writeTLOI(String username, TriggeredLOI tloi) {
         Boolean newTLOI = tloi.getId() == null || tloi.getId().equals("");
         if (newTLOI)
             tloi.setId(GUID.randomId("TriggeredLOI"));
@@ -670,7 +803,7 @@ public class WriteKBRepository extends KBRepository {
         if (userKB == null)
             return false;
 
-        this.start_write();
+        this.rdf.startWrite();
         KBObject tloiItem = userKB.createObjectOfClass(tloiId, DISKOnt.getClass(DISK.TLOI));
 
         if (tloi.getName() != null)
@@ -683,6 +816,9 @@ public class WriteKBRepository extends KBRepository {
         if (tloi.getDataSource() != null)
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE),
                     userKB.createLiteral(tloi.getDataSource()));
+        if (tloi.getDataSourceURL() != null)
+            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE_URL),
+                    userKB.createLiteral(tloi.getDataSourceURL()));
         if (tloi.getDateCreated() != null)
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.DATE_CREATED),
                     userKB.createLiteral(tloi.getDateCreated()));
@@ -725,8 +861,8 @@ public class WriteKBRepository extends KBRepository {
             userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_QUERY_RESULTS),
                     userKB.createLiteral(tloi.getQueryResults()));
 
-        this.save(userKB);
-        this.end();
+        this.rdf.save(userKB);
+        this.rdf.end();
 
         writeWorkflowsBindings(username, tloi);
         writeMetaWorkflowsBindings(username, tloi);
@@ -734,7 +870,7 @@ public class WriteKBRepository extends KBRepository {
         return true;
     }
 
-    protected TriggeredLOI loadTLOI(String username, String id) {
+    public TriggeredLOI loadTLOI(String username, String id) {
         String userDomain = this.TLOIURI(username);
         String tloiId = userDomain + "/" + id;
 
@@ -742,7 +878,7 @@ public class WriteKBRepository extends KBRepository {
         if (userKB == null)
             return null;
 
-        this.start_read();
+        this.rdf.startRead();
         KBObject obj = userKB.getIndividual(tloiId);
         if (obj != null && obj.getName() != null) {
             TriggeredLOI tloi = new TriggeredLOI();
@@ -809,19 +945,19 @@ public class WriteKBRepository extends KBRepository {
             if (queryResultsObj != null)
                 tloi.setQueryResults(queryResultsObj.getValueAsString());
 
-            this.end();
+            this.rdf.end();
 
             tloi.setWorkflows(loadWorkflowsBindings(userDomain, tloi.getId()));
             tloi.setMetaWorkflows(loadMetaWorkflowsBindings(userDomain, tloi.getId()));
 
             return tloi;
         } else {
-            this.end();
+            this.rdf.end();
             return null;
         }
     }
 
-    protected boolean deleteTLOI(String username, String id) {
+    public boolean deleteTLOI(String username, String id) {
         if (id == null)
             return false;
 
@@ -833,19 +969,19 @@ public class WriteKBRepository extends KBRepository {
             return false;
 
         // Remove this TLOI
-        this.start_read();
+        this.rdf.startRead();
         KBObject item = userKB.getIndividual(tloiId);
-        this.end();
+        this.rdf.end();
         if (item != null) {
-            this.start_write();
+            this.rdf.startWrite();
             userKB.deleteObject(item, true, true);
-            return this.save(userKB) && this.end();
+            return this.rdf.save(userKB) && this.rdf.end();
         } else {
             return false;
         }
     }
 
-    protected List<TriggeredLOI> listTLOIs(String username) {
+    public List<TriggeredLOI> listTLOIs(String username) {
         List<TriggeredLOI> list = new ArrayList<TriggeredLOI>();
         String userDomain = this.TLOIURI(username);
         KBAPI userKB = getKB(userDomain);
@@ -853,14 +989,14 @@ public class WriteKBRepository extends KBRepository {
         if (userKB != null) {
             List<String> tloiIds = new ArrayList<String>();
 
-            this.start_read();
+            this.rdf.startRead();
             KBObject cls = DISKOnt.getClass(DISK.TLOI);
             KBObject typeprop = userKB.getProperty(KBConstants.RDF_NS + "type");
 
             for (KBTriple t : userKB.genericTripleQuery(null, typeprop, cls)) {
                 tloiIds.add(t.getSubject().getID());
             }
-            this.end();
+            this.rdf.end();
 
             for (String tloiId : tloiIds) {
                 TriggeredLOI tloi = loadTLOI(username, tloiId.replaceAll("^.*\\/", ""));
@@ -901,13 +1037,14 @@ public class WriteKBRepository extends KBRepository {
         KBAPI userKB = getOrCreateKB(userDomain);
 
         if (userKB != null) {
-            this.start_write();
+            this.rdf.startWrite();
             KBObject item = userKB.getIndividual(fullId); // This is a LOI or TLOI
 
             for (WorkflowBindings bindings : bindingsList) {
                 String source = bindings.getSource();
+                String sourceURL = bindings.getSourceURL();
                 String description = bindings.getDescription();
-                MethodAdapter methodAdapter = this.methodAdapters.getMethodAdapterByName(source);
+                MethodAdapter methodAdapter = this.methodAdapters != null ? this.methodAdapters.getMethodAdapterByName(source) : null;
                 if (methodAdapter == null) {
                     System.out.println("Method adapter not found " + source);
                     continue;
@@ -917,9 +1054,9 @@ public class WriteKBRepository extends KBRepository {
                 KBObject bindingobj = userKB.createObjectOfClass(null, DISKOnt.getClass(DISK.WORKFLOW_BINDING));
                 userKB.addPropertyValue(item, bindingprop, bindingobj);
 
-                userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_WORKFLOW),
-                        userKB.getResource(workflowId));
+                userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_WORKFLOW), userKB.getResource(workflowId));
                 userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_SOURCE), userKB.createLiteral(source));
+                userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_SOURCE_URL), userKB.createLiteral(sourceURL));
                 if (description != null)
                     userKB.setComment(bindingobj, description);
 
@@ -1011,7 +1148,7 @@ public class WriteKBRepository extends KBRepository {
                 for (VariableBinding vBinding : bindings.getBindings()) {
                     String varId = vBinding.getVariable();
                     String binding = vBinding.getBinding();
-                    String cType = vBinding.getType();
+                    String cType = vBinding.getDatatype();
 
                     String type = cType != null ? cType :  KBConstants.XSD_NS + "string"; // default type
                     Value bindingValue = new Value(binding, type);
@@ -1044,8 +1181,8 @@ public class WriteKBRepository extends KBRepository {
                             userKB.getResource(workflowuri + "#" + revhypId));
             }
 
-            this.save(userKB);
-            this.end();
+            this.rdf.save(userKB);
+            this.rdf.end();
         }
     }
 
@@ -1063,7 +1200,7 @@ public class WriteKBRepository extends KBRepository {
         KBAPI kb = getOrCreateKB(userDomain);
 
         if (kb != null) {
-            this.start_write();
+            this.rdf.startWrite();
             KBObject loiItem = kb.getIndividual(loiId);
             KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
 
@@ -1075,8 +1212,12 @@ public class WriteKBRepository extends KBRepository {
                 if (sourceObj != null) {
                     String source = sourceObj.getValueAsString();
                     bindings.setSource(source);
-                    methodAdapter = this.methodAdapters.getMethodAdapterByName(source);
+                    methodAdapter = this.methodAdapters != null ? this.methodAdapters.getMethodAdapterByName(source) : null;
                 }
+
+                KBObject sourceUrlObj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_SOURCE_URL));
+                if (sourceUrlObj != null)
+                    bindings.setSourceURL(sourceUrlObj.getValueAsString());
 
                 String description = kb.getComment(wbObj);
                 if (description != null)
@@ -1206,7 +1347,7 @@ public class WriteKBRepository extends KBRepository {
                         e.printStackTrace();
                     }
                     if (cls != null) {
-                        vBinding.setType(cls);
+                        vBinding.setDatatype(cls);
                     }
                     bindings.getBindings().add(vBinding);
                 }
@@ -1221,7 +1362,7 @@ public class WriteKBRepository extends KBRepository {
 
                 list.add(bindings);
             }
-            this.end();
+            this.rdf.end();
         }
         return list;
     }

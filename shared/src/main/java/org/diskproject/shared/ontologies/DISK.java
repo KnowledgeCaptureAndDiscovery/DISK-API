@@ -22,10 +22,12 @@ public class DISK {
     public static final String HAS_BINDING_VALUE = "hasBindingValue";
     public static final String HAS_VARIABLE_BINDING = "hasVariableBinding";
     public static final String HAS_SOURCE = "hasSource";
+    public static final String HAS_SOURCE_URL = "hasSourceURL";
 
     public static final String HAS_HYPOTHESIS_QUERY = "hasHypothesisQuery";
     public static final String HAS_DATA_QUERY = "hasDataQuery";
     public static final String HAS_DATA_SOURCE = "hasDataSource";
+    public static final String HAS_DATA_SOURCE_URL = "hasDataSourceURL";
     public static final String HAS_TABLE_VARIABLES = "hasTableVariables";
     public static final String HAS_TABLE_DESCRIPTION = "hasTableDescription";
     public static final String HAS_DATA_QUERY_DESCRIPTION = "hasDataQueryDescription";
@@ -52,8 +54,8 @@ public class DISK {
     public static final String HAS_HYPOTHESIS_VARIABLE = "hasHypothesisVariable";
     public static final String HAS_REVISED_HYPOTHESIS_VARIABLE = "hasRevisedHypothesisVariable";
 
-    public static final String HAS_TYPE = "hasType";
-    public static final String HAS_DATATYPE = "hasDatatype";
+    public static final String HAS_TYPE = "hasType"; //TODO: this is not used yet
+    public static final String HAS_DATATYPE = "hasDatatype"; //This is for inputs/outputs
     public static final String HAS_LOG = "hasLog";
     public static final String HAS_STEP = "hasStep";
     public static final String EXEC_INFO = "ExecutionInfo";

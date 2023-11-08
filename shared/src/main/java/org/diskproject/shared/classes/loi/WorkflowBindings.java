@@ -11,6 +11,7 @@ import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 public class WorkflowBindings implements Comparable<WorkflowBindings>{
   String source;          // This is the ID of the method source
+  String sourceURL;          // This is the ID of the method source
   String workflow;
   String workflowLink;
   String description;
@@ -46,6 +47,14 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
 
   public void setSource (String source) {
     this.source = source;
+  }
+
+  public String getSourceURL () {
+    return this.sourceURL;
+  }
+
+  public void setSourceURL (String url) {
+    this.sourceURL = url;
   }
 
   public String getDescription () {
@@ -107,8 +116,10 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
   public List<String> getAllVariables () {
     List<String> vars = new ArrayList<String>();
     for (VariableBinding b: bindings) {
-      for (String v: b.getBindingAsArray()) {
-        vars.add(v);
+      if (b.isArray()) {
+        for (String v: b.getBindings()) {
+          vars.add(v);
+        }
       }
     }
     return vars;
@@ -117,10 +128,8 @@ public class WorkflowBindings implements Comparable<WorkflowBindings>{
   public List<String> getNonCollectionVariables () {
     List<String> vars = new ArrayList<String>();
     for (VariableBinding b: bindings) {
-      if (!b.isCollection()) {
-        for (String v: b.getBindingAsArray()) {
-          vars.add(v);
-        }
+      if (!b.isArray()) {
+          vars.add(b.getBinding());
       }
     }
     return vars;

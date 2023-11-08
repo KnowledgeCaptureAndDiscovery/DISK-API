@@ -27,7 +27,6 @@ import org.apache.jena.query.QueryException;
 import org.diskproject.server.repository.DiskRepository;
 import org.diskproject.shared.api.DiskService;
 import org.diskproject.shared.classes.adapters.MethodAdapter.FileAndMeta;
-import org.diskproject.shared.classes.common.TreeItem;
 import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
@@ -264,7 +263,7 @@ public class DiskResource implements DiskService {
   @GET
   @Path("lois")
   @Override
-  public List<TreeItem> listLOIs() {
+  public List<LineOfInquiry> listLOIs() {
     return this.repo.listLOIs(USERNAME);
   }
 
@@ -318,7 +317,7 @@ public class DiskResource implements DiskService {
     if (username != null) {
       tloi.setAuthor(username);
     }
-    return this.repo.updateTLOINotes(USERNAME, id, tloi);
+    return this.repo.updateTriggeredLOI(USERNAME, id, tloi);
   }
 
   @GET
@@ -532,14 +531,6 @@ public class DiskResource implements DiskService {
       }
     }
     return null;
-  }
-
-  @GET
-  @Path("tloi/{tloiId}/narratives")
-  @Override
-  public Map<String, String> getNarratives(
-      @PathParam("tloiId") String tloiId) {
-    return this.repo.getNarratives(USERNAME, tloiId);
   }
 
   @POST

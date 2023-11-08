@@ -12,6 +12,8 @@ public class SQO {
     public static final String BOUNDING_BOX_QUESTION_VARIABLE = "BoundingBoxQuestionVariable";
     public static final String TIME_INTERVAL_QUESTION_VARIABLE = "TimeIntervalQuestionVariable";
     public static final String USER_INPUT_QUESTION_VARIABLE = "UserInputQuestionVariable";
+    public static final String QUESTION_VARIABLE_OR = "Disjunction";
+    public static final String QUESTION_VARIABLE_AND = "Conjunction";
     // Object Properties
     public static final String HAS_VARIABLE = "hasQuestionVariable";
     public static final String HAS_QUESTION_CATEGORY = "hasQuestionCategory";

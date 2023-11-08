@@ -14,7 +14,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.Produces;
 
-import org.diskproject.shared.classes.common.TreeItem;
 import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
@@ -99,7 +98,7 @@ public interface DiskService {
 
   @GET
   @Path("lois")  
-  public List<TreeItem> listLOIs();
+  public List<LineOfInquiry> listLOIs();
 
   @GET
   @Path("lois/{id}")  
@@ -208,13 +207,6 @@ public interface DiskService {
       @PathParam("lid") String lid);
 
   
-  /* Get narratives for tloi id*/
-  @GET
-  @Path("tloi/{tloiId}/narratives")
-  public Map<String, String> getNarratives(
-      @PathParam("tloiId") String tloiId);
-
-
   @GET
   @Path("externalQuery")  
   public Map<String, List<String>> queryExternalStore(
