@@ -1,7 +1,7 @@
 package org.diskproject.server.repository;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
@@ -11,44 +11,31 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.WeakHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.jena.query.QueryParseException;
-import org.diskproject.server.adapters.DataAdapterManager;
-import org.diskproject.server.adapters.MethodAdapterManager;
-import org.diskproject.server.adapters.StorageManager;
+
+import org.diskproject.server.db.DiskDB;
+import org.diskproject.server.db.QuestionDB;
+import org.diskproject.server.managers.DataAdapterManager;
+import org.diskproject.server.managers.MethodAdapterManager;
+import org.diskproject.server.managers.StorageManager;
+import org.diskproject.server.managers.VocabularyManager;
 import org.diskproject.server.threads.ThreadManager;
 import org.diskproject.server.util.Config;
-import org.diskproject.server.util.KBCache;
 import org.diskproject.server.util.KBUtils;
-import org.diskproject.server.util.VocabularyConfiguration;
-import org.diskproject.server.util.Config.StorageConfig;
-import org.diskproject.server.util.Config.VocabularyConfig;
 import org.diskproject.shared.classes.adapters.DataAdapter;
 import org.diskproject.shared.classes.adapters.DataResult;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.adapters.MethodAdapter.FileAndMeta;
-import org.diskproject.shared.classes.common.TreeItem;
-import org.diskproject.shared.classes.common.Triple;
-import org.diskproject.shared.classes.common.Value;
 import org.diskproject.shared.classes.hypothesis.Hypothesis;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.WorkflowBindings;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.workflow.WorkflowRun.RunBinding;
-import org.diskproject.shared.classes.workflow.WorkflowRun.Status;
-import org.diskproject.shared.classes.question.BoundingBoxQuestionVariable;
-import org.diskproject.shared.classes.question.DynamicOptionsQuestionVariable;
 import org.diskproject.shared.classes.question.Question;
-import org.diskproject.shared.classes.question.QuestionCategory;
-import org.diskproject.shared.classes.question.QuestionVariable;
-import org.diskproject.shared.classes.question.StaticOptionsQuestionVariable;
-import org.diskproject.shared.classes.question.TimeIntervalQuestionVariable;
-import org.diskproject.shared.classes.question.UserInputQuestionVariable;
 import org.diskproject.shared.classes.question.VariableOption;
-import org.diskproject.shared.classes.question.QuestionVariable.QuestionSubtype;
 import org.diskproject.shared.classes.util.DataAdapterResponse;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.util.QuestionOptionsRequest;
@@ -57,7 +44,6 @@ import org.diskproject.shared.classes.workflow.WorkflowVariable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 import org.diskproject.shared.ontologies.DISK;
-import org.diskproject.shared.ontologies.SQO;
 
 import edu.isi.kcap.ontapi.KBAPI;
 import edu.isi.kcap.ontapi.KBObject;
@@ -66,26 +52,24 @@ import edu.isi.kcap.ontapi.OntSpec;
 import edu.isi.kcap.ontapi.SparqlQuerySolution;
 import javax.ws.rs.NotFoundException;
 
-public class DiskRepository extends WriteKBRepository {
+public class DiskRepository {
     static DiskRepository singleton;
     private static boolean creatingKB = false;
+
+    private String tdbdir, server;
+    private DiskRDF rdf;
+    private DiskDB diskDB;
+    private QuestionDB questionDB;
 
     private static SimpleDateFormat dateformatter = new SimpleDateFormat("HH:mm:ss yyyy-MM-dd");
     Pattern varPattern = Pattern.compile("\\?(.+?)\\b");
     Pattern varCollPattern = Pattern.compile("\\[\\s*\\?(.+?)\\s*\\]");
 
-    protected KBAPI questionKB, hypothesisVocabulary;
-    protected KBCache SQOnt;
-
-    Map<String, Vocabulary> vocabularies;
     StorageManager externalStorage;
     ThreadManager threadManager;
-
-    private Map<String, List<VariableOption>> optionsCache;
-    private Map<String, VocabularyConfiguration> externalVocabularies;
-
-    private Map<String, Question> allQuestions;
-    private Map<String, QuestionVariable> allVariables;
+    VocabularyManager vocabularyManager;
+    public DataAdapterManager dataAdapters;
+    public MethodAdapterManager methodAdapters;
 
     public static void main(String[] args) {
         get();
@@ -101,113 +85,59 @@ public class DiskRepository extends WriteKBRepository {
         return singleton;
     }
 
-    public DiskRepository() {
-        // Set domain for writing the KB
-        setConfiguration();
-        this.setDomain(this.server);
-        // Initialize
-        this.methodAdapters = new MethodAdapterManager();
-        this.dataAdapters = new DataAdapterManager();
-        try {
-            initializeKB();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(1);
+    private boolean loadAndSetConfiguration () {
+        Config currentConfig =  Config.get();
+        if (currentConfig != null) {
+            this.tdbdir = currentConfig.storage.tdb;
+            this.server = currentConfig.server;
+            File tdbdirF = new File(tdbdir);
+            if (!tdbdirF.exists() && !tdbdirF.mkdirs()) {
+                System.err.println("Cannot create tdb directory : " + tdbdirF.getAbsolutePath());
+            } else {
+                return this.tdbdir != null && this.server != null;
+            }
         }
+        return false;
+
+    }
+
+    public DiskRepository() {
+        this.loadAndSetConfiguration();
+        // Create RDF transaction API
+        this.rdf = new DiskRDF(tdbdir); // Transaction API & Factory.
+        // Create managers reading from configuration
+        this.dataAdapters = new DataAdapterManager();
+        this.methodAdapters = new MethodAdapterManager();
+        this.externalStorage = new StorageManager();
         // Threads
-        threadManager = new ThreadManager(methodAdapters, this);
+        this.threadManager = new ThreadManager(methodAdapters, this);  // FIXME: instead of this should be the db & adapters.
+        // These read/write RDF
+        this.diskDB = new DiskDB(server, this.rdf, this.methodAdapters);
+        this.questionDB = new QuestionDB(this.rdf, this.dataAdapters);
+        this.vocabularyManager = new VocabularyManager(this.rdf);
+        this.addInternalVocabularies();
     }
 
     public void shutdownExecutors() {
-        threadManager.shutdownExecutors();
+        this.threadManager.shutdownExecutors();
     }
 
     /********************
      * Initialization
      */
 
-    public void initializeKB() throws Exception {
-        super.initializeKB(); // This initializes the DISK ontology
-        if (fac == null)
-            throw new Exception("Could not load DISK ontology");
-
-        this.questionKB = fac.getKB(KBConstants.QUESTION_URI, OntSpec.PLAIN, false, true);
-        this.hypothesisVocabulary = fac.getKB(KBConstants.HYP_URI, OntSpec.PLAIN, false, true);
-        // Load questions
-        optionsCache = new WeakHashMap<String, List<VariableOption>>();
-        this.start_read();
-        SQOnt = new KBCache(this.questionKB);
-        this.end();
-        loadQuestionTemplates();
-        this.loadVocabulariesFromConfig();
-        this.initializeVocabularies();
-        this.initializeExternalStorage();
-    }
-
-    private void initializeExternalStorage() throws Exception {
-        StorageConfig cfg = Config.get().storage;
-        this.externalStorage = null;
-        if (cfg.external != null && cfg.username !=null&& cfg.password!= null) {
-            this.externalStorage = new StorageManager(cfg.external, cfg.username, cfg.password);
-            this.externalStorage.init();
-        }
-    }
-
-    private void loadVocabulariesFromConfig() throws Exception {
-        this.externalVocabularies = new HashMap<String, VocabularyConfiguration>();
-        for (VocabularyConfig v: Config.get().vocabularies) {
-            KBAPI curKB = null;
-            try {
-                curKB = fac.getKB(v.url, OntSpec.PLAIN, false, true);
-            } catch (Exception e) {
-                System.out.println("Could not load " + v.url);
-            }
-            if (curKB != null) {
-                VocabularyConfiguration vc = new VocabularyConfiguration(v.prefix, v.url, v.namespace, v.title);
-                vc.setKB(curKB);
-                if (v.description != null)
-                    vc.setDescription(v.description);
-                this.externalVocabularies.put(v.prefix, vc);
-            }
-        }
-
-        if (this.externalVocabularies.size() == 0) {
-            System.err.println("WARNING: No external vocabularies found on the configuration file.");
-        }
-    }
+     private void addInternalVocabularies () {
+        this.vocabularyManager.addVocabularyFromKB(diskDB.getKB(), KBConstants.DISK_URI, KBConstants.DISK_NS,
+            "The DISK Ontology", "disk", "DISK Main ontology. Defines all resources used on the DISK system.");
+        this.vocabularyManager.addVocabularyFromKB(questionDB.getKB(), KBConstants.QUESTION_URI, KBConstants.QUESTION_NS,
+            "Scientific Question Ontology", "sqo", "Ontology to define questions templates.");
+     }
 
     public void reloadKBCaches() throws Exception {
-        KBAPI[] kbs = { this.ontKB, this.questionKB, this.hypothesisVocabulary };
-
-        try {
-            this.start_write();
-            for (KBAPI kb : kbs)
-                if (kb != null) {
-                    System.out.println("Reloading " + kb.getURI());
-                    kb.removeAllTriples();
-                    kb.delete();
-                    this.save(kb);
-                    this.end();
-                    this.start_write();
-                }
-            for (VocabularyConfiguration vc : this.externalVocabularies.values()) {
-                KBAPI kb = vc.getKB();
-                System.out.println("Reloading " + kb.getURI());
-                kb.removeAllTriples();
-                kb.delete();
-                this.save(kb);
-                this.end();
-
-                vc.setKB(null);
-                this.start_write();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            this.end();
-        }
-
-        this.initializeKB();
+        this.diskDB.reloadKB();
+        this.questionDB.reloadKB();
+        this.vocabularyManager.reloadKB();
+        this.addInternalVocabularies();
     }
 
     // -- Data adapters
@@ -223,98 +153,35 @@ public class DiskRepository extends WriteKBRepository {
         return adapters;
     }
 
-    // -- Vocabulary Initialization
-    private void initializeVocabularies() {
-        this.vocabularies = new HashMap<String, Vocabulary>();
-        try {
-            this.start_read();
-            this.vocabularies.put(KBConstants.DISK_URI,
-                    this.initializeVocabularyFromKB(this.ontKB, KBConstants.DISK_NS,
-                            "disk", "The DISK Ontology",
-                            "DISK Main ontology. Defines all resources used on the DISK system."));
-            this.vocabularies.put(KBConstants.QUESTION_URI,
-                    this.initializeVocabularyFromKB(this.questionKB, KBConstants.QUESTION_NS,
-                            "sqo", "Scientific Question Ontology", "Ontology to define questions templates."));
-            this.vocabularies.put(KBConstants.HYP_URI,
-                    this.initializeVocabularyFromKB(this.hypothesisVocabulary, KBConstants.HYP_NS,
-                            "hyp", "DISK Hypothesis Ontology",
-                            "DISK Hypothesis Ontology: Defines general terms to express hypotheses."));
-
-            // Load vocabularies from config file
-            for (VocabularyConfiguration vc : this.externalVocabularies.values()) {
-                KBAPI cur = vc.getKB();
-                this.vocabularies.put(vc.getPrefix(), this.initializeVocabularyFromKB(cur, vc.getNamespace(),
-                        vc.getPrefix(), vc.getTitle(), vc.getDescription()));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            this.end();
-        }
-    }
-
     public Vocabulary getVocabulary(String uri) {
-        return this.vocabularies.get(uri);
-    }
-
-    public Vocabulary initializeVocabularyFromKB(KBAPI kb, String ns, String prefix, String title, String description) {
-        Vocabulary vocabulary = new Vocabulary(ns);
-        vocabulary.setPrefix(prefix);
-        vocabulary.setTitle(title);
-        if (description != null)
-            vocabulary.setDescription(description);
-        KBUtils.fetchTypesAndIndividualsFromKB(kb, vocabulary);
-        KBUtils.fetchPropertiesFromKB(kb, vocabulary);
-        return vocabulary;
+        return this.vocabularyManager.getVocabulary(uri);
     }
 
     public Map<String, Vocabulary> getVocabularies() {
-        return this.vocabularies;
+        return this.vocabularyManager.getVocabularies();
     }
 
     /*
      * Hypotheses
      */
     public Hypothesis addHypothesis(String username, Hypothesis hypothesis) {
-        // Check required inputs and set ID if necessary
-        String name = hypothesis.getName();
-        String desc = hypothesis.getDescription();
-        String question = hypothesis.getQuestionId();
-        String dateCreated = hypothesis.getDateCreated();
-        // Set or update date
-        if (dateCreated == null || dateCreated.equals("")) {
-            hypothesis.setDateCreated(dateformatter.format(new Date()));
-        } else {
-            hypothesis.setDateModified(dateformatter.format(new Date()));
-        }
-        if (name != null && desc != null && question != null && !name.equals("") && !desc.equals("")
-                && !question.equals("") && writeHypothesis(username, hypothesis)) {
-            return hypothesis;
-        }
-        return null;
+        return this.diskDB.AddOrUpdateHypothesis(username, hypothesis, null);
     }
 
     public boolean removeHypothesis(String username, String id) {
-        return this.deleteHypothesis(username, id);
+        return this.diskDB.deleteHypothesis(username, id);
     }
 
     public Hypothesis getHypothesis(String username, String id) {
-        return loadHypothesis(username, id);
+        return this.diskDB.loadHypothesis(username, id);
     }
 
     public Hypothesis updateHypothesis(String username, String id, Hypothesis hypothesis) {
-        String name = hypothesis.getName();
-        String desc = hypothesis.getDescription();
-        String question = hypothesis.getQuestionId();
-        if (name != null && desc != null && question != null && !name.equals("") && !desc.equals("")
-                && !question.equals("") &&
-                hypothesis.getId().equals(id) && this.deleteHypothesis(username, id))
-            return this.addHypothesis(username, hypothesis);
-        return null;
+        return this.diskDB.AddOrUpdateHypothesis(username, hypothesis, id);
     }
 
     public List<Hypothesis> listHypotheses(String username) {
-        return listHypothesesPreviews(username);
+        return this.diskDB.listHypothesesPreviews(username);
     }
 
     /*
@@ -322,53 +189,23 @@ public class DiskRepository extends WriteKBRepository {
      */
 
     public LineOfInquiry addLOI(String username, LineOfInquiry loi) {
-        String name = loi.getName();
-        String desc = loi.getDescription();
-        String question = loi.getQuestionId();
-        String dateCreated = loi.getDateCreated();
-        System.out.println(">>> " + loi.getDataQueryExplanation());
-        // Set or update date
-        if (dateCreated == null || dateCreated.equals("")) {
-            loi.setDateCreated(dateformatter.format(new Date()));
-        } else {
-            loi.setDateModified(dateformatter.format(new Date()));
-        }
-        if (name != null && desc != null && question != null &&
-                !name.equals("") && !desc.equals("") && !question.equals("") &&
-                writeLOI(username, loi))
-            return loi;
-        else
-            return null;
+        return this.diskDB.AddOrUpdateLOI(username, loi, null);
     }
 
     public boolean removeLOI(String username, String id) {
-        return deleteLOI(username, id);
+        return this.diskDB.deleteLOI(username, id);
     }
 
     public LineOfInquiry getLOI(String username, String id) {
-        return this.loadLOI(username, id);
+        return this.diskDB.loadLOI(username, id);
     }
 
     public LineOfInquiry updateLOI(String username, String id, LineOfInquiry loi) {
-        if (loi.getId() != null && this.deleteLOI(username, id))
-            return this.addLOI(username, loi);
-        return null;
+        return this.diskDB.AddOrUpdateLOI(username, loi, id);
     }
 
-    public List<TreeItem> listLOIs(String username) {
-        List<TreeItem> list = new ArrayList<TreeItem>();
-        List<LineOfInquiry> lois = this.listLOIPreviews(username);
-
-        for (LineOfInquiry l : lois) {
-            TreeItem item = new TreeItem(l.getId(), l.getName(), l.getDescription(),
-                    null, l.getDateCreated(), l.getAuthor());
-            if (l.getDateModified() != null)
-                item.setDateModified(l.getDateModified());
-            if (l.getQuestionId() != null)
-                item.setQuestion(l.getQuestionId());
-            list.add(item);
-        }
-        return list;
+    public List<LineOfInquiry> listLOIs(String username) {
+        return this.diskDB.listLOIPreviews(username);
     }
 
     /*
@@ -376,418 +213,37 @@ public class DiskRepository extends WriteKBRepository {
      */
 
     public TriggeredLOI addTriggeredLOI(String username, TriggeredLOI tloi) {
-        tloi.setStatus(Status.QUEUED);
-        String dateCreated = tloi.getDateCreated();
-        if (dateCreated == null || dateCreated.equals("")) {
-            tloi.setDateCreated(dateformatter.format(new Date()));
-        } else {
-            tloi.setDateModified(dateformatter.format(new Date()));
-        }
-        writeTLOI(username, tloi);
-        threadManager.executeTLOI(tloi);
-        //TLOIExecutionThread wflowThread = new TLOIExecutionThread(username, tloi, loi, false);
-        //executor.execute(wflowThread);
-        return tloi;
+        TriggeredLOI newTloi = this.diskDB.addOrUpdateTLOI(username, tloi, null);
+        if (newTloi != null) threadManager.executeTLOI(newTloi);
+        return newTloi;
     }
 
     public boolean removeTriggeredLOI(String username, String id) {
-        return deleteTLOI(username, id);
+        return this.diskDB.deleteTLOI(username, id);
     }
 
     public TriggeredLOI getTriggeredLOI(String username, String id) {
-        return loadTLOI(username, id);
+        return this.diskDB.loadTLOI(username, id);
     }
 
     public TriggeredLOI updateTriggeredLOI(String username, String id, TriggeredLOI tloi) {
-        if (tloi.getId() != null && this.deleteTLOI(username, id) && this.writeTLOI(username, tloi))
-            return tloi;
-        return null;
-    }
-
-    public TriggeredLOI updateTLOINotes(String username, String id, TriggeredLOI tloi) {
-        TriggeredLOI updatedTLOI = getTriggeredLOI(username, id);
-        if (updatedTLOI != null && tloi != null) {
-            updatedTLOI.setNotes(tloi.getNotes());
-            if (this.deleteTLOI(username, id) && this.writeTLOI(username, updatedTLOI))
-                return tloi;
-        }
-        //TODO: We return the request as default, check what when wrong and send apropiate error.
-        return tloi;
+        return this.diskDB.addOrUpdateTLOI(username, tloi, id);
     }
 
     public List<TriggeredLOI> listTriggeredLOIs(String username) {
-        return listTLOIs(username);
+        return this.diskDB.listTLOIs(username);
     }
 
     /*
      * Questions and option configuration
      */
 
-    private void loadQuestionTemplates() {
-        this.allQuestions = new HashMap<String, Question>();
-        this.allVariables = new HashMap<String, QuestionVariable>();
-        for (String url : Config.get().questions.values()) {
-            // Clear cache first
-            try {
-                start_write();
-                KBAPI kb = fac.getKB(url, OntSpec.PLAIN, true, true);
-                kb.removeAllTriples();
-                kb.delete();
-                this.save(kb);
-                this.end();
-            } catch (Exception e) {
-                System.err.println("Error while loading " + url);
-                e.printStackTrace();
-                if (is_in_transaction()) {
-                    this.end();
-                }
-            }
-            // Load questions and add them to cache
-            for (Question q : loadQuestionsFromKB(url)) {
-                this.allQuestions.put(q.getId(), q);
-            }
-        }
-    }
-
-    public List<Question> loadQuestionsFromKB(String url) {
-        System.out.println("Loading Question Templates: " + url);
-        List<Question> questions = new ArrayList<Question>();
-        try {
-            KBAPI kb = fac.getKB(url, OntSpec.PLAIN, true, true);
-            this.start_read();
-            KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
-            KBObject labelprop = kb.getProperty(KBConstants.RDFS_NS + "label");
-            // Load question variables:
-            for (KBTriple t : kb.genericTripleQuery(null, typeprop, SQOnt.getClass(SQO.QUESTION_VARIABLE))) {
-                KBObject qv = t.getSubject();
-                allVariables.put(qv.getID(), LoadQuestionVariableFromKB(qv, kb));
-            }
-
-            // Load questions and subproperties
-            for (KBTriple t : kb.genericTripleQuery(null, typeprop, SQOnt.getClass(SQO.QUESTION))) {
-                // System.out.println(t.toString());
-                KBObject question = t.getSubject();
-                KBObject name = kb.getPropertyValue(question, labelprop);
-                KBObject template = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_TEMPLATE));
-                KBObject constraint = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_QUESTION_CONSTRAINT_QUERY));
-                KBObject category = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_QUESTION_CATEGORY));
-                ArrayList<KBObject> variables = kb.getPropertyValues(question, SQOnt.getProperty(SQO.HAS_VARIABLE));
-                KBObject pattern = kb.getPropertyValue(question, SQOnt.getProperty(SQO.HAS_PATTERN));
-                if (name != null && template != null) {
-                    List<QuestionVariable> vars = null;
-                    if (variables != null && variables.size() > 0) {
-                        vars = new ArrayList<QuestionVariable>();
-                        for (KBObject var : variables) {
-                            QuestionVariable qv = allVariables.get(var.getID());
-                            if (qv != null)
-                                vars.add(qv);
-                            else
-                                System.err.println("Could not find " + var.getID());
-                        }
-                    }
-
-                    Question q = new Question(question.getID(), name.getValueAsString(), template.getValueAsString(),
-                            pattern != null ? LoadStatements(pattern, kb) : null, vars);
-                    if (constraint != null) q.setConstraint(constraint.getValueAsString());
-                    if (category != null) {
-                        KBObject catName = kb.getPropertyValue(category, labelprop);
-                        q.setCategory( new QuestionCategory(category.getID(), catName.getValueAsString()) );
-                    }
-                    questions.add(q);
-                }
-            }
-            this.end();
-            return questions;
-        } catch (Exception e) {
-            e.printStackTrace();
-            if (this.is_in_transaction())
-                this.end();
-            // TODO: handle exception
-        }
-        return null;
-    }
-
-    public List<Triple> LoadStatements(KBObject kbList, KBAPI kb) {
-        List<KBObject> patterns = kb.getListItems(kbList);
-        List<Triple> triples = new ArrayList<Triple>();
-        for (KBObject p : patterns) {
-            KBObject sub = kb.getPropertyValue(p, kb.getProperty(KBConstants.RDF_NS + "subject"));
-            KBObject pre = kb.getPropertyValue(p, kb.getProperty(KBConstants.RDF_NS + "predicate"));
-            KBObject obj = kb.getPropertyValue(p, kb.getProperty(KBConstants.RDF_NS + "object"));
-            if (pre != null && obj != null) {
-                triples.add(new Triple(
-                    sub == null? null : sub.getValueAsString(),
-                    pre.getValueAsString(),
-                    obj.isLiteral() ? new Value(obj.getValueAsString(), obj.getDataType()) : new Value(obj.getValueAsString())
-                ));
-            }
-        }
-        return triples;
-    }
-
-    public QuestionVariable LoadQuestionVariableFromKB (KBObject var, KBAPI kb) {
-        KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
-        KBObject variableName = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_VARIABLE_NAME));
-        // Get possible subtype for this Question Variable
-        List<KBObject> types = kb.getPropertyValues(var, typeprop);
-        String additionalType = null;
-        if (types != null) {
-            for (KBObject typ : types) {
-                String urlvalue = typ.getValueAsString();
-                if (urlvalue.startsWith(KBConstants.QUESTION_NS)
-                        && !urlvalue.equals(KBConstants.QUESTION_NS + SQO.QUESTION_VARIABLE)) {
-                    additionalType = urlvalue;
-                }
-            }
-        }
-
-        // Create appropriate Question Variable type
-        if (variableName != null) {
-            QuestionVariable q = null;
-            if (additionalType == null) {
-                q = new QuestionVariable(var.getID(), variableName.getValueAsString());
-            } else if (additionalType.equals(KBConstants.QUESTION_NS + SQO.USER_INPUT_QUESTION_VARIABLE)) {
-                q = new UserInputQuestionVariable(var.getID(), variableName.getValueAsString());
-                KBObject inputDatatype = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_INPUT_DATATYPE));
-                if (inputDatatype != null)
-                    ((UserInputQuestionVariable) q).setInputDatatype(inputDatatype.getValueAsString());
-            } else if (additionalType.equals(KBConstants.QUESTION_NS + SQO.DYNAMIC_OPTIONS_QUESTION_VARIABLE)) {
-                q = new DynamicOptionsQuestionVariable(var.getID(), variableName.getValueAsString());
-                KBObject optionsQuery = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_OPTIONS_QUERY));
-                if (optionsQuery != null)
-                    ((DynamicOptionsQuestionVariable) q).setOptionsQuery(optionsQuery.getValueAsString());
-            } else if (additionalType.equals(KBConstants.QUESTION_NS + SQO.STATIC_OPTIONS_QUESTION_VARIABLE)) {
-                q = new StaticOptionsQuestionVariable(var.getID(), variableName.getValueAsString());
-                List<KBObject> kbOptions = kb.getPropertyValues(var, SQOnt.getProperty(SQO.HAS_OPTION));
-                List<VariableOption> options = new ArrayList<VariableOption>();
-                for (KBObject curOption: kbOptions) {
-                    KBObject label = kb.getPropertyValue(curOption, SQOnt.getProperty(SQO.HAS_LABEL));
-                    KBObject value = kb.getPropertyValue(curOption, SQOnt.getProperty(SQO.HAS_VALUE));
-                    KBObject comment = kb.getPropertyValue(curOption, SQOnt.getProperty(SQO.HAS_COMMENT));
-                    if (label != null && value != null) {
-                        VariableOption cur = new VariableOption(value.getValueAsString(), label.getValueAsString());
-                        if (comment != null)
-                            cur.setComment(comment.getValueAsString());
-                        options.add(cur);
-                    }
-                }
-                if (options != null)
-                    ((StaticOptionsQuestionVariable) q).setOptions(options);
-            } else if (additionalType.equals(KBConstants.QUESTION_NS + SQO.BOUNDING_BOX_QUESTION_VARIABLE)) {
-                q = new BoundingBoxQuestionVariable(var.getID(), variableName.getValueAsString());
-                KBObject minLatVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MIN_LAT));
-                KBObject minLngVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MIN_LNG));
-                KBObject maxLatVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MAX_LAT));
-                KBObject maxLngVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MAX_LNG));
-                if (minLatVar != null && minLngVar != null && maxLatVar != null && maxLngVar != null) {
-                    ((BoundingBoxQuestionVariable) q).setBoundingBoxVariables(
-                        ((UserInputQuestionVariable) LoadQuestionVariableFromKB(minLatVar, kb)),
-                        ((UserInputQuestionVariable) LoadQuestionVariableFromKB(maxLatVar, kb)),
-                        ((UserInputQuestionVariable) LoadQuestionVariableFromKB(minLngVar, kb)),
-                        ((UserInputQuestionVariable) LoadQuestionVariableFromKB(maxLngVar, kb))
-                    );
-                }
-            } else if (additionalType.equals(KBConstants.QUESTION_NS + SQO.TIME_INTERVAL_QUESTION_VARIABLE)) {
-                q = new TimeIntervalQuestionVariable(var.getID(), variableName.getValueAsString());
-                KBObject startTimeVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_START_TIME));
-                KBObject endTimeVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_END_TIME));
-                KBObject timeTypeVar = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_TIME_TYPE));
-                if (startTimeVar != null && endTimeVar != null && timeTypeVar != null) {
-                    ((TimeIntervalQuestionVariable) q).setStartTime((UserInputQuestionVariable) LoadQuestionVariableFromKB(startTimeVar, kb));
-                    ((TimeIntervalQuestionVariable) q).setEndTime((UserInputQuestionVariable) LoadQuestionVariableFromKB(endTimeVar, kb));
-                    ((TimeIntervalQuestionVariable) q).setTimeType((StaticOptionsQuestionVariable) LoadQuestionVariableFromKB(timeTypeVar, kb));
-                }
-            } else {
-                System.err.println("WARN: Question subtype not implemented: " + additionalType);
-                q = new QuestionVariable(var.getID(), variableName.getValueAsString());
-            }
-
-            // Set basic Question variables properties:
-            KBObject minCardinality = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MIN_CARDINALITY));
-            KBObject maxCardinality = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_MAX_CARDINALITY));
-            KBObject representation = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_REPRESENTATION));
-            KBObject explanation = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_EXPLANATION));
-            KBObject patternFragment = kb.getPropertyValue(var, SQOnt.getProperty(SQO.HAS_PATTERN_FRAGMENT));
-
-            q.setMinCardinality(minCardinality != null ? Double.valueOf(minCardinality.getValueAsString()) : 1);
-            q.setMaxCardinality(maxCardinality != null ? Double.valueOf(maxCardinality.getValueAsString()) : 1);
-            if (representation != null) q.setRepresentation(representation.getValueAsString());
-            if (explanation != null) q.setExplanation(explanation.getValueAsString());
-            if (patternFragment != null) {
-                List<Triple> pFragList = LoadStatements(patternFragment, kb);
-                if (pFragList.size() > 0) q.setPatternFragment(pFragList);
-            }
-            return q;
-        }
-        return null;
-    }
-
     public List<Question> listHypothesesQuestions() {
-        return new ArrayList<Question>(this.allQuestions.values());
+        return this.questionDB.listHypothesesQuestions();
     }
 
-    // OPTIONS: 
-    private List<VariableOption> queryForOptions (String varName, String query) throws Exception {
-        if (optionsCache.containsKey(varName + query))
-            return optionsCache.get(varName + query);
-
-        List<VariableOption> options = new ArrayList<VariableOption>();
-        // If there is a constraint query, send it to all data providers;
-        Map<String, List<DataResult>> solutions = new HashMap<String, List<DataResult>>();
-        for (DataAdapter adapter : this.dataAdapters.values()) {
-            solutions.put(adapter.getName(), adapter.queryOptions(varName, query));
-        }
-
-        // To check that all labels are only once
-        Map<String, List<List<String>>> labelToOption = new HashMap<String, List<List<String>>>();
-
-        for (String dataSourceName : solutions.keySet()) {
-            for (DataResult solution : solutions.get(dataSourceName)) {
-                String uri = solution.getValue(DataAdapter.VARURI);
-                String label = solution.getValue(DataAdapter.VARLABEL);
-
-                if (uri != null && label != null) {
-                    List<List<String>> sameLabelOptions = labelToOption.containsKey(label)
-                            ? labelToOption.get(label)
-                            : new ArrayList<List<String>>();
-                    List<String> thisOption = new ArrayList<String>();
-                    thisOption.add(uri);
-                    thisOption.add(label);
-                    thisOption.add(dataSourceName);
-                    sameLabelOptions.add(thisOption);
-                    labelToOption.put(label, sameLabelOptions);
-                }
-            }
-        }
-
-        // Add all options with unique labels
-        for (List<List<String>> sameLabelOptions : labelToOption.values()) {
-            if (sameLabelOptions.size() == 1) {
-                List<String> opt = sameLabelOptions.get(0);
-                options.add(new VariableOption(opt.get(0), opt.get(1)));
-            } else { // There's more than one option with the same label
-                boolean allTheSame = true;
-                String lastValue = sameLabelOptions.get(0).get(0); // Comparing IDs
-                for (List<String> curOption : sameLabelOptions) {
-                    if (!lastValue.equals(curOption.get(0))) {
-                        allTheSame = false;
-                        break;
-                    }
-                }
-                if (allTheSame) { // All ids are the same, add one option.
-                    List<String> opt = sameLabelOptions.get(0);
-                    options.add(new VariableOption(opt.get(0), opt.get(1)));
-                } else {
-                    Map<String, Integer> dsCount = new HashMap<String, Integer>();
-
-                    for (List<String> curOption : sameLabelOptions) {
-                        String curValue = curOption.get(0);
-
-                        String dataSource = curOption.get(2);
-                        Integer count = dsCount.containsKey(dataSource) ? dsCount.get(dataSource) : 0;
-                        String label = curOption.get(1) + " (" + dataSource
-                                + (count > 0 ? "_" + count.toString() : "") + ")";
-                        dsCount.put(dataSource, (count + 1));
-
-                        options.add(new VariableOption(curValue, label));
-                    }
-                }
-            }
-        }
-        optionsCache.put(varName + query, options);
-        return options;
-    }
-
-    public String createQuestionOptionsQuery (Question q, List<QuestionVariable> includedVariables) {
-        if (q != null) {
-            String queryConstraint = q.getConstraint();
-            String query = queryConstraint != null ? queryConstraint : "";
-            for (QuestionVariable qv: includedVariables) {
-                QuestionSubtype t = qv.getSubType();
-                if (t == QuestionSubtype.DYNAMIC_OPTIONS || t == QuestionSubtype.BOUNDING_BOX || t == QuestionSubtype.TIME_INTERVAL) {
-                    String queryFragment = ((DynamicOptionsQuestionVariable) qv).getOptionsQuery();
-                    if (queryFragment != null)
-                        query += queryFragment;
-                }
-            }
-            return query;
-        }
-        return null;
-    }
-
-    public Map<String,List<VariableOption>> listDynamicOptions (QuestionOptionsRequest cfg) throws Exception {
-        // Returns a map[var.name] -> [option, option2, ...]
-        Map<String, String> bindings = cfg.getBindings();
-        Question q = allQuestions.get(cfg.getId());
-        if (q == null) {
-            System.err.println("Question not found: " + cfg.getId());
-            return null;
-        }
-
-        Map<String, String> queries = new HashMap<String, String>();
-        Map<String, List<VariableOption>> options = new HashMap<String, List<VariableOption>>();
-        if (bindings == null || bindings.size() == 0) {
-            // If there are no bindings, we can just send the base query + the constraint for this variable
-            for (QuestionVariable qv: q.getVariables()) {
-                QuestionSubtype t = qv.getSubType();
-                if (t == QuestionSubtype.DYNAMIC_OPTIONS || t == QuestionSubtype.BOUNDING_BOX || t == QuestionSubtype.TIME_INTERVAL ) { 
-                    String curQuery = (q.getConstraint() != null ? q.getConstraint() : "") + ((DynamicOptionsQuestionVariable) qv).getOptionsQuery();
-                    queries.put(qv.getId(), curQuery);
-                }
-            }
-        } else {
-            // If we have at leas one binding, we need to create filters for all queries:
-            Map<String, String> filters = new HashMap<String, String>();
-            for (String varId: bindings.keySet()) {
-                QuestionVariable curVar = allVariables.get(varId); // Should be the same as question.getVariables.
-                if (curVar != null) {
-                    String value = bindings.get(varId);
-                    String sparqlValue = value.startsWith("http") ? "<" + value + ">" : "\"" + value + "\"";
-                    String line = "VALUES " + curVar.getVariableName() + " { " + sparqlValue + " }";
-                    filters.put(varId, line);
-                } else {
-                    System.err.println("Cannot find variable with ID: " + varId);
-                }
-            }
-
-            String baseQuery = createQuestionOptionsQuery(q, q.getVariables());
-            for (QuestionVariable qv: q.getVariables()) {
-                QuestionSubtype t = qv.getSubType();
-                if (t == QuestionSubtype.DYNAMIC_OPTIONS || t == QuestionSubtype.BOUNDING_BOX || t == QuestionSubtype.TIME_INTERVAL ) { 
-                    String varId = qv.getId();
-                    String curQuery = baseQuery;
-                    // We need to add all filters that ARE NOT THIS ONE
-                    for (String filterId: filters.keySet()) {
-                        if (!filterId.equals(varId)) {
-                            curQuery += "\n" + filters.get(filterId);
-                        }
-                    }
-                    queries.put(varId, curQuery);
-                }
-            }
-        }
-
-        // Now run the queries and load results.
-        for (QuestionVariable qv: q.getVariables()) {
-            QuestionSubtype t = qv.getSubType();
-            String varName = qv.getVariableName();
-            if (t == QuestionSubtype.STATIC_OPTIONS) {
-                options.put(varName, ((StaticOptionsQuestionVariable) qv).getOptions());
-            } else if (t == QuestionSubtype.DYNAMIC_OPTIONS) {
-                // We add all the filter except the value for the queried variable
-                if (queries.containsKey(qv.getId())) {
-                    String curQuery = queries.get(qv.getId());
-                    options.put(varName, queryForOptions(varName, curQuery));
-                    if (options.get(varName).size() == 0) {
-                        System.out.println(qv.getId() + " got 0 results:");
-                        System.out.println(curQuery);
-                    } else {
-                        System.out.println(qv.getId() + " got " + options.get(varName).size() + " results.");
-                    }
-                }
-            }
-        }
-        return options;
+    public Map<String,List<VariableOption>> listDynamicOptions(QuestionOptionsRequest cfg) throws Exception {
+        return this.questionDB.listDynamicOptions(cfg);
     }
 
     /*
@@ -795,11 +251,7 @@ public class DiskRepository extends WriteKBRepository {
      */
 
     private String getAllPrefixes() {
-        String prefixes = KBConstants.getAllPrefixes();
-        for (VocabularyConfiguration vc : this.externalVocabularies.values()) {
-            prefixes += "PREFIX " + vc.getPrefix() + ": <" + vc.getNamespace() + ">\n";
-        }
-        return prefixes;
+        return KBConstants.getAllPrefixes() + this.vocabularyManager.getPrefixes();
     }
 
     public Map<String, List<String>> queryExternalStore(String endpoint, String sparqlQuery, String variables)
@@ -953,15 +405,15 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     public Map<LineOfInquiry, List<Map<String, String>>> getLOIByHypothesisId(String username, String id) {
-        String hypuri = this.HYPURI(username) + "/" + id;
+        String hypuri = this.server + "/" + username + "/hypotheses";
         // LoiId -> [{ variable -> value }]
         Map<String, List<Map<String, String>>> allMatches = new HashMap<String, List<Map<String, String>>>();
-        List<LineOfInquiry> lois = this.listLOIPreviews(username);
+        List<LineOfInquiry> lois = this.diskDB.listLOIPreviews(username);
 
         // Starts checking all LOIs that match the hypothesis directly from the KB.
         try {
-            this.start_read();
-            KBAPI hypKB = this.fac.getKB(hypuri, OntSpec.PLAIN, true);
+            this.rdf.startRead();
+            KBAPI hypKB = this.rdf.getFactory().getKB(hypuri, OntSpec.PLAIN, true);
             System.out.println("GRAPH: " + hypKB.getAllTriples().toString().replace("),", ")\n"));
             for (LineOfInquiry loi : lois) {
                 String hq = loi.getHypothesisQuery();
@@ -1017,7 +469,7 @@ public class DiskRepository extends WriteKBRepository {
             // throw e;
             e.printStackTrace();
         } finally {
-            this.end();
+            this.rdf.end();
         }
 
         Map<LineOfInquiry, List<Map<String, String>>> results = new HashMap<LineOfInquiry, List<Map<String, String>>>();
@@ -1039,6 +491,23 @@ public class DiskRepository extends WriteKBRepository {
         // LOI -> [{ variable -> value }, {...}, ...]
         return results;
     }
+
+    //public List<TriggeredLOI> newQueryHypothesis (String username, String id) throws Exception, QueryParseException {
+    //    // New approach, use the question bindings.
+    //    List<TriggeredLOI> tlois = new ArrayList<TriggeredLOI>();
+    //    Hypothesis hypothesis = this.getHypothesis(username, id);
+    //    List<LineOfInquiry> lois = this.diskDB.listLOIPreviews(username);
+    //    List<LineOfInquiry> matchingLois = new ArrayList<LineOfInquiry>();
+    //    for (LineOfInquiry loi: lois) {
+    //        if (loi.getQuestionId().equals(hypothesis.getQuestionId())) {
+    //            matchingLois.add(loi);
+    //        }
+    //    }
+    //    List<VariableBinding> questionBindings = hypothesis.getQuestionBindings();
+    //    for (LineOfInquiry loi: matchingLois) {
+    //    }
+    //    return tlois;
+    //}
 
     public List<TriggeredLOI> queryHypothesis(String username, String id) throws Exception, QueryParseException {
         // Create TLOIs that match with a hypothesis and username
@@ -1325,7 +794,7 @@ public class DiskRepository extends WriteKBRepository {
                         if (varName.equals(v.getName())) {
                             List<String> classes = v.getType();
                             if (classes != null && classes.size() > 0) {
-                                dType = classes.contains(vBinding.getType()) ? vBinding.getType() : classes.get(0);
+                                dType = classes.contains(vBinding.getDatatype()) ? vBinding.getDatatype() : classes.get(0);
                             }
                         }
                     }
@@ -1353,12 +822,12 @@ public class DiskRepository extends WriteKBRepository {
                     // This variable expects a collection. Modify the existing tloiBinding values,
                     // collections of non-files are send as comma separated values:
                     VariableBinding cur = new VariableBinding(vBinding.getVariable(), dsNames.toString());
-                    cur.setType(vBinding.getType());
+                    cur.setDatatype(vBinding.getDatatype());
                     tloiWorkflowDef.addBinding(cur);
                 } else {
                     if (dsNames.size() == 1) {
                         VariableBinding cur = new VariableBinding(vBinding.getVariable(), dsNames.get(0));
-                        cur.setType(vBinding.getType());
+                        cur.setDatatype(vBinding.getDatatype());
                         tloiWorkflowDef.addBinding(cur);
                     } else {
                         System.out.println("IS MORE THAN ONE VALUE BUT NOT COLLECTION! Creating new workflow runs");
@@ -1373,7 +842,7 @@ public class DiskRepository extends WriteKBRepository {
                                 List<VariableBinding> newBindings = new ArrayList<VariableBinding>();
                                 for (VariableBinding cur: tmpWorkflow.getBindings()) {
                                     VariableBinding newV = new VariableBinding(cur.getVariable(), cur.getBinding());
-                                    newV.setType(cur.getType());
+                                    newV.setDatatype(cur.getDatatype());
                                     newBindings.add(newV);
                                 }
 
@@ -1383,7 +852,7 @@ public class DiskRepository extends WriteKBRepository {
                                         newBindings);
 
                                 VariableBinding cur = new VariableBinding(vBinding.getVariable(), dsName);
-                                cur.setType(vBinding.getType());
+                                cur.setDatatype(vBinding.getDatatype());
                                 newWorkflow.addBinding(cur);
 
                                 newWorkflow.setMeta(workflowDef.getMeta());
@@ -1446,12 +915,12 @@ public class DiskRepository extends WriteKBRepository {
 
     public Boolean runAllHypotheses(String username) throws Exception {
         List<String> hList = new ArrayList<String>();
-        String url = this.HYPURI(username);
+        String url = this.server + "/" + username + "/hypotheses";
         try {
-            KBAPI kb = this.fac.getKB(url, OntSpec.PLAIN, true);
-            KBObject hypCls = DISKOnt.getClass(DISK.HYPOTHESIS);
+            KBAPI kb = this.rdf.getFactory().getKB(url, OntSpec.PLAIN, true);
+            KBObject hypCls = this.diskDB.getOnt().getClass(DISK.HYPOTHESIS);
 
-            this.start_read();
+            this.rdf.startRead();
             KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
             for (KBTriple t : kb.genericTripleQuery(null, typeprop, hypCls)) {
                 KBObject hypobj = t.getSubject();
@@ -1467,7 +936,7 @@ public class DiskRepository extends WriteKBRepository {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            this.end();
+            this.rdf.end();
         }
 
         List<TriggeredLOI> tList = new ArrayList<TriggeredLOI>();
@@ -1488,193 +957,13 @@ public class DiskRepository extends WriteKBRepository {
     }
 
     /*
-     * Narratives
-     */
-
-    public Map<String, String> getNarratives(String username, String tloiId) {
-        // DEPRECATED!
-        Map<String, String> narratives = new HashMap<String, String>();
-        TriggeredLOI tloi = this.getTriggeredLOI(username, tloiId);
-        if (tloi != null) {
-            String hypId = tloi.getParentHypothesisId();
-            String loiId = tloi.getParentLoiId();
-            Hypothesis hyp = this.getHypothesis(username, hypId);
-            LineOfInquiry loi = this.getLOI(username, loiId);
-
-            if (loi == null || hyp == null) {
-                System.out.println("ERROR: could not get hypotheses or LOI");
-                return narratives;
-            }
-
-            // Assuming each tloi only has a workflow or metaworkflow:
-            WorkflowBindings wf = null;
-            List<WorkflowBindings> wfs = tloi.getWorkflows();
-            List<WorkflowBindings> metaWfs = tloi.getMetaWorkflows();
-
-            if (metaWfs != null && metaWfs.size() > 0) {
-                wf = metaWfs.get(0);
-            } else if (wfs != null && wfs.size() > 0) {
-                wf = wfs.get(0);
-            } else {
-                System.out.println("TLO ID: " + tloiId + " has does not have any workflow.");
-                return null;
-            }
-
-            // List of data used.
-            String dataset = "";
-            String fileprefix = "https://enigma-disk.wings.isi.edu/wings-portal/users/admin/test/data/fetch?data_id=http%3A//skc.isi.edu%3A8080/wings-portal/export/users/"
-                    + username + "/data/library.owl%23";
-            boolean allCollections = true;
-            int len = 0;
-            for (VariableBinding ds : wf.getBindings()) {
-                if (!ds.isCollection()) {
-                    allCollections = false;
-                    break;
-                }
-                len = ds.getBindingAsArray().length > len ? ds.getBindingAsArray().length : len;
-            }
-            if (allCollections) {
-                dataset += "<table><thead><tr><td><b>#</b></td>";
-                for (VariableBinding ds : wf.getBindings()) {
-                    dataset += "<td><b>" + ds.getVariable() + "</b></td>";
-                }
-                dataset += "</tr></thead><tbody>";
-                for (int i = 0; i < len; i++) {
-                    dataset += "<tr>";
-                    dataset += "<td>" + (i + 1) + "</td>";
-                    for (VariableBinding ds : wf.getBindings()) {
-                        String[] bindings = ds.getBindingAsArray();
-                        String bindingData = bindings[i];
-                        String dataname = bindingData.replaceAll("^.*#", "").replaceAll("SHA\\w{6}_", "");
-                        String url = fileprefix + bindingData;
-                        String anchor = "<a target=\"_blank\" href=\"" + url + "\">" + dataname + "</a>";
-                        dataset += "<td>" + anchor + "</td>";
-                    }
-                    dataset += "</tr>";
-                }
-                dataset += "</tbody></table>";
-
-            } else {
-                for (VariableBinding ds : wf.getBindings()) {
-                    String binding = ds.getBinding();
-                    if (binding.startsWith("[")) {
-                        for (String bindingData : ds.getBindingAsArray()) {
-                            String dataname = bindingData.replaceAll("^.*#", "").replaceAll("SHA\\w{6}_", "");
-                            String url = fileprefix + bindingData;
-                            String anchor = "<a target=\"_blank\" href=\"" + url + "\">" + dataname + "</a>";
-                            dataset += "<li>" + anchor + "</li>";
-                        }
-                    }
-                }
-            }
-            Double confidence = tloi.getConfidenceValue();
-            DecimalFormat df = new DecimalFormat(confidence != 0 && confidence < 0.001 ? "0.#E0"
-                    : "0.###");
-
-            String confidenceValueString = df.format(confidence);
-            String confidenceType = tloi.getConfidenceType();
-            // Execution narratives
-            // String executionTemplate = "The Hypothesis with title: <b>${HYP.NAME}</b> was
-            // runned <span class=\"${TLOI.STATUS}\">${TLOI.STATUS}</span>"
-            // + "with the Line of Inquiry: <b>${LOI.NAME}"</b>."
-            // + "The LOI triggered the <a target=\"_blank\"
-            // href="{WF.getWorkflowLink()}">workflow on WINGS</a>"
-            // + " where it was tested with the following datasets:<div
-            // class=\"data-list\"><ol> ${[WF.getInputFiles]}"
-            // + "</ol></div>The resulting p-value is $(tloi.pVal).";
-            String execution = "The Hypothesis with title: <b>" + hyp.getName()
-                    + "</b> was runned <span class=\"" + tloi.getStatus() + "\">"
-                    + tloi.getStatus() + "</span>"
-                    + " with the Line of Inquiry: <b>" + loi.getName()
-                    + "</b>. The LOI triggered the <a target=\"_blank\" href=\"" + wf.getWorkflowLink()
-                    + "\">workflow on WINGS</a>"
-                    + " where it was tested with the following datasets:<div class=\"data-list\"><ol>" + dataset
-                    + "</ol></div>The resulting " + confidenceType + " is " + confidenceValueString + ".";
-            narratives.put("execution", execution);
-
-            String dataQuery = "<b>Data Query Narrative:</b><br/>" + this.dataQueryNarrative(loi.getDataQuery());
-
-            narratives.put("dataquery", dataQuery);
-        }
-        return narratives;
-    }
-
-    private String dataQueryNarrative(String dataQuery) {
-        // this is necessary to replace the new line characters in query
-        String dataQuery1 = dataQuery.replaceAll("^(//)n${1}", "");
-        String[] querylist = dataQuery1.split("\\.");
-        String rdfs_label = "rdfs:label";
-
-        try {
-            Map<String, String> properties = new HashMap<String, String>();
-            for (int i = 0; i < querylist.length; i++) {
-                if (querylist[i].contains(rdfs_label)) {
-                    String[] line = querylist[i].replace("\\", "").split(" ");
-                    properties.put(line[2], line[4].replace('"', ' '));
-                }
-            }
-
-            // We map all the objects to the properties they were identified with, by using
-            // the objects dictionary
-            Map<String, List<List<String>>> inputs = new HashMap<>();
-            Map<List<String>, String> outputs = new HashMap<>();
-            for (int i = 0; i < querylist.length; i++) {
-                if (!querylist[i].contains(rdfs_label)) {
-                    String[] line = querylist[i].split(" ");
-                    String schema = "Schema";
-                    if (!inputs.containsKey(line[2]) & !line[2].contains(schema)) {
-                        List<List<String>> list = new ArrayList<List<String>>();
-                        List<String> item = new ArrayList<String>();
-                        item.add(line[2]);
-                        item.add(properties.get(line[3]));
-                        list.add(item);
-                        inputs.put(line[2], list);
-                        outputs.put(item, line[4]);
-                    } else if (inputs.containsKey(line[2]) & !line[2].contains(schema)) {
-                        List<List<String>> list2 = inputs.get(line[2]);
-                        List<String> item = new ArrayList<String>();
-                        item.add(line[2]);
-                        item.add(properties.get(line[3]));
-                        list2.add(item);
-                        inputs.put(line[2], list2);
-                        List<String> list = new ArrayList<String>();
-                        list.add(line[2]);
-                        list.add(properties.get(line[3]));
-                        outputs.put(item, line[4]);
-                    }
-                }
-            }
-            // Now we traverse the path
-            String path = "";
-            for (String key : inputs.keySet()) {
-                List<List<String>> value = inputs.get(key);
-                for (int j = 0; j < value.size(); j++) {
-                    // p = v
-                    List<String> p = value.get(j);
-                    try {
-                        path = path + key.replace("?", "") + "->" + p.get(1).toString().trim().replace("?", "") + "->"
-                                + outputs.get(p).toString().replace("?", "") + "<br/>";
-                    } catch (NullPointerException e) {
-
-                    }
-                }
-            }
-            // System.out.println("Narrative"+path);
-            return path;
-        } catch (Exception e) {
-            return "Error generating narrative";
-        }
-
-    }
-
-    /*
      * Running
      */
 
     public List<TriggeredLOI> getTLOIsForHypothesisAndLOI(String username, String hypId, String loiId) {
         // Get all TLOIs and filter out
         List<TriggeredLOI> list = new ArrayList<TriggeredLOI>();
-        for (TriggeredLOI tloi : listTLOIs(username)) {
+        for (TriggeredLOI tloi : this.diskDB.listTLOIs(username)) {
             String parentHypId = tloi.getParentHypothesisId();
             String parentLOIId = tloi.getParentLoiId();
             if (parentHypId != null && parentHypId.equals(hypId) &&
@@ -1705,16 +994,12 @@ public class DiskRepository extends WriteKBRepository {
 
     public WorkflowRun getWorkflowRunStatus(String source, String id) {
         MethodAdapter methodAdapter = this.methodAdapters.getMethodAdapterByName(source);
-        if (methodAdapter == null)
-            return null;
-        return methodAdapter.getRunStatus(id);
+        return methodAdapter != null ? methodAdapter.getRunStatus(id) : null;
     }
 
     public FileAndMeta getOutputData(String source, String id) {
         MethodAdapter methodAdapter = this.methodAdapters.getMethodAdapterByName(source);
-        if (methodAdapter == null)
-            return null;
-        return methodAdapter.fetchData(methodAdapter.getDataUri(id));
+        return (methodAdapter != null) ? methodAdapter.fetchData(methodAdapter.getDataUri(id)) : null;
     }
 
     /*

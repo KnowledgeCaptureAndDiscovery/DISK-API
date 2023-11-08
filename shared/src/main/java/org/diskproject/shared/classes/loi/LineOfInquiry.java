@@ -15,8 +15,11 @@ public class LineOfInquiry extends DISKResource {
                 MANUAL = 4;
     }
 
-    // Data query
-    String dataSource, dataQuery, dataQueryExplanation;
+    // Data query:
+    String dataQuery, dataQueryExplanation;
+    // Data source:
+    String dataSource, dataSourceURL;
+    // Preview table:
     String tableVariables, tableDescription;
     // Methods
     List<WorkflowBindings> workflows, metaWorkflows;
@@ -52,6 +55,14 @@ public class LineOfInquiry extends DISKResource {
 
     public String getDataSource () {
 	    return this.dataSource;
+    }
+
+    public void setDataSourceURL (String url) {
+	    this.dataSourceURL = url;
+    }
+
+    public String getDataSourceURL () {
+	    return this.dataSourceURL;
     }
 
     public Set<String> getAllWorkflowVariables () {

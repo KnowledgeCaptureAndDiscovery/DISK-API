@@ -1,5 +1,6 @@
 package org.diskproject.server.util;
 
+import org.diskproject.server.repository.DiskRDF;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.vocabulary.Individual;
 import org.diskproject.shared.classes.vocabulary.Property;
@@ -15,6 +16,17 @@ import edu.isi.kcap.ontapi.KBObject;
 import edu.isi.kcap.ontapi.KBTriple;
 
 public class KBUtils {
+    public static void clearKB (KBAPI kb, DiskRDF rdf) {
+        if (kb != null) {
+            System.out.println("Reloading " + kb.getURI());
+            rdf.startWrite();
+            kb.removeAllTriples();
+            kb.delete();
+            rdf.save(kb);
+            rdf.end();
+        }
+    }
+
     public static String createPropertyLabel(String pName) {
         // Remove starting "has"
         pName = pName.replaceAll("^has", "");

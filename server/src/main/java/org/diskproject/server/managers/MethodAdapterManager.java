@@ -1,10 +1,11 @@
-package org.diskproject.server.adapters;
+package org.diskproject.server.managers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.diskproject.server.adapters.AirFlowAdapter;
 import org.diskproject.server.repository.WingsAdapter;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.Config.MethodAdapterConfig;

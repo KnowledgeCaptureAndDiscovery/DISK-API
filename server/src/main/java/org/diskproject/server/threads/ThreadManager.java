@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.diskproject.server.adapters.MethodAdapterManager;
+import org.diskproject.server.managers.MethodAdapterManager;
 import org.diskproject.server.repository.DiskRepository;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.loi.LineOfInquiry;

@@ -1,4 +1,7 @@
-package org.diskproject.server.adapters;
+package org.diskproject.server.managers;
+
+import org.diskproject.server.util.Config;
+import org.diskproject.server.util.Config.StorageConfig;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -24,16 +27,19 @@ public class StorageManager {
     String url, username, password;
     MinioClient client;
 
-    public StorageManager (String url, String username, String password) {
-        this.url = url;
-        this.username = username;
-        this.password = password;
+    public StorageManager () {
+        // Reads storage info from config, then create the minio instance.
+        StorageConfig cfg = Config.get().storage;
+        if (cfg.external != null && cfg.username != null && cfg.password != null) {
+            this.url = cfg.external;
+            this.username = cfg.username;
+            this.password = cfg.password;
+            this.init();
+        }
     }
 
     public boolean init () {
         try {
-            // Create a minioClient with the MinIO server playground, its access key and
-            // secret key.
             this.client = MinioClient.builder()
                     .endpoint(this.url)
                     .credentials(this.username, this.password)
