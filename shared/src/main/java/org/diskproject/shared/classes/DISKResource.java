@@ -1,9 +1,22 @@
 package org.diskproject.shared.classes;
 
+import org.diskproject.shared.classes.common.Entity;
+
 public class DISKResource {
-    String id, name, description, dateCreated, dateModified, author, notes;
+    String id, name, description, dateCreated, dateModified, notes;
+    Entity author;
     
     public DISKResource () {}
+    
+    public DISKResource (DISKResource src) {
+        this.id = src.id;
+        this.name = src.name;
+        this.description = src.description;
+        this.dateCreated = src.dateCreated;
+        this.dateModified = src.dateModified;
+        this.notes = src.notes;
+        this.author = src.author;
+    }
 
     public DISKResource (String id, String name, String description) {
         this.id = id;
@@ -12,7 +25,7 @@ public class DISKResource {
     }
 
     public DISKResource (String id, String name, String description, String notes,
-            String author, String dateCreated, String dateModified) {
+            Entity author, String dateCreated, String dateModified) {
         this.id = id;
         this.name = name;
         this.notes = notes;
@@ -54,11 +67,11 @@ public class DISKResource {
         this.notes = notes;
     }
 
-    public String getAuthor() {
+    public Entity getAuthor() {
         return this.author;
     }
 
-    public void setAuthor(String author) {
+    public void setAuthor(Entity author) {
         this.author = author;
     }
 

@@ -14,7 +14,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.Produces;
 
-import org.diskproject.shared.classes.hypothesis.Hypothesis;
+import org.diskproject.shared.classes.hypothesis.Goal;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.question.Question;
@@ -49,40 +49,40 @@ public interface DiskService {
   public String reloadVocabularies();
   
   /*
-   * Hypothesis
+   * Goals
    */
   @POST
-  @Path("hypotheses")
+  @Path("goals")
   @Produces("application/json")
   @Consumes("application/json")
-  public Hypothesis addHypothesis(
-      @JsonProperty("hypothesis") Hypothesis hypothesis);
+  public Goal addGoal(
+      @JsonProperty("goal") Goal goal);
   
   @GET
-  @Path("hypotheses")
-  public List<Hypothesis> listHypotheses();
+  @Path("goals")
+  public List<Goal> listGoals();
   
   @GET
-  @Path("hypotheses/{id}")
-  public Hypothesis getHypothesis(
+  @Path("goals/{id}")
+  public Goal getGoal(
       @PathParam("id") String id);
   
   @PUT
-  @Path("hypotheses/{id}")
+  @Path("goals/{id}")
   @Produces("application/json")
   @Consumes("application/json")
-  public Hypothesis updateHypothesis(
+  public Goal updateGoal(
       @PathParam("id") String id,
-      @JsonProperty("hypothesis") Hypothesis hypothesis);
+      @JsonProperty("goal") Goal goal);
   
   @DELETE
-  @Path("hypotheses/{id}")
-  public void deleteHypothesis(
+  @Path("goals/{id}")
+  public void deleteGoal(
       @PathParam("id") String id);
   
   @GET
-  @Path("hypotheses/{id}/query")
-  public List<TriggeredLOI> queryHypothesis(
+  @Path("goals/{id}/query")
+  public List<TriggeredLOI> queryGoal(
       @PathParam("id") String id);
   
   /*

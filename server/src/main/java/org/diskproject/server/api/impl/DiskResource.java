@@ -26,8 +26,10 @@ import org.apache.http.HttpStatus;
 import org.apache.jena.query.QueryException;
 import org.diskproject.server.repository.DiskRepository;
 import org.diskproject.shared.api.DiskService;
+import org.diskproject.shared.classes.DISKResource;
 import org.diskproject.shared.classes.adapters.MethodAdapter.FileAndMeta;
-import org.diskproject.shared.classes.hypothesis.Hypothesis;
+import org.diskproject.shared.classes.common.Entity;
+import org.diskproject.shared.classes.hypothesis.Goal;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.question.Question;
@@ -56,15 +58,9 @@ class ErrorMessage {
 @Produces("application/json")
 @Consumes("application/json")
 public class DiskResource implements DiskService {
-
-  private static String USERNAME = "admin";
-
-  @Context
-  HttpServletResponse response;
-  @Context
-  HttpServletRequest request;
-  @Context
-  SecurityContext securityContext;
+  @Context HttpServletResponse response;
+  @Context HttpServletRequest request;
+  @Context SecurityContext securityContext;
 
   DiskRepository repo;
 
@@ -108,68 +104,70 @@ public class DiskResource implements DiskService {
     return "";
   }
 
-  /**
-   * Hypothesis
-   */
-  @POST
-  @Path("hypotheses")
-  @Override
-  public Hypothesis addHypothesis(
-      @JsonProperty("hypothesis") Hypothesis hypothesis) {
-
+  //--
+  private void addAuthorFromRequest (DISKResource obj, HttpServletRequest request) {
     String username = (String) request.getAttribute("username");
     if (username != null) {
-      hypothesis.setAuthor(username);
+      Entity author = this.repo.getOrCreateEntity(username);
+      obj.setAuthor(author);
     }
-    return this.repo.addHypothesis(USERNAME, hypothesis);
+  }
+
+  /**
+   * Goals
+   */
+  @POST
+  @Path("goals")
+  @Override
+  public Goal addGoal(
+      @JsonProperty("goal") Goal goal) {
+    this.addAuthorFromRequest(goal, request);
+    return this.repo.addGoal(goal);
   }
 
   @GET
-  @Path("hypotheses")
+  @Path("goals")
   @Override
-  public List<Hypothesis> listHypotheses() {
-    return this.repo.listHypotheses(USERNAME);
+  public List<Goal> listGoals() {
+    return this.repo.listGoals();
   }
 
   @GET
-  @Path("hypotheses/{id}")
+  @Path("goals/{id}")
   @Override
-  public Hypothesis getHypothesis(
+  public Goal getGoal(
       @PathParam("id") String id) {
-    return this.repo.getHypothesis(USERNAME, id);
+    return this.repo.getGoal(id);
   }
 
   @PUT
-  @Path("hypotheses/{id}")
+  @Path("goals/{id}")
   @Override
-  public Hypothesis updateHypothesis(
+  public Goal updateGoal(
       @PathParam("id") String id,
-      @JsonProperty("hypothesis") Hypothesis hypothesis) {
-    String username = (String) request.getAttribute("username");
-    if (username != null) {
-      hypothesis.setAuthor(username);
-    }
-    return this.repo.updateHypothesis(USERNAME, id, hypothesis);
+      @JsonProperty("goal") Goal goal) {
+    this.addAuthorFromRequest(goal, request);
+    return this.repo.updateGoal(id, goal);
   }
 
   @DELETE
-  @Path("hypotheses/{id}")
+  @Path("goal/{id}")
   @Override
-  public void deleteHypothesis(
+  public void deleteGoal(
       @PathParam("id") String id) {
-    this.repo.removeHypothesis(USERNAME, id);
+    this.repo.removeGoal(id);
   }
 
   @GET
-  @Path("hypotheses/{id}/query")
+  @Path("goal/{id}/query")
   @Override
-  public List<TriggeredLOI> queryHypothesis(
+  public List<TriggeredLOI> queryGoal(
       @PathParam("id") String id) {
     Gson response_body = new Gson();
     response.setContentType("application/json");
     response.setCharacterEncoding("utf-8");
     try {
-      return this.repo.queryHypothesis(USERNAME, id);
+      return this.repo.queryHypothesis(id);
     } catch (NotFoundException e) {
       try {
         ErrorMessage error = new ErrorMessage(e.getMessage());
@@ -210,41 +208,6 @@ public class DiskResource implements DiskService {
   }
 
   /**
-   * Assertions LATER!
-   * 
-   * @POST
-   *       @Path("assertions")
-   * @Override
-   *           public void addAssertion(
-   *           @JsonProperty("assertions") Graph assertions) {
-   *           this.repo.addAssertion(USERNAME, assertions);
-   *           }
-   * 
-   * @GET
-   *      @Path("assertions")
-   * @Override
-   *           public Graph listAssertions() {
-   *           return this.repo.listAssertions(USERNAME, DOMAIN);
-   *           }
-   * 
-   * @DELETE
-   *         @Path("assertions")
-   * @Override
-   *           public void deleteAssertion(
-   *           @JsonProperty("assertions") Graph assertions) {
-   *           this.repo.deleteAssertion(USERNAME, assertions);
-   *           }
-   * 
-   * @PUT
-   *      @Path("assertions")
-   * @Override
-   *           public void updateAssertions (
-   *           @JsonProperty("assertions") Graph assertions) {
-   *           this.repo.updateAssertions(USERNAME, assertions);
-   *           }
-   */
-
-  /**
    * Lines of Inquiry
    */
   @POST
@@ -252,19 +215,15 @@ public class DiskResource implements DiskService {
   @Override
   public LineOfInquiry addLOI(
       @JsonProperty("loi") LineOfInquiry loi) {
-
-    String username = (String) request.getAttribute("username");
-    if (username != null) {
-      loi.setAuthor(username);
-    }
-    return this.repo.addLOI(USERNAME, loi);
+    this.addAuthorFromRequest(loi, request);
+    return this.repo.addLOI(loi);
   }
 
   @GET
   @Path("lois")
   @Override
   public List<LineOfInquiry> listLOIs() {
-    return this.repo.listLOIs(USERNAME);
+    return this.repo.listLOIs();
   }
 
   @GET
@@ -272,7 +231,7 @@ public class DiskResource implements DiskService {
   @Override
   public LineOfInquiry getLOI(
       @PathParam("id") String id) {
-    return this.repo.getLOI(USERNAME, id);
+    return this.repo.getLOI(id);
   }
 
   @PUT
@@ -281,11 +240,8 @@ public class DiskResource implements DiskService {
   public LineOfInquiry updateLOI(
       @PathParam("id") String id,
       @JsonProperty("loi") LineOfInquiry loi) {
-    String username = (String) request.getAttribute("username");
-    if (username != null) {
-      loi.setAuthor(username);
-    }
-    return this.repo.updateLOI(USERNAME, id, loi);
+    this.addAuthorFromRequest(loi, request);
+    return this.repo.updateLOI(id, loi);
   }
 
   @DELETE
@@ -293,7 +249,7 @@ public class DiskResource implements DiskService {
   @Override
   public void deleteLOI(
       @PathParam("id") String id) {
-    this.repo.removeLOI(USERNAME, id);
+    this.repo.removeLOI(id);
   }
 
   /*
@@ -304,7 +260,7 @@ public class DiskResource implements DiskService {
   @Override
   public TriggeredLOI addTriggeredLOI(
       @JsonProperty("tloi") TriggeredLOI tloi) {
-    return this.repo.addTriggeredLOI(USERNAME, tloi);
+    return this.repo.addTriggeredLOI(tloi);
   }
 
   @PUT
@@ -313,18 +269,15 @@ public class DiskResource implements DiskService {
   public TriggeredLOI updateTLOI(
       @PathParam("id") String id,
       @JsonProperty("tloi") TriggeredLOI tloi) {
-    String username = (String) request.getAttribute("username");
-    if (username != null) {
-      tloi.setAuthor(username);
-    }
-    return this.repo.updateTriggeredLOI(USERNAME, id, tloi);
+    this.addAuthorFromRequest(tloi, request);
+    return this.repo.updateTriggeredLOI(id, tloi);
   }
 
   @GET
   @Path("tlois")
   @Override
   public List<TriggeredLOI> listTriggeredLOIs() {
-    return this.repo.listTriggeredLOIs(USERNAME);
+    return this.repo.listTriggeredLOIs();
   }
 
   @GET
@@ -332,7 +285,7 @@ public class DiskResource implements DiskService {
   @Override
   public TriggeredLOI getTriggeredLOI(
       @PathParam("id") String id) {
-    return this.repo.getTriggeredLOI(USERNAME, id);
+    return this.repo.getTriggeredLOI(id);
   }
 
   @DELETE
@@ -340,7 +293,7 @@ public class DiskResource implements DiskService {
   @Override
   public void deleteTriggeredLOI(
       @PathParam("id") String id) {
-    this.repo.removeTriggeredLOI(USERNAME, id);
+    this.repo.removeTriggeredLOI(id);
   }
 
   /*
@@ -472,7 +425,7 @@ public class DiskResource implements DiskService {
   public List<TriggeredLOI> getExecutions(
       @PathParam("hid") String hid,
       @PathParam("lid") String lid) {
-    return this.repo.getTLOIsForHypothesisAndLOI(USERNAME, hid, lid);
+    return this.repo.getTLOIsForHypothesisAndLOI(hid, lid);
   }
 
   @GET
@@ -482,7 +435,7 @@ public class DiskResource implements DiskService {
       @PathParam("hid") String hid,
       @PathParam("lid") String lid) {
     try {
-      return this.repo.runHypothesisAndLOI(USERNAME, hid, lid);
+      return this.repo.runHypothesisAndLOI(hid, lid);
     } catch (Exception e) {
       try {
         // Create Json error response
@@ -510,7 +463,7 @@ public class DiskResource implements DiskService {
   @Override
   public Boolean runHypotheses() {
     try {
-      return this.repo.runAllHypotheses(USERNAME);
+      return this.repo.runAllHypotheses();
     } catch (Exception e) {
       try {
         // Create Json error response

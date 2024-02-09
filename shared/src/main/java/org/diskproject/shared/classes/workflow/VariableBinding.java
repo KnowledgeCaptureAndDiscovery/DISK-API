@@ -15,9 +15,9 @@ public class VariableBinding implements Serializable, Comparable<VariableBinding
   String variable;        // Variable NAME
   List<String> binding;   // Binding VALUE
   boolean isArray;        // This binding is an array, if false bindings list will only have one value.
-  String datatype;        // Binding datatype. This one should be an xsd value. Does not require to be defined on the ontology TODO
-  String filetype;        // When datatype=anyURI and bindings is some url file.
   BindingTypes type;      // This is for the type of selector used to set this binding.
+  String datatype;        // Binding datatype. This one should be an xsd value. Does not require to be defined on the ontology TODO
+  //String filetype;        // When datatype=anyURI and bindings is some url file. //FIXME: is this necessary? datatype could store this value
 
   public VariableBinding(){}
    
@@ -94,13 +94,13 @@ public class VariableBinding implements Serializable, Comparable<VariableBinding
     this.datatype = t;
   }
 
-  public String getFiletype () {
+  /*public String getFiletype () {
     return filetype;
   }
 
   public void setFiletype (String t) {
     this.filetype = t;
-  }
+  }*/
 
   public BindingTypes getType () {
     return type;

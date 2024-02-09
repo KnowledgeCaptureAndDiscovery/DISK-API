@@ -12,17 +12,17 @@ import java.util.concurrent.TimeUnit;
 import org.diskproject.server.managers.MethodAdapterManager;
 import org.diskproject.server.repository.DiskRepository;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
+import org.diskproject.shared.classes.common.Status;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
-import org.diskproject.shared.classes.loi.WorkflowBindings;
+import org.diskproject.shared.classes.workflow.Execution;
 import org.diskproject.shared.classes.workflow.VariableBinding;
+import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
+import org.diskproject.shared.classes.workflow.WorkflowSeed;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
-import org.diskproject.shared.classes.workflow.WorkflowRun.RunBinding;
-import org.diskproject.shared.classes.workflow.WorkflowRun.Status;
 
 public class ThreadManager {
-    private static String USERNAME = "admin";
     protected MethodAdapterManager methodAdapters;
     private DiskRepository disk;
     protected ScheduledExecutorService monitor;
@@ -53,7 +53,7 @@ public class ThreadManager {
     }
 
     public void executeTLOI (TriggeredLOI tloi, Boolean meta) {
-        LineOfInquiry loi = disk.getLOI(USERNAME, tloi.getParentLoiId());
+        LineOfInquiry loi = disk.getLOI(tloi.getParentLoi().getId());
         if (meta) {
             tloi.setStatus(Status.RUNNING);
             this.addMetaBindings(tloi);
@@ -69,12 +69,12 @@ public class ThreadManager {
     }
 
     public void updateTLOI (TriggeredLOI tloi) {
-        disk.updateTriggeredLOI(USERNAME, tloi.getId(), tloi);
+        disk.updateTriggeredLOI(tloi.getId(), tloi);
     }
 
-    public void processFinishedRun (TriggeredLOI tloi, WorkflowBindings wf, WorkflowRun run, boolean meta) {
-        LineOfInquiry loi = disk.getLOI(USERNAME, tloi.getParentLoiId());
-        MethodAdapter methodAdapter = this.getMethodAdapters().getMethodAdapterByName(wf.getSource());
+    public void processFinishedRun (TriggeredLOI tloi, WorkflowSeed wf, WorkflowRun run, boolean meta) {
+        LineOfInquiry loi = disk.getLOI(tloi.getParentLoi().getId());
+        MethodAdapter methodAdapter = this.getMethodAdapters().getMethodAdapterByName(wf.getSource().getName());
         disk.processWorkflowOutputs(tloi, loi, wf, run, methodAdapter, meta);
     }
 
@@ -84,62 +84,60 @@ public class ThreadManager {
             System.out.println("Adding data to metaworkflow");
         boolean allOk = true;
         //Get all 
-        for (TriggeredLOI cur: disk.listTriggeredLOIs(USERNAME)) {
-            if (cur.getParentHypothesisId().equals(tloi.getParentHypothesisId()) && 
-                cur.getParentLoiId().equals(tloi.getParentLoiId())) {
+        String thisParentLoiId = tloi.getParentLoi().getId();
+        String thisParentGoalId = tloi.getParentGoal().getId();
+        for (TriggeredLOI cur: disk.listTriggeredLOIs()) {
+            String parentLoiId = cur.getParentLoi().getId();
+            String parentGoalId = cur.getParentGoal().getId();
+            if (thisParentGoalId.equals(parentGoalId) && thisParentLoiId.equals(parentLoiId)) {
                 //TLOIs that match both, LOI & Hypothesis
-                for (WorkflowBindings wf: cur.getWorkflows()) {
-            //MethodAdapter adapter = this.methodAdapters.getMethodAdapterByName(wf.getSource());
-            //Map<String, WorkflowVariable> outputVariables = adapter.getWorkflowOutputs(wf.getWorkflow());
-            //List<WorkflowVariable> outputVariables = adapter.getWorkflowVariables(wf.getWorkflow());
-            //System.out.println(outputVariables);
-            //FIXME: continue here.
-                    for (WorkflowRun run: wf.getRuns().values()) {
-                        for (String outputName: run.getOutputs().keySet()) {
-                            RunBinding out = run.getOutputs().get(outputName);
-                            if (!files.containsKey(outputName)) {
-                                files.put(outputName, new ArrayList<String>());
-                            }
-                            List<String> list = files.get(outputName);
-                            list.add(out.id.replaceAll("^.*#", ""));
+                for (WorkflowInstantiation wf: cur.getWorkflows()) {
+                    for (Execution run: wf.getExecutions()) {
+                        for (VariableBinding out: run.getOutputs()) {
+                            //FIXME: continue here.
+                            //if (!files.containsKey(outputName)) {
+                            //    files.put(outputName, new ArrayList<String>());
+                            //}
+                            //List<String> list = files.get(outputName);
+                            //list.add(out.id.replaceAll("^.*#", ""));
                         }
-                        dates.add(String.valueOf(run.getExecutionInfo().endTime));
+                        dates.add(String.valueOf(run.getEndDate()));
                     }
                 }
             }
         }
 
-        for (WorkflowBindings wf: tloi.getMetaWorkflows()) {
-            MethodAdapter adapter = this.methodAdapters.getMethodAdapterByName(wf.getSource());
-            List<WorkflowVariable> vars = adapter.getWorkflowVariables(wf.getWorkflow());
-            for (VariableBinding vb: wf.getBindings()) {
-                String binding = vb.getBinding();
-                if (binding.equals("_RUN_DATE_")) {
-                    vb.setBinding("[" + String.join(",", dates) + "]");
-                } else {
-                    if (binding.startsWith("[") && binding.endsWith("]")) {
-                        binding = binding.substring(1, binding.length() -1);
-                    }
-                    for (String outName: files.keySet()) {
-                        if (binding.equals("!" + outName)) {
-                            vb.setBinding("[" + String.join(",", files.get(outName)) + "]");
-                            String type = null;
-                            for (WorkflowVariable wv: vars) {
-                                if (vb.getVariable().equals(wv.getName()) && wv.getType().size() > 0) {
-                                    type = wv.getType().get(0);
-                                }
-                            }
-
-                            System.out.println("type: " + type);
-                            // Upload files:
-                            for (String dataid: files.get(outName)) {
-                                if (!adapter.registerData(dataid, type));
-                                    allOk = false;
-                            }
-                        }
-                    }
-                }
-            }
+        for (WorkflowSeed wf: tloi.getMetaWorkflowSeeds()) {
+            MethodAdapter adapter = this.methodAdapters.getMethodAdapterByName(wf.getSource().getName());
+            List<WorkflowVariable> vars = adapter.getWorkflowVariables(wf.getId());
+            // Check this also TODO
+            //for (VariableBinding vb: wf.getBindings()) {
+            //    String binding = vb.getBinding();
+            //    if (binding.equals("_RUN_DATE_")) {
+            //        vb.setBinding("[" + String.join(",", dates) + "]");
+            //    } else {
+            //        if (binding.startsWith("[") && binding.endsWith("]")) {
+            //            binding = binding.substring(1, binding.length() -1);
+            //        }
+            //        for (String outName: files.keySet()) {
+            //            if (binding.equals("!" + outName)) {
+            //                vb.setBinding("[" + String.join(",", files.get(outName)) + "]");
+            //                String type = null;
+            //                for (WorkflowVariable wv: vars) {
+            //                    if (vb.getVariable().equals(wv.getName()) && wv.getType().size() > 0) {
+            //                        type = wv.getType().get(0);
+            //                    }
+            //                }
+            //                System.out.println("type: " + type);
+            //                // Upload files:
+            //                for (String dataid: files.get(outName)) {
+            //                    if (!adapter.registerData(dataid, type));
+            //                        allOk = false;
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
         }
 
         return allOk;
