@@ -3,33 +3,34 @@ package org.diskproject.server.db;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.diskproject.server.managers.MethodAdapterManager;
 import org.diskproject.server.repository.DiskRDF;
 import org.diskproject.server.util.KBCache;
 import org.diskproject.server.util.KBUtils;
-import org.diskproject.shared.classes.adapters.MethodAdapter;
+import org.diskproject.shared.classes.DISKResource;
+import org.diskproject.shared.classes.common.Endpoint;
+import org.diskproject.shared.classes.common.Entity;
 import org.diskproject.shared.classes.common.Graph;
+import org.diskproject.shared.classes.common.Status;
 import org.diskproject.shared.classes.common.Triple;
 import org.diskproject.shared.classes.common.Value;
-import org.diskproject.shared.classes.common.Value.Type;
-import org.diskproject.shared.classes.hypothesis.Hypothesis;
+import org.diskproject.shared.classes.hypothesis.Goal;
+import org.diskproject.shared.classes.hypothesis.GoalResult;
+import org.diskproject.shared.classes.loi.DataQueryResult;
+import org.diskproject.shared.classes.loi.DataQueryTemplate;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
-import org.diskproject.shared.classes.loi.WorkflowBindings;
+import org.diskproject.shared.classes.question.Question;
 import org.diskproject.shared.classes.util.GUID;
 import org.diskproject.shared.classes.util.KBConstants;
+import org.diskproject.shared.classes.workflow.Execution;
+import org.diskproject.shared.classes.workflow.ExecutionRecord;
 import org.diskproject.shared.classes.workflow.VariableBinding;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
-import org.diskproject.shared.classes.workflow.VariableBinding.BindingTypes;
-import org.diskproject.shared.classes.workflow.WorkflowRun.RunBinding;
-import org.diskproject.shared.classes.workflow.WorkflowRun.RuntimeInfo;
-import org.diskproject.shared.classes.workflow.WorkflowRun.Status;
+import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
+import org.diskproject.shared.classes.workflow.WorkflowSeed;
 import org.diskproject.shared.ontologies.DISK;
 
 import edu.isi.kcap.ontapi.KBAPI;
@@ -41,7 +42,7 @@ public class DiskDB {
     private static SimpleDateFormat dateformatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX");
     private String domain;
     private DiskRDF rdf;
-    private KBAPI ontKB;
+    private KBAPI diskKB, domainKB;
     private KBCache DISKOnt;
     public MethodAdapterManager methodAdapters;
 
@@ -50,46 +51,58 @@ public class DiskDB {
         this.rdf = rdf;
         this.methodAdapters = methodAdapters;
         this.loadKB();
+        this.domainKB = getOrCreateKB(domain);
+        if (this.domainKB == null) //TODO: check this.
+            System.out.println("Something when wrong creating the domain KB");
     }
 
     private void loadKB () {
+        //This is the main KB of the DISK system, loads the ontology from the UI (class and property definitions)
         try {
-            this.ontKB = this.rdf.getFactory().getKB(KBConstants.DISK_URI, OntSpec.PELLET, false, true);
+            this.diskKB = this.rdf.getFactory().getKB(KBConstants.DISK_URI, OntSpec.PELLET, false, true);
         } catch (Exception e) {
             System.out.println("Error reading KB: " + KBConstants.DISK_URI);
             return;
         }
-
-        if (this.ontKB != null) {
+        //This maps the terms of the ontology to use for creating new DISK resources.
+        if (this.diskKB != null) {
             this.rdf.startRead();
-            this.DISKOnt = new KBCache(ontKB);
+            this.DISKOnt = new KBCache(diskKB);
             this.rdf.end();
         }
     }
 
     public void reloadKB () {
-        KBUtils.clearKB(this.ontKB, this.rdf);
+        KBUtils.clearKB(this.diskKB, this.rdf);
         this.loadKB();
     }
 
     public KBAPI getKB () {
-        return this.ontKB;
+        return this.diskKB;
     }
 
     public KBCache getOnt () {
         return this.DISKOnt;
     }
 
-    public String HYPURI(String username) {
-        return this.domain + "/" + username + "/hypotheses";
+    public String createGoalURI (String id) {
+        return this.domain + "/goals/" + id;
     }
 
-    public String LOIURI(String username) {
-        return this.domain + "/" + username + "/lois";
+    public String createLoiURI (String id) {
+        return this.domain + "/lois/" + id;
     }
 
-    public String TLOIURI(String username) {
-        return this.domain + "/" + username + "/tlois";
+    public String createTloiURI (String id) {
+        return this.domain + "/tlois/" + id;
+    }
+
+    public String createEntityURI (int id) {
+        return this.domain + "/entities/" + id;
+    }
+
+    public String createEndpointURI (int id) {
+        return this.domain + "/endpoint/" + id;
     }
 
     private KBAPI getOrCreateKB(String url) {
@@ -213,236 +226,228 @@ public class DiskDB {
         return triples;
     }
 
-    // --- Hypothesis
-    public Hypothesis AddOrUpdateHypothesis (String username, Hypothesis hypothesis, String id) {
+    // -- Common
+    private KBObject findOrWriteEndpoint (Endpoint p) {
+        // All entities should be unique
+        int id = p.toString().hashCode();
+        KBObject KBEndpoint = domainKB.getIndividual(createEndpointURI(id));
+        //Check if this entity exists
+        Endpoint endpoint = loadEndpoint(KBEndpoint);
+        if (endpoint == null) {
+            System.out.println("Endpoint does not exist. Creating...");
+            domainKB.setPropertyValue(KBEndpoint, DISKOnt.getProperty(DISK.HAS_SOURCE_NAME), domainKB.createLiteral(p.getName()));
+            domainKB.setPropertyValue(KBEndpoint, DISKOnt.getProperty(DISK.HAS_SOURCE_URL), domainKB.createLiteral(p.getUrl()));
+        }
+        return KBEndpoint;
+    }
+
+    private Endpoint loadEndpoint (KBObject endpoint) {
+        KBObject name  = domainKB.getPropertyValue(endpoint, DISKOnt.getProperty(DISK.HAS_SOURCE_NAME));
+        KBObject url  = domainKB.getPropertyValue(endpoint, DISKOnt.getProperty(DISK.HAS_SOURCE_URL));
+        if (name == null || url == null)
+            return null;
+        return new Endpoint(name.getValueAsString(), url.getValueAsString());
+    }
+
+    public KBObject findOrWriteEntity (Entity src) {
+        // All entities should be unique
+        int id = src.getEmail().hashCode();
+        KBObject KBEntity = domainKB.getIndividual(createEntityURI(id));
+        //Check if this entity exists
+        Entity entity = loadEntity(domainKB, KBEntity);
+        if (entity != null) {
+            System.out.println("Entity " + src.getEmail() + " already exists.");
+        } else {
+            domainKB.setPropertyValue(KBEntity, DISKOnt.getProperty(DISK.HAS_NAME), domainKB.createLiteral(src.getName()));
+            domainKB.setPropertyValue(KBEntity, DISKOnt.getProperty(DISK.HAS_EMAIL), domainKB.createLiteral(src.getEmail()));
+        }
+        return KBEntity;
+    }
+
+    private Entity loadEntity (KBAPI kb, KBObject author) {
+        KBObject name  = kb.getPropertyValue(author, DISKOnt.getProperty(DISK.HAS_NAME));
+        KBObject email = kb.getPropertyValue(author, DISKOnt.getProperty(DISK.HAS_EMAIL));
+        if (name == null || email == null)
+            return null;
+        return new Entity(author.getID(), name.getValueAsString(), email.getValueAsString());
+    }
+
+    private KBObject writeCommonResource (DISKResource obj, String uri, KBObject cls) {
+        //This writes name, description, notes, date created and date modified. The object is of class `cls`
+        KBObject kbObj = domainKB.createObjectOfClass(uri, cls);
+        if (obj.getName() != null)
+            domainKB.setLabel(kbObj, obj.getName());
+        if (obj.getDescription() != null)
+            domainKB.setComment(kbObj, obj.getDescription());
+        if (obj.getDateCreated() != null)
+            domainKB.setPropertyValue(kbObj, DISKOnt.getProperty(DISK.DATE_CREATED),
+                    domainKB.createLiteral(obj.getDateCreated()));
+        if (obj.getDateModified() != null)
+            domainKB.setPropertyValue(kbObj, DISKOnt.getProperty(DISK.DATE_MODIFIED),
+                    domainKB.createLiteral(obj.getDateModified()));
+        if (obj.getNotes() != null)
+            domainKB.setPropertyValue(kbObj, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES),
+                    domainKB.createLiteral(obj.getNotes()));
+        if (obj.getAuthor() != null) {
+            domainKB.setPropertyValue(kbObj, DISKOnt.getProperty(DISK.HAS_AUTHOR),
+                    findOrWriteEntity(obj.getAuthor()));
+        }
+        return kbObj;
+    }
+
+    private DISKResource loadCommonResource (KBObject item) {
+        DISKResource current = new DISKResource(item.getID(), domainKB.getLabel(item), domainKB.getComment(item));
+        KBObject created = domainKB.getPropertyValue(item, DISKOnt.getProperty(DISK.DATE_CREATED));
+        KBObject updated = domainKB.getPropertyValue(item, DISKOnt.getProperty(DISK.DATE_MODIFIED));
+        KBObject notes   = domainKB.getPropertyValue(item, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES));
+        KBObject author  = domainKB.getPropertyValue(item, DISKOnt.getProperty(DISK.HAS_AUTHOR));
+        if (created != null) current.setDateCreated(created.getValueAsString());
+        if (updated != null) current.setDateModified(updated.getValueAsString());
+        if (notes != null)   current.setNotes(notes.getValueAsString());
+        if (author != null)  current.setAuthor(loadEntity(domainKB, author));
+        return current;
+    }
+
+    private List<String> listObjectIdPerClass (KBObject cls) {
+        List<String> ids = new ArrayList<String>();
+        this.rdf.startRead();
+        KBObject typeProp = domainKB.getProperty(KBConstants.RDF_NS + "type");
+        for (KBTriple t : domainKB.genericTripleQuery(null, typeProp, cls)) {
+            ids.add(t.getSubject().getID());
+        }
+        this.rdf.end();
+        return ids;
+    }
+
+    // -- Goals
+    public Goal AddOrUpdateGoal (Goal goal, String id) {
         // Check required inputs
-        String name = hypothesis.getName();
-        String desc = hypothesis.getDescription();
-        String question = hypothesis.getQuestionId();
+        String name = goal.getName();
+        String desc = goal.getDescription();
+        String questionId = goal.getQuestion().getId();
         boolean isCreating = id == null || id.equals("");
         // Set or update date
         String now = dateformatter.format(new Date());
         if (isCreating) {
-            hypothesis.setDateCreated(now);
+            goal.setDateCreated(now);
         } else {
-            hypothesis.setDateModified(now);
+            goal.setDateModified(now);
         }
-        if (name == null || desc == null || question == null || "".equals(name) || "".equals(desc) || "".equals(question)) {
+        if (name == null || desc == null || questionId == null || "".equals(name) || "".equals(desc) || "".equals(questionId)) {
             // These are necessary fields, should send an appropriate exception here.
             return null;
         } else {
-            if ((isCreating || (hypothesis.getId().equals(id) && deleteHypothesis(username, id))) && writeHypothesis(username, hypothesis)) {
-                return isCreating ? hypothesis : loadHypothesis(username, id);
+            if ((isCreating || (goal.getId().equals(id) && deleteGoal(id))) && writeGoal(goal)) {
+                return isCreating ? goal : loadGoal(id);
             }
         }
         return null;
     }
 
-    public boolean writeHypothesis(String username, Hypothesis hypothesis) {
-        Boolean newHyp = hypothesis.getId() == null || hypothesis.getId().equals("");
-        if (newHyp) {
-            hypothesis.setId(GUID.randomId("Hypothesis"));
-        }
-
-        String userDomain = this.HYPURI(username);
-        String hypothesisId = userDomain + "/" + hypothesis.getId();
-        KBAPI userKB = getOrCreateKB(userDomain);
-
-        if (userKB == null)
-            return false;
+    public boolean writeGoal(Goal goal) {
+        Boolean newGoal = goal.getId() == null || goal.getId().equals("");
+        if (newGoal) goal.setId(GUID.randomId("Goal"));
+        String fullId = createGoalURI(goal.getId());
+        //if (domainKB == null) return false;
         this.rdf.startWrite();
-
-        // Insert hypothesis info on user's graph
-        KBObject hypitem = userKB.createObjectOfClass(hypothesisId, DISKOnt.getClass(DISK.HYPOTHESIS));
-
-        if (hypothesis.getName() != null)
-            userKB.setLabel(hypitem, hypothesis.getName());
-        if (hypothesis.getDescription() != null)
-            userKB.setComment(hypitem, hypothesis.getDescription());
-        if (hypothesis.getDateCreated() != null)
-            userKB.setPropertyValue(hypitem, DISKOnt.getProperty(DISK.DATE_CREATED),
-                    userKB.createLiteral(hypothesis.getDateCreated()));
-        if (hypothesis.getDateModified() != null)
-            userKB.setPropertyValue(hypitem, DISKOnt.getProperty(DISK.DATE_MODIFIED),
-                    userKB.createLiteral(hypothesis.getDateModified()));
-        if (hypothesis.getAuthor() != null)
-            userKB.setPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_AUTHOR),
-                    userKB.createLiteral(hypothesis.getAuthor()));
-        if (hypothesis.getNotes() != null)
-            userKB.setPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES),
-                    userKB.createLiteral(hypothesis.getNotes()));
-
-        // Adding parent hypothesis ID FIXME: this is not used.
-        if (hypothesis.getParentId() != null) {
-            String fullParentId = userDomain + "/" + hypothesis.getParentId();
-            userKB.setPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS),
-                    userKB.getResource(fullParentId));
-        }
-
-        // Adding question template details
-        if (hypothesis.getQuestionId() != null)
-            userKB.setPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_QUESTION),
-                    userKB.createLiteral(hypothesis.getQuestionId()));
-        List<VariableBinding> questionBindings = hypothesis.getQuestionBindings();
-        if (questionBindings != null) {
+        KBObject goalItem = this.writeCommonResource(goal, fullId, DISKOnt.getClass(DISK.GOAL));
+        // Writting question template bindings.
+        String questionId = goal.getQuestion().getId();
+        if (questionId != null)
+            domainKB.setPropertyValue(goalItem, DISKOnt.getProperty(DISK.HAS_QUESTION),
+                    domainKB.createLiteral(questionId));
+        List<VariableBinding> questionBindings = goal.getQuestionBindings();
+        if (questionBindings != null && questionBindings.size() > 0) {
+            String prefix = fullId + "/bindings/";
             for (VariableBinding vb : questionBindings) {
-                String[] sp = vb.getVariable().split("/");
-                String ID = hypothesisId + "/bindings/" + sp[sp.length - 1];
-                KBObject binding = userKB.createObjectOfClass(ID, DISKOnt.getClass(DISK.VARIABLE_BINDING));
-                userKB.addPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING), binding);
-                String bindingValue = vb.isArray() ? "[" + String.join(",", vb.getBindings()) + "]" : vb.getBinding();
-                userKB.setPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_VARIABLE),
-                        userKB.createLiteral(vb.getVariable()));
-                userKB.setPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE),
-                        userKB.createLiteral(bindingValue));
-                
-                BindingTypes type = vb.getType(); //datatype nor filetype are used on questions i think TODO
-                if (type != null) 
-                    userKB.setPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_TYPE),
-                            userKB.createLiteral(type));
+                domainKB.addPropertyValue(goalItem, DISKOnt.getProperty(DISK.HAS_QUESTION_BINDINGS), 
+                    writeVariableBinding(vb, prefix));
             }
         }
 
-        this.rdf.save(userKB);
+        this.rdf.save(domainKB);
         this.rdf.end();
 
         // Store hypothesis as a graph
-        KBAPI hypKb = getOrCreateKB(hypothesisId);
-        if (hypKb == null) {
-            // Already exists an hypothesis with this ID.
-            System.err.println("An hypothesis graph with this ID already exists: " + hypothesisId +  " -- Aborted");
+        KBAPI goalKB = getOrCreateKB(fullId);
+        if (goalKB == null) {
+            // Already exists a goal with this ID.
+            System.err.println("A Goal graph with this ID already exists: " + fullId +  " -- Aborted");
             return false;
         }
 
         this.rdf.startWrite();
-        for (Triple triple : completeGraphWithDomains(hypothesis.getGraph(), hypothesisId, "goal")) {
-            KBTriple curTriple = tripleToKBTriple(triple, hypKb);
+        // This can be created server side too. maybe is better that way
+        for (Triple triple : completeGraphWithDomains(goal.getGraph(), fullId, "goal")) {
+            KBTriple curTriple = tripleToKBTriple(triple, goalKB);
             if (curTriple != null) {
-                hypKb.addTriple(curTriple);
+                goalKB.addTriple(curTriple);
             }
         }
-        this.rdf.save(hypKb);
+        this.rdf.save(goalKB);
         this.rdf.end();
 
-        // TODO: I've removed the old provenance code that was here.
         return true;
     }
 
-    public Hypothesis loadHypothesis(String username, String id) {
-        String userDomain = this.HYPURI(username);
-        String hypothesisId = userDomain + "/" + id;
-
-        KBAPI userKB = getKB(userDomain);
-        if (userKB == null)
-            return null;
+    public Goal loadGoal (String id) {
+        String goalId = createGoalURI(id);
+        //if (domainKB == null) return null;
 
         this.rdf.startRead();
-
-        KBObject hypitem = userKB.getIndividual(hypothesisId);
-        Graph graph = this.loadGraphFromKB(hypothesisId);
-        if (hypitem == null || graph == null) {
+        KBObject goalItem = domainKB.getIndividual(goalId);
+        Graph graph = this.loadGraphFromKB(goalId);
+        if (goalItem == null || graph == null) {
             this.rdf.end();
             return null;
         }
 
-        Hypothesis hypothesis = new Hypothesis();
-        hypothesis.setId(id);
-        hypothesis.setName(userKB.getLabel(hypitem));
-        hypothesis.setDescription(userKB.getComment(hypitem));
-        hypothesis.setGraph(graph);
-
-        KBObject dateobj = userKB.getPropertyValue(hypitem, DISKOnt.getProperty(DISK.DATE_CREATED));
-        if (dateobj != null)
-            hypothesis.setDateCreated(dateobj.getValueAsString());
-
-        KBObject dateModifiedObj = userKB.getPropertyValue(hypitem, DISKOnt.getProperty(DISK.DATE_MODIFIED));
-        if (dateModifiedObj != null)
-            hypothesis.setDateModified(dateModifiedObj.getValueAsString());
-
-        KBObject authorobj = userKB.getPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_AUTHOR));
-        if (authorobj != null)
-            hypothesis.setAuthor(authorobj.getValueAsString());
-
-        KBObject notesobj = userKB.getPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES));
-        if (notesobj != null)
-            hypothesis.setNotes(notesobj.getValueAsString());
-
-        // Parent hypothesis ID
-        KBObject parentobj = userKB.getPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS));
-        if (parentobj != null)
-            hypothesis.setParentId(parentobj.getName());
+        Goal goal = new Goal(loadCommonResource(goalItem));
+        goal.setGraph(graph);
 
         // Question template info
-        KBObject questionobj = userKB.getPropertyValue(hypitem, DISKOnt.getProperty(DISK.HAS_QUESTION));
-        if (questionobj != null)
-            hypothesis.setQuestionId(questionobj.getValueAsString());
+        KBObject questionobj = domainKB.getPropertyValue(goalItem, DISKOnt.getProperty(DISK.HAS_QUESTION));
+        if (questionobj != null) {
+            String questionId = questionobj.getValueAsString();
+            goal.setQuestion(new Question(questionId));
+        }
 
-        ArrayList<KBObject> questionBindings = userKB.getPropertyValues(hypitem,
-                DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING));
+        //Load question template binding values.
+        ArrayList<KBObject> questionBindings = domainKB.getPropertyValues(goalItem, DISKOnt.getProperty(DISK.HAS_QUESTION_BINDINGS));
         List<VariableBinding> variableBindings = new ArrayList<VariableBinding>();
         if (questionBindings != null) {
             for (KBObject binding : questionBindings) {
-                KBObject kbVar = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_VARIABLE));
-                KBObject kbVal = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
-                KBObject kbType = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_TYPE));
-                if (kbVar != null && kbVal != null) {
-                    VariableBinding curVarBinding = null;
-                    String var = kbVar.getValueAsString();
-                    String val = kbVal.getValueAsString();
-                    if (val.startsWith("[") && val.endsWith("]")) {
-                        String[] x = val.substring(1, val.length()-1).split(",");
-                        curVarBinding = new VariableBinding(var, new ArrayList<String>(Arrays.asList(x)));
-                    } else {
-                        curVarBinding = new VariableBinding(var, val);
-                    }
-                    if (curVarBinding != null) {
-                        if (kbType != null) {
-                            curVarBinding.setType(kbType.getValueAsString());
-                        }
-                        variableBindings.add(curVarBinding);
-                    } 
-                }
+                variableBindings.add(loadVariableBinding(binding));
             }
         }
-        hypothesis.setQuestionBindings(variableBindings);
+        goal.setQuestionBindings(variableBindings);
         this.rdf.end();
-        return hypothesis;
+        return goal;
     }
 
-    public boolean deleteHypothesis(String username, String id) {
+    public boolean deleteGoal(String id) {
         if (id == null)
             return false;
 
-        String userDomain = this.HYPURI(username);
-        String hypothesisId = userDomain + "/" + id;
+        String goalId = createGoalURI(id);
+        KBAPI hypKB = getKB(goalId);
 
-        KBAPI userKB = getKB(userDomain);
-        KBAPI hypKB = getKB(hypothesisId);
-
-        if (userKB != null && hypKB != null) {
+        if (domainKB != null && hypKB != null) {
             this.rdf.startRead();
-            KBObject hypitem = userKB.getIndividual(hypothesisId);
+            KBObject hypitem = domainKB.getIndividual(goalId);
             if (hypitem != null) {
-                ArrayList<KBTriple> childHypotheses = userKB.genericTripleQuery(null,
-                        DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS), hypitem);
-                ArrayList<KBObject> questionBindings = userKB.getPropertyValues(hypitem,
-                        DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING));
+                ArrayList<KBObject> questionBindings = domainKB.getPropertyValues(hypitem,
+                        DISKOnt.getProperty(DISK.HAS_QUESTION_BINDINGS));
                 this.rdf.end();
-
                 // Remove question template bindings
                 this.rdf.startWrite();
                 if (questionBindings != null)
                     for (KBObject binding : questionBindings) {
-                        userKB.deleteObject(binding, true, true);
+                        domainKB.deleteObject(binding, true, true);
                     }
-                userKB.deleteObject(hypitem, true, true);
-                this.rdf.save(userKB);
+                domainKB.deleteObject(hypitem, true, true);
+                this.rdf.save(domainKB);
                 this.rdf.end();
-
-                // Remove all child hypotheses
-                for (KBTriple t : childHypotheses) {
-                    this.deleteHypothesis(username, t.getSubject().getName());
-                }
             } else {
                 this.rdf.end();
             }
@@ -452,86 +457,77 @@ public class DiskDB {
         return false;
     }
 
-    public List<Hypothesis> listHypothesesPreviews(String username) {
-        List<Hypothesis> list = new ArrayList<Hypothesis>();
-        String userDomain = this.HYPURI(username);
-
-        KBAPI userKB = getKB(userDomain);
-        if (userKB != null) {
-            this.rdf.startRead();
-            KBObject hypCls = DISKOnt.getClass(DISK.HYPOTHESIS);
-            KBObject typeProp = userKB.getProperty(KBConstants.RDF_NS + "type");
-            for (KBTriple t : userKB.genericTripleQuery(null, typeProp, hypCls)) {
-                KBObject hypobj = t.getSubject();
-                String name = userKB.getLabel(hypobj);
-                String description = userKB.getComment(hypobj);
-
-                String parentId = null;
-                KBObject parentobj = userKB.getPropertyValue(hypobj, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS));
-                if (parentobj != null)
-                    parentId = parentobj.getName();
-
-                String dateCreated = null;
-                KBObject dateobj = userKB.getPropertyValue(hypobj, DISKOnt.getProperty(DISK.DATE_CREATED));
-                if (dateobj != null)
-                    dateCreated = dateobj.getValueAsString();
-
-                String dateModified = null;
-                KBObject dateModifiedObj = userKB.getPropertyValue(hypobj, DISKOnt.getProperty(DISK.DATE_MODIFIED));
-                if (dateModifiedObj != null)
-                    dateModified = dateModifiedObj.getValueAsString();
-
-                String author = null;
-                KBObject authorobj = userKB.getPropertyValue(hypobj, DISKOnt.getProperty(DISK.HAS_AUTHOR));
-                if (authorobj != null)
-                    author = authorobj.getValueAsString();
-
-                String question = null;
-                KBObject questionobj = userKB.getPropertyValue(hypobj, DISKOnt.getProperty(DISK.HAS_QUESTION));
-                if (questionobj != null)
-                    question = questionobj.getValueAsString();
-
-                ArrayList<KBObject> questionBindings = userKB.getPropertyValues(hypobj,
-                        DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING));
-                List<VariableBinding> variableBindings = new ArrayList<VariableBinding>();
-                if (questionBindings != null) {
-                    for (KBObject binding : questionBindings) {
-                        KBObject kbVar = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_VARIABLE));
-                        KBObject kbVal = userKB.getPropertyValue(binding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
-                        if (kbVar != null && kbVal != null) {
-                            String var = kbVar.getValueAsString();
-                            String val = kbVal.getValueAsString();
-                            variableBindings.add(new VariableBinding(var, val));
-                        }
-                    }
-                }
-
-                Hypothesis item = new Hypothesis(hypobj.getName(), name, description, parentId, null);
-                if (dateCreated != null)
-                    item.setDateCreated(dateCreated);
-                if (dateModified != null)
-                    item.setDateModified(dateModified);
-                if (author != null)
-                    item.setAuthor(author);
-                if (question != null)
-                    item.setQuestionId(question);
-
-                if (variableBindings.size() > 0)
-                    item.setQuestionBindings(variableBindings);
-
-                list.add(item);
-            }
-            this.rdf.end();
+    public List<Goal> listGoals () {
+        List<Goal> list = new ArrayList<Goal>();
+        List<String> goalIds = listObjectIdPerClass(DISKOnt.getClass(DISK.GOAL));
+        for (String id: goalIds) {
+            list.add(this.loadGoal(id));
         }
         return list;
     }
 
+    // -- Data query template
+    private KBObject writeDataQueryTemplate (DataQueryTemplate dataQuery)  {
+        KBObject dq = domainKB.createObjectOfClass(GUID.randomId("dqt"), DISKOnt.getClass(DISK.DATA_QUERY_TEMPLATE));
+        return _writeDataQueryTemplate(dataQuery, dq);
+    }
+
+    private KBObject _writeDataQueryTemplate (DataQueryTemplate dataQuery, KBObject dq)  {
+        if (dataQuery.getDescription() != null)
+            domainKB.setComment(dq, dataQuery.getDescription());
+        if (dataQuery.getEndpoint() != null)
+            domainKB.setPropertyValue(dq, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE), findOrWriteEndpoint(dataQuery.getEndpoint()));
+        if (dataQuery.getTemplate() != null)
+            domainKB.setPropertyValue(dq, DISKOnt.getProperty(DISK.HAS_QUERY_TEMPLATE), domainKB.createLiteral(dataQuery.getTemplate()));
+        if (dataQuery.getVariablesToShow() != null)
+            domainKB.setPropertyValue(dq, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES), domainKB.createLiteral(dataQuery.getVariablesToShow()));
+        if (dataQuery.getFootnote() != null)
+            domainKB.setPropertyValue(dq, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION), domainKB.createLiteral(dataQuery.getFootnote()));
+        return dq;
+    }
+
+    private DataQueryTemplate loadDataQueryTemplate (KBObject objTemplate)  {
+        KBObject endpointObj = domainKB.getPropertyValue(objTemplate, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE));
+        KBObject templateObj = domainKB.getPropertyValue(objTemplate, DISKOnt.getProperty(DISK.HAS_QUERY_TEMPLATE));
+        DataQueryTemplate dataQuery = new DataQueryTemplate(templateObj.getValueAsString(), loadEndpoint(endpointObj));
+        if (domainKB.getComment(objTemplate) != null)
+            dataQuery.setDescription(domainKB.getComment(objTemplate));
+        KBObject objVars = domainKB.getPropertyValue(objTemplate, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES));
+        if (objVars != null)
+            dataQuery.setVariablesToShow(objVars.getValueAsString());
+        KBObject objFootnotes = domainKB.getPropertyValue(objTemplate, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION));
+        if (objFootnotes != null)
+            dataQuery.setFootnote(objFootnotes.getValueAsString());
+        return dataQuery;
+    }
+
+    private KBObject writeDataQueryResults (DataQueryResult queryResults) {
+        KBObject dq = domainKB.createObjectOfClass(GUID.randomId("dqt"), DISKOnt.getClass(DISK.DATA_QUERY_TEMPLATE));
+        KBObject qr = _writeDataQueryTemplate(queryResults, dq);
+        if (queryResults.getQuery() != null)
+            domainKB.setPropertyValue(qr, DISKOnt.getProperty(DISK.HAS_QUERY), domainKB.createLiteral(queryResults.getQuery()));
+        if (queryResults.getResults() != null)
+            domainKB.setPropertyValue(qr, DISKOnt.getProperty(DISK.HAS_RESULT), domainKB.createLiteral(queryResults.getResults()));
+        return qr;
+    }
+
+    private DataQueryResult loadDataQueryResult (KBObject objResult) {
+        DataQueryResult result = new DataQueryResult(loadDataQueryTemplate(objResult));
+        KBObject objQuery = domainKB.getPropertyValue(objResult, DISKOnt.getProperty(DISK.HAS_QUERY));
+        if (objQuery != null)
+            result.setQuery(objQuery.getValueAsString());
+        KBObject rawResult = domainKB.getPropertyValue(objResult, DISKOnt.getProperty(DISK.HAS_RESULT));
+        if (rawResult != null)
+            result.setResults(rawResult.getValueAsString());
+        return result;
+    }
+
     // -- Line of inquiry
-    public LineOfInquiry AddOrUpdateLOI (String username, LineOfInquiry loi, String id) {
+    public LineOfInquiry AddOrUpdateLOI (LineOfInquiry loi, String id) {
         // Check required inputs
         String name = loi.getName();
         String desc = loi.getDescription();
-        String question = loi.getQuestionId();
+        String question = loi.getQuestion().getId();
         boolean isCreating = id == null || id.equals("");
         // Set or update date
         String now = dateformatter.format(new Date());
@@ -544,227 +540,448 @@ public class DiskDB {
             // These are necessary fields, should send an appropriate exception here.
             return null;
         } else {
-            if ((isCreating || (loi.getId().equals(id) && deleteLOI(username, id))) && writeLOI(username, loi)) {
-                return isCreating ? loi : loadLOI(username, id);
+            if ((isCreating || (loi.getId().equals(id) && deleteLOI(id))) && writeLOI(loi)) {
+                return isCreating ? loi : loadLOI(id);
             }
         }
         return null;
     }
 
-    public boolean writeLOI(String username, LineOfInquiry loi) {
+    public boolean writeLOI(LineOfInquiry loi) {
         Boolean newLOI = loi.getId() == null || loi.getId().equals("");
-        if (newLOI) {
-            loi.setId(GUID.randomId("LOI"));
-        }
+        if (newLOI) loi.setId(GUID.randomId("LOI"));
 
-        String userDomain = this.LOIURI(username);
-        String loiId = userDomain + "/" + loi.getId();
-        KBAPI userKB = getOrCreateKB(userDomain);
-
-        if (userKB == null)
-            return false;
-
+        String loiId = createLoiURI(loi.getId());
+        //if (domainKB == null) return false;
         this.rdf.startWrite();
 
-        KBObject loiItem = userKB.createObjectOfClass(loiId, DISKOnt.getClass(DISK.LOI));
-        if (loi.getName() != null)
-            userKB.setLabel(loiItem, loi.getName());
-        if (loi.getDescription() != null)
-            userKB.setComment(loiItem, loi.getDescription());
-        if (loi.getDateCreated() != null)
-            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.DATE_CREATED),
-                    userKB.createLiteral(loi.getDateCreated()));
-        if (loi.getDateModified() != null)
-            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.DATE_MODIFIED),
-                    userKB.createLiteral(loi.getDateModified()));
-        if (loi.getAuthor() != null)
-            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_AUTHOR),
-                    userKB.createLiteral(loi.getAuthor()));
-
-        if (loi.getHypothesisQuery() != null)
-            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_QUERY),
-                    userKB.createLiteral(loi.getHypothesisQuery()));
-        if (loi.getDataQuery() != null)
-            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY),
-                    userKB.createLiteral(loi.getDataQuery()));
-        if (loi.getDataSource() != null)
-            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE),
-                    userKB.createLiteral(loi.getDataSource()));
-        if (loi.getDataSourceURL() != null)
-            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE_URL),
-                    userKB.createLiteral(loi.getDataSourceURL()));
-        if (loi.getNotes() != null)
-            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES),
-                    userKB.createLiteral(loi.getNotes()));
-        if (loi.getTableVariables() != null)
-            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES),
-                    userKB.createLiteral(loi.getTableVariables()));
-        if (loi.getTableDescription() != null)
-            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION),
-                    userKB.createLiteral(loi.getTableDescription()));
-        if (loi.getQuestionId() != null)
-            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION),
-                    userKB.createLiteral(loi.getQuestionId()));
-        if (loi.getDataQueryExplanation() != null)
-            userKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION),
-                    userKB.createLiteral(loi.getDataQueryExplanation()));
-
-        this.rdf.save(userKB);
+        KBObject loiItem = writeCommonResource(loi, loiId, DISKOnt.getClass(DISK.LINE_OF_INQUIRY));
+        writeLOIExtras(loi, loiItem);
+        this.rdf.save(domainKB);
         this.rdf.end();
-
-        writeWorkflowsBindings(username, loi);
-        writeMetaWorkflowsBindings(username, loi);
 
         return true;
     }
 
-    public LineOfInquiry loadLOI(String username, String id) {
-        String userDomain = this.LOIURI(username);
-        String loiId = userDomain + "/" + id;
-
-        KBAPI userKB = getKB(userDomain);
-        if (userKB == null)
-            return null;
+    public LineOfInquiry loadLOI(String id) {
+        String loiId = createLoiURI(id);
+        //if (domainKB == null) return null;
 
         this.rdf.startRead();
-
-        KBObject loiItem = userKB.getIndividual(loiId);
+        KBObject loiItem = domainKB.getIndividual(loiId);
         if (loiItem == null) {
             this.rdf.end();
             return null;
         }
 
-        LineOfInquiry loi = new LineOfInquiry();
-        loi.setId(id);
-        loi.setName(userKB.getLabel(loiItem));
-        loi.setDescription(userKB.getComment(loiItem));
-
-        KBObject dateobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.DATE_CREATED));
-        if (dateobj != null)
-            loi.setDateCreated(dateobj.getValueAsString());
-
-        KBObject datasourceobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE));
-        if (datasourceobj != null)
-            loi.setDataSource(datasourceobj.getValueAsString());
-
-        KBObject datasourceurlobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE_URL));
-        if (datasourceurlobj != null)
-            loi.setDataSourceURL(datasourceurlobj.getValueAsString());
-
-        KBObject dateModifiedObj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.DATE_MODIFIED));
-        if (dateModifiedObj != null)
-            loi.setDateModified(dateModifiedObj.getValueAsString());
-
-        KBObject authorobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_AUTHOR));
-        if (authorobj != null)
-            loi.setAuthor(authorobj.getValueAsString());
-
-        KBObject notesobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES));
-        if (notesobj != null)
-            loi.setNotes(notesobj.getValueAsString());
-
-        KBObject tableVarObj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES));
-        if (tableVarObj != null)
-            loi.setTableVariables(tableVarObj.getValueAsString());
-
-        KBObject tableDescObj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION));
-        if (tableDescObj != null)
-            loi.setTableDescription(tableDescObj.getValueAsString());
-
-        KBObject hypQueryObj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_QUERY));
-        if (hypQueryObj != null)
-            loi.setHypothesisQuery(hypQueryObj.getValueAsString());
-
-        KBObject dataQueryObj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY));
-        if (dataQueryObj != null)
-            loi.setDataQuery(dataQueryObj.getValueAsString());
-
-        KBObject questionobj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION));
-        if (questionobj != null)
-            loi.setQuestionId(questionobj.getValueAsString());
-
-        KBObject explanationObj = userKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION));
-        if (explanationObj != null) {
-            loi.setDataQueryExplanation(explanationObj.getValueAsString());
-        }
-
+        LineOfInquiry loi = new LineOfInquiry(loadCommonResource(loiItem));
+        loadLOIExtras(loi, loiItem);
         this.rdf.end();
-
-        loi.setWorkflows(loadWorkflowsBindings(userDomain, loi.getId()));
-        loi.setMetaWorkflows(loadMetaWorkflowsBindings(userDomain, loi.getId()));
-
         return loi;
     }
 
-    public boolean deleteLOI(String username, String id) {
+    private void writeLOIExtras (LineOfInquiry loi, KBObject loiItem) {
+        domainKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_UPDATE_CONDITION),
+                domainKB.createLiteral(loi.getUpdateCondition()));
+        if (loi.getGoalQuery() != null) {
+            domainKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_GOAL_QUERY),
+                    domainKB.createLiteral(loi.getGoalQuery()));
+        }
+        if (loi.getDataQueryTemplate() != null) {
+            KBObject dqt = writeDataQueryTemplate(loi.getDataQueryTemplate());
+            domainKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY), dqt);
+        }
+        String questionId = loi.getQuestion().getId();
+        if (questionId != null)
+            domainKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION),
+                    domainKB.createLiteral(questionId));
+        List<WorkflowSeed> wf = loi.getWorkflowSeeds(), mwf = loi.getMetaWorkflowSeeds();
+        if (wf != null && wf.size() > 0) {
+            for (WorkflowSeed wfSeed: wf) {
+                domainKB.addPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_WORKFLOW_SEED), 
+                    writeWorkflowSeed(wfSeed, loi.getId()));
+            }
+        }
+        if (mwf != null && mwf.size() > 0) {
+            for (WorkflowSeed wfSeed: mwf) {
+                domainKB.addPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_META_WORKFLOW_SEED), 
+                    writeWorkflowSeed(wfSeed, loi.getId()));
+            }
+        }
+    }
+
+    private void loadLOIExtras (LineOfInquiry loi, KBObject loiItem) {
+        KBObject goalQueryObj = domainKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_GOAL_QUERY));
+        if (goalQueryObj != null)
+            loi.setGoalQuery(goalQueryObj.getValueAsString());
+        KBObject dataQueryObj = domainKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY));
+        if (dataQueryObj != null)
+            loi.setDataQueryTemplate(loadDataQueryTemplate(dataQueryObj));
+        KBObject questionobj = domainKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION));
+        if (questionobj != null)
+            loi.setQuestion(new Question(questionobj.getValueAsString()));
+        KBObject updateCondObj = domainKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_UPDATE_CONDITION));
+        if (updateCondObj != null)
+            loi.setUpdateCondition( Integer.parseInt(updateCondObj.getValueAsString()) );
+
+        List<KBObject> wfSeeds  = domainKB.getPropertyValues(loiItem, DISKOnt.getProperty(DISK.HAS_WORKFLOW_SEED));
+        List<KBObject> mwfSeeds = domainKB.getPropertyValues(loiItem, DISKOnt.getProperty(DISK.HAS_META_WORKFLOW_SEED));
+
+        if (wfSeeds != null && wfSeeds.size() > 0) {
+            List<WorkflowSeed> list = new ArrayList<WorkflowSeed>();
+            for (KBObject t: wfSeeds) {
+                list.add(loadWorkflowSeed(t));
+            }
+            loi.setWorkflowSeeds(list);
+        }
+        if (mwfSeeds != null && mwfSeeds.size() > 0) {
+            List<WorkflowSeed> list = new ArrayList<WorkflowSeed>();
+            for (KBObject t: mwfSeeds) {
+                list.add(loadWorkflowSeed(t));
+            }
+            loi.setMetaWorkflowSeeds(list);
+        }
+    }
+
+    public boolean deleteLOI(String id) {
         if (id == null)
             return false;
 
-        String userDomain = this.LOIURI(username);
-        String loiId = userDomain + "/" + id;
-
-        KBAPI userKB = getKB(userDomain);
-        if (userKB == null)
-            return false;
+        String loiId = createLoiURI(id);
+        //if (domainKB == null) return false;
 
         this.rdf.startWrite();
-        KBObject hypitem = userKB.getIndividual(loiId);
+        KBObject hypitem = domainKB.getIndividual(loiId);
         if (hypitem != null)
-            userKB.deleteObject(hypitem, true, true);
+            domainKB.deleteObject(hypitem, true, true);
+            //TODO: remove query object too.
 
-        return this.rdf.save(userKB) && this.rdf.end();
+        return this.rdf.save(domainKB) && this.rdf.end();
     }
 
-    public List<LineOfInquiry> listLOIPreviews(String username) {
+    public List<LineOfInquiry> listLOIPreviews() {
         List<LineOfInquiry> list = new ArrayList<LineOfInquiry>();
-        String userDomain = this.LOIURI(username);
-        KBAPI userKB = getKB(userDomain);
+        List<String> ids = listObjectIdPerClass(DISKOnt.getClass(DISK.LINE_OF_INQUIRY));
 
-        if (userKB != null) {
-            this.rdf.startRead();
-            KBObject loiCls = DISKOnt.getClass(DISK.LOI);
-            KBObject typeprop = userKB.getProperty(KBConstants.RDF_NS + "type");
-            for (KBTriple t : userKB.genericTripleQuery(null, typeprop, loiCls)) {
-                KBObject loiObj = t.getSubject();
-                String name = userKB.getLabel(loiObj);
-                String description = userKB.getComment(loiObj);
-
-                KBObject dateobj = userKB.getPropertyValue(loiObj, DISKOnt.getProperty(DISK.DATE_CREATED));
-                String dateCreated = (dateobj != null) ? dateobj.getValueAsString() : null;
-
-                KBObject dateModifiedObj = userKB.getPropertyValue(loiObj, DISKOnt.getProperty(DISK.DATE_MODIFIED));
-                String dateModified = (dateModifiedObj != null) ? dateModifiedObj.getValueAsString() : null;
-
-                KBObject authorobj = userKB.getPropertyValue(loiObj, DISKOnt.getProperty(DISK.HAS_AUTHOR));
-                String author = (authorobj != null) ? authorobj.getValueAsString() : null;
-
-                KBObject questionobj = userKB.getPropertyValue(loiObj, DISKOnt.getProperty(DISK.HAS_QUESTION));
-                String questionId =  (questionobj != null) ? questionobj.getValueAsString() : null;
-
-                KBObject hypQueryObj = userKB.getPropertyValue(loiObj, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_QUERY));
-                String hypothesisQuery = (hypQueryObj != null) ? hypQueryObj.getValueAsString() : null;
-
-                LineOfInquiry item = new LineOfInquiry(loiObj.getName(), name, description);
-                if (dateCreated != null)
-                    item.setDateCreated(dateCreated);
-                if (dateModified != null)
-                    item.setDateModified(dateModified);
-                if (author != null)
-                    item.setAuthor(author);
-                if (hypothesisQuery != null)
-                    item.setHypothesisQuery(hypothesisQuery);
-                if (questionId != null)
-                    item.setQuestionId(questionId);
-
-                list.add(item);
-            }
-            this.rdf.end();
+        for (String id: ids) {
+            list.add(this.loadLOI(id));
         }
         return list;
     }
 
+    // -- Workflow Seeds and execution
+    private KBObject writeWorkflowSeed (WorkflowSeed seed, String parentId) {
+        String prefix = parentId != null ? parentId + "/seeds/" : null;
+        KBObject seedObj = domainKB.createObjectOfClass(prefix != null ? prefix + GUID.randomId("") : null , DISKOnt.getClass(DISK.WORKFLOW_SEED));
+        return _writeWorkflowSeed(seed, seedObj, parentId);
+    }
+
+    private KBObject _writeWorkflowSeed (WorkflowSeed seed, KBObject seedObj, String parentId) {
+        if (seed.getDescription() != null)
+            domainKB.setComment(seedObj, seed.getDescription());
+        if (seed.getSource() != null)
+            domainKB.setPropertyValue(seedObj, DISKOnt.getClass(DISK.HAS_WORKFLOW_SOURCE), findOrWriteEndpoint(seed.getSource()));
+        if (seed.getLink() != null)
+            domainKB.setPropertyValue(seedObj, DISKOnt.getClass(DISK.HAS_WORKFLOW), domainKB.createLiteral(seed.getLink()) );
+        
+        List<VariableBinding> parameters = seed.getParameters(), inputs = seed.getInputs();
+        if (parameters != null && parameters.size() > 0) {
+            for (VariableBinding vBinding: parameters) {
+                domainKB.addPropertyValue(seedObj, DISKOnt.getProperty(DISK.HAS_PARAMETER), 
+                    writeVariableBinding(vBinding, parentId));
+            }
+        }
+        if (inputs != null && inputs.size() > 0) {
+            for (VariableBinding vBinding: inputs) {
+                domainKB.addPropertyValue(seedObj, DISKOnt.getProperty(DISK.HAS_INPUT), 
+                    writeVariableBinding(vBinding, parentId));
+            }
+        }
+        return seedObj;
+    }
+
+    private WorkflowSeed loadWorkflowSeed (KBObject seedObj) {
+        WorkflowSeed seed = new WorkflowSeed();
+        String comment = domainKB.getComment(seedObj);
+        if (comment != null) seed.setDescription(comment);
+        KBObject source = domainKB.getPropertyValue(seedObj, DISKOnt.getProperty(DISK.HAS_WORKFLOW_SOURCE));
+        if (source != null) seed.setSource(loadEndpoint(source));
+        KBObject link = domainKB.getPropertyValue(seedObj, DISKOnt.getProperty(DISK.HAS_WORKFLOW));
+        if (link != null) seed.setLink(link.getValueAsString());
+
+        List<KBObject> params = domainKB.getPropertyValues(seedObj, DISKOnt.getProperty(DISK.HAS_PARAMETER));
+        List<KBObject> inputs = domainKB.getPropertyValues(seedObj, DISKOnt.getProperty(DISK.HAS_INPUT));
+        if (params != null && params.size() > 0) {
+            List<VariableBinding> list = new ArrayList<VariableBinding>();
+            for (KBObject t: params) {
+                list.add(loadVariableBinding(t));
+            }
+            seed.setParameters(list);
+        }
+        if (inputs != null && inputs.size() > 0) {
+            List<VariableBinding> list = new ArrayList<VariableBinding>();
+            for (KBObject t: inputs) {
+                list.add(loadVariableBinding(t));
+            }
+            seed.setInputs(list);
+        }
+        return seed;
+    }
+
+    private KBObject writeWorkflowInstantiation (WorkflowInstantiation inst, String parentId) {
+        String prefix = parentId != null ? parentId + "/instantiations/" : null;
+        KBObject seedObj = domainKB.createObjectOfClass(prefix != null ? prefix + GUID.randomId("") : null , DISKOnt.getClass(DISK.WORKFLOW_INSTANTIATION));
+        KBObject instObj = _writeWorkflowSeed(inst, seedObj, parentId);
+
+        if (inst.getStatus() != null)
+            domainKB.setPropertyValue(instObj, DISKOnt.getClass(DISK.HAS_STATUS), domainKB.createLiteral(getStringFromStatus(inst.getStatus())) );
+
+        List<VariableBinding> data = inst.getDataBindings();
+        if (data != null && data.size() > 0) {
+            for (VariableBinding vBinding: data) {
+                domainKB.addPropertyValue(instObj, DISKOnt.getProperty(DISK.HAS_DATA_BINDINGS), 
+                    writeVariableBinding(vBinding, parentId));
+            }
+        }
+
+        List<Execution> execs = inst.getExecutions();
+        if (execs != null && execs.size() > 0) {
+            for (Execution exec: execs) {
+                domainKB.addPropertyValue(instObj, DISKOnt.getProperty(DISK.HAS_EXECUTION), 
+                    writeExecution(exec, parentId));
+            }
+        }
+        return instObj;
+    }
+
+    private WorkflowInstantiation loadWorkflowInstantiation (KBObject instObj) {
+        WorkflowInstantiation inst = new WorkflowInstantiation(loadWorkflowSeed(instObj));
+
+        KBObject status = domainKB.getPropertyValue(instObj, DISKOnt.getProperty(DISK.HAS_STATUS));
+        if (status != null) inst.setStatus(getStatusFromString(status.getValueAsString()));
+
+        List<KBObject> data = domainKB.getPropertyValues(instObj, DISKOnt.getProperty(DISK.HAS_DATA_BINDINGS));
+        if (data != null && data.size() > 0) {
+            List<VariableBinding> list = new ArrayList<VariableBinding>();
+            for (KBObject t: data) {
+                list.add(loadVariableBinding(t));
+            }
+            inst.setDataBindings(list);
+        }
+
+        List<KBObject> executions = domainKB.getPropertyValues(instObj, DISKOnt.getProperty(DISK.HAS_EXECUTION));
+        if (executions != null && executions.size() > 0) {
+            List<Execution> list = new ArrayList<Execution>();
+            for (KBObject t: executions) {
+                list.add(loadExecution(t));
+            }
+            inst.setExecutions(list);
+        }
+        return inst;
+    }
+
+    private KBObject writeExecutionRecord (ExecutionRecord exec, String parentId) {
+        String prefix = parentId != null ? parentId + "/executions/" : null;
+        return _writeExecutionRecord(exec, domainKB.createObjectOfClass(
+            prefix != null ? prefix + GUID.randomId("") : null,
+            DISKOnt.getClass(DISK.EXECUTION_RECORD)));
+    }
+
+    private KBObject _writeExecutionRecord (ExecutionRecord exec, KBObject execObj) {
+        if ( exec.getLog() != null )
+            domainKB.setPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_LOG), domainKB.createLiteral(exec.getLog()));
+        if ( exec.getStartDate() != null )
+            domainKB.setPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_RUN_START_DATE), domainKB.createLiteral(exec.getStartDate()));
+        if ( exec.getEndDate() != null )
+            domainKB.setPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_RUN_END_DATE), domainKB.createLiteral(exec.getEndDate()));
+        if (exec.getStatus() != null)
+            domainKB.setPropertyValue(execObj, DISKOnt.getClass(DISK.HAS_STATUS), domainKB.createLiteral(getStringFromStatus(exec.getStatus())));
+        return execObj;
+    }
+
+    private ExecutionRecord loadExecutionRecord (KBObject execObj) {
+        ExecutionRecord record = new ExecutionRecord();
+        KBObject log = domainKB.getPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_LOG));
+        if (log != null) record.setLog(log.getValueAsString());
+        KBObject startDate = domainKB.getPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_RUN_START_DATE));
+        if (startDate != null) record.setStartDate(startDate.getValueAsString());
+        KBObject endDate = domainKB.getPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_RUN_END_DATE));
+        if (endDate != null) record.setEndDate(endDate.getValueAsString());
+        KBObject status = domainKB.getPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_STATUS));
+        if (status != null) record.setStatus(getStatusFromString(status.getValueAsString()));
+        return record;
+    }
+
+    private KBObject writeExecution (Execution exec, String parentId) {
+        String prefix = parentId != null ? parentId + "/executions/" : null;
+        KBObject execObj = _writeExecutionRecord(exec, domainKB.createObjectOfClass(
+            prefix != null ? prefix + GUID.randomId("") : null,
+            DISKOnt.getClass(DISK.EXECUTION_RECORD))
+        );
+
+        if (exec.getExternalId() != null)
+            domainKB.setPropertyValue(execObj, DISKOnt.getClass(DISK.HAS_RUN_LINK), domainKB.createLiteral(exec.getExternalId()));
+        if (exec.getResult() != null) {
+            domainKB.setPropertyValue(execObj, DISKOnt.getClass(DISK.HAS_RESULT), writeGoalResult(exec.getResult(), parentId));
+        }
+
+        List<VariableBinding> inputs = exec.getInputs(), outputs = exec.getOutputs();
+        if (inputs != null && inputs.size() > 0) {
+            for (VariableBinding vBinding: inputs) {
+                domainKB.addPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_INPUT_FILE), 
+                    writeVariableBinding(vBinding, parentId));
+            }
+        }
+        if (outputs != null && outputs.size() > 0) {
+            for (VariableBinding vBinding: outputs) {
+                domainKB.addPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE), 
+                    writeVariableBinding(vBinding, parentId));
+            }
+        }
+
+        List<ExecutionRecord> steps = exec.getSteps();
+        if (steps != null && steps.size() > 0) {
+            for (ExecutionRecord step: steps) {
+                domainKB.addPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_STEP), 
+                    writeExecutionRecord(step, parentId));
+            }
+        }
+        return execObj;
+    }
+
+    private Execution loadExecution (KBObject execObj) {
+        Execution execution = new Execution(loadExecutionRecord(execObj));
+
+        KBObject externalId = domainKB.getPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_RUN_LINK));
+        if (externalId != null) execution.setStatus(getStatusFromString(externalId.getValueAsString()));
+        KBObject result = domainKB.getPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_RESULT));
+        if (result != null) execution.setResult(loadGoalResult(result));
+
+        List<KBObject> inputs = domainKB.getPropertyValues(execObj, DISKOnt.getProperty(DISK.HAS_INPUT_FILE));
+        if (inputs != null && inputs.size() > 0) {
+            List<VariableBinding> list = new ArrayList<VariableBinding>();
+            for (KBObject t: inputs) {
+                list.add(loadVariableBinding(t));
+            }
+            execution.setInputs(list);
+        }
+        List<KBObject> outputs = domainKB.getPropertyValues(execObj, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE));
+        if (outputs != null && outputs.size() > 0) {
+            List<VariableBinding> list = new ArrayList<VariableBinding>();
+            for (KBObject t: outputs) {
+                list.add(loadVariableBinding(t));
+            }
+            execution.setInputs(list);
+        }
+
+        List<KBObject> steps = domainKB.getPropertyValues(execObj, DISKOnt.getProperty(DISK.HAS_STEP));
+        if (steps != null && steps.size() > 0) {
+            List<ExecutionRecord> list = new ArrayList<ExecutionRecord>();
+            for (KBObject t: steps) {
+                list.add(loadExecutionRecord(t));
+            }
+            execution.setSteps(list);
+        }
+        return execution;
+    }
+
+    private KBObject writeGoalResult (GoalResult result, String parentId) {
+        String prefix = parentId != null ? parentId + "/results/" : null;
+        KBObject resultObj = domainKB.createObjectOfClass(
+            prefix != null ? prefix + GUID.randomId("") : null,
+            DISKOnt.getClass(DISK.GOAL_RESULT));
+
+        if (result.getConfidenceType() != null)
+            domainKB.setPropertyValue(resultObj, DISKOnt.getClass(DISK.HAS_CONFIDENCE_TYPE),
+                    domainKB.createLiteral(result.getConfidenceType()));
+        if (result.getConfidenceValue() != null) {
+            domainKB.setPropertyValue(resultObj, DISKOnt.getClass(DISK.HAS_CONFIDENCE_VALUE),
+                    domainKB.createLiteral(result.getConfidenceValue()));
+        }
+        return resultObj;
+    }
+
+    private GoalResult loadGoalResult (KBObject resultObj) {
+        GoalResult result = new GoalResult();
+        KBObject typeObj = domainKB.getPropertyValue(resultObj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE));
+        if (typeObj != null) result.setConfidenceType(typeObj.getValueAsString());
+        KBObject valueObj = domainKB.getPropertyValue(resultObj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE));
+        if (valueObj != null) result.setConfidenceValue(valueObj.getValueAsString());
+        return result;
+    }
+
+    // -- Variable bindings
+    private KBObject createLiteralFromBindingValue (VariableBinding binding) {
+        if (binding.isArray()) {
+            List<String> values = binding.getBindings();
+            int size = values.size(), i = 0;
+            String str = "";
+            for (String value: values) {
+                str += "'" + value.replaceAll("'","\'") + "'";
+                if (++i != size) {
+                    str += ",";
+                }
+            }
+            return domainKB.createLiteral("[" + str + "]");
+        }
+        return domainKB.createLiteral(binding.getBinding());
+    }
+
+    private void readLiteralAsBindingValue (String rawValue, VariableBinding vb) {
+        if (rawValue.startsWith("[") && rawValue.endsWith("]")) {
+            vb.setIsArray(true);
+            String str = rawValue.substring(1, rawValue.length()-1);
+            String[] values = str.split(",");
+            List<String> list = new ArrayList<String>();
+            for (String v: values) {
+                if (v.startsWith("'") && v.endsWith("'")) {
+                    list.add(v.substring(1, v.length()-1));
+                } else {
+                    System.out.println("Something when wrong");
+                    list.add(v);
+                }
+            }
+            vb.setBindings(list);
+        } else {
+            vb.setIsArray(false);
+            vb.setBinding(rawValue);
+        }
+    }
+
+    private KBObject writeVariableBinding (VariableBinding vBinding, String prefix) {
+        String id = null;
+        if (vBinding.getVariable() != null && prefix !=null && !prefix.equals("")) {
+            String[] fragments = vBinding.getVariable().split("/");
+            id = prefix + "/bindings/" + fragments[fragments.length-1];
+        }
+        KBObject vBindingObj = domainKB.createObjectOfClass(id, DISKOnt.getClass(DISK.VARIABLE_BINDING));
+        if (vBinding.getVariable() != null)
+            domainKB.setPropertyValue(vBindingObj, DISKOnt.getClass(DISK.HAS_BINDING_VARIABLE), domainKB.createLiteral(vBinding.getVariable()));
+        if (vBinding.getDatatype() != null)
+            domainKB.setPropertyValue(vBindingObj, DISKOnt.getClass(DISK.HAS_DATATYPE), domainKB.createLiteral(vBinding.getDatatype()));
+        if (vBinding.getType() != null)
+            domainKB.setPropertyValue(vBindingObj, DISKOnt.getClass(DISK.HAS_TYPE), domainKB.createLiteral(vBinding.getType()));
+        if (vBinding.getBinding() != null) {
+            domainKB.setPropertyValue(vBindingObj, DISKOnt.getClass(DISK.HAS_BINDING_VALUE), createLiteralFromBindingValue(vBinding));
+        }
+        return vBindingObj;
+    }
+
+    private VariableBinding loadVariableBinding (KBObject bindingObj) {
+        VariableBinding vb = new VariableBinding();
+        KBObject variable = domainKB.getPropertyValue(bindingObj, DISKOnt.getProperty(DISK.HAS_BINDING_VARIABLE));
+        if (variable != null) vb.setVariable(variable.getValueAsString());
+        KBObject datatype = domainKB.getPropertyValue(bindingObj, DISKOnt.getProperty(DISK.HAS_DATATYPE));
+        if (datatype != null) vb.setDatatype(datatype.getValueAsString());
+        KBObject type = domainKB.getPropertyValue(bindingObj, DISKOnt.getProperty(DISK.HAS_TYPE));
+        if (type != null) vb.setType(type.getValueAsString());
+        KBObject rawValue = domainKB.getPropertyValue(bindingObj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
+        if (rawValue != null) readLiteralAsBindingValue(rawValue.getValueAsString(), vb);
+        return vb;
+    }
+
     // -- Triggered Lines of Inquiry
-    public TriggeredLOI addOrUpdateTLOI (String username, TriggeredLOI tloi, String id) {
+    public TriggeredLOI addOrUpdateTLOI (TriggeredLOI tloi, String id) {
         boolean isCreating = id == null || id.equals("");
         // Set or update date
         String now = dateformatter.format(new Date());
@@ -777,179 +994,105 @@ public class DiskDB {
 
         if (!isCreating) {
             //Updates only notes
-            TriggeredLOI orig = loadTLOI(username, id);
+            TriggeredLOI orig = loadTLOI(id);
             if (orig != null) {
                 orig.setNotes(tloi.getNotes());
                 tloi = orig;
             }
         }
-        if ((isCreating || deleteTLOI(username, id)) && writeTLOI(username, tloi)) {
+        if ((isCreating || deleteTLOI(id)) && writeTLOI(tloi)) {
             return tloi;
         }
         return null;
     }
 
-    public boolean writeTLOI(String username, TriggeredLOI tloi) {
+    public boolean writeTLOI(TriggeredLOI tloi) {
         Boolean newTLOI = tloi.getId() == null || tloi.getId().equals("");
-        if (newTLOI)
-            tloi.setId(GUID.randomId("TriggeredLOI"));
-
-        String userDomain = this.TLOIURI(username);
-        String tloiId = userDomain + "/" + tloi.getId();
-        String hypNs = this.HYPURI(username) + "/";
-        String loins = this.LOIURI(username) + "/";
-
-        KBAPI userKB = getOrCreateKB(userDomain);
-        if (userKB == null)
-            return false;
+        if (newTLOI) tloi.setId(GUID.randomId("TriggeredLOI"));
+        String tloiId = createTloiURI(tloi.getId());
+        //if (domainKB == null) return false;
 
         this.rdf.startWrite();
-        KBObject tloiItem = userKB.createObjectOfClass(tloiId, DISKOnt.getClass(DISK.TLOI));
-
-        if (tloi.getName() != null)
-            userKB.setLabel(tloiItem, tloi.getName());
-        if (tloi.getDescription() != null)
-            userKB.setComment(tloiItem, tloi.getDescription());
-        if (tloi.getNotes() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES),
-                    userKB.createLiteral(tloi.getNotes()));
-        if (tloi.getDataSource() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE),
-                    userKB.createLiteral(tloi.getDataSource()));
-        if (tloi.getDataSourceURL() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE_URL),
-                    userKB.createLiteral(tloi.getDataSourceURL()));
-        if (tloi.getDateCreated() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.DATE_CREATED),
-                    userKB.createLiteral(tloi.getDateCreated()));
-        if (tloi.getDateModified() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.DATE_MODIFIED),
-                    userKB.createLiteral(tloi.getDateModified()));
-        if (tloi.getAuthor() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_AUTHOR),
-                    userKB.createLiteral(tloi.getAuthor()));
-        if (tloi.getDataQuery() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY),
-                    userKB.createLiteral(tloi.getDataQuery()));
-        if (tloi.getTableVariables() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES),
-                    userKB.createLiteral(tloi.getTableVariables()));
-        if (tloi.getTableDescription() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION),
-                    userKB.createLiteral(tloi.getTableDescription()));
-        if (tloi.getDataQueryExplanation() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION),
-                    userKB.createLiteral(tloi.getDataQueryExplanation()));
-        if (tloi.getConfidenceValue() > 0)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE),
-                    userKB.createLiteral(Double.toString(tloi.getConfidenceValue())));
-        if (tloi.getConfidenceType() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE),
-                    userKB.createLiteral(tloi.getConfidenceType()));
-        if (tloi.getStatus() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_TLOI_STATUS),
-                    userKB.createLiteral(getStringFromStatus(tloi.getStatus())));
-        if (tloi.getParentLoiId() != null) {
-            KBObject loiObj = userKB.getResource(loins + tloi.getParentLoiId());
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_LOI), loiObj);
+        KBObject tloiItem = writeCommonResource(tloi, tloiId, DISKOnt.getClass(DISK.TRIGGERED_LINE_OF_INQUIRY));
+        writeLOIExtras(tloi, tloiItem);
+        if (tloi.getParentLoi() != null) {
+            KBObject loiObj = domainKB.getResource(tloi.getParentLoi().getId());
+            domainKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_LINE_OF_INQUIRY), loiObj);
         }
-        if (tloi.getParentHypothesisId() != null) {
-            KBObject hypObj = userKB.getResource(hypNs + tloi.getParentHypothesisId());
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS), hypObj);
+        if (tloi.getParentGoal() != null) {
+            KBObject hypObj = domainKB.getResource(tloi.getParentGoal().getId());
+            domainKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_GOAL), hypObj);
         }
-        if (tloi.getQueryResults() != null)
-            userKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_QUERY_RESULTS),
-                    userKB.createLiteral(tloi.getQueryResults()));
+        if (tloi.getStatus() != null) {
+            KBObject statusObj = domainKB.createLiteral(getStringFromStatus(tloi.getStatus()));
+            domainKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_STATUS), statusObj);
+        }
+        if (tloi.getQueryResults() != null) {
+            domainKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_QUERY_RESULTS),
+                writeDataQueryResults(tloi.getQueryResults()));
+        }
 
-        this.rdf.save(userKB);
+        List<WorkflowInstantiation> wf = tloi.getWorkflows(), mwf = tloi.getMetaWorkflows();
+        if (wf != null && wf.size() > 0) {
+            for (WorkflowInstantiation wfInst: wf) {
+                domainKB.addPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_WORKFLOW_INST), 
+                    writeWorkflowInstantiation(wfInst, tloi.getId()));
+            }
+        }
+        if (mwf != null && mwf.size() > 0) {
+            for (WorkflowInstantiation wfInst: mwf) {
+                domainKB.addPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_META_WORKFLOW_INST), 
+                    writeWorkflowInstantiation(wfInst, tloi.getId()));
+            }
+        }
+
+        this.rdf.save(domainKB);
         this.rdf.end();
-
-        writeWorkflowsBindings(username, tloi);
-        writeMetaWorkflowsBindings(username, tloi);
-
         return true;
     }
 
-    public TriggeredLOI loadTLOI(String username, String id) {
-        String userDomain = this.TLOIURI(username);
-        String tloiId = userDomain + "/" + id;
-
-        KBAPI userKB = getKB(userDomain);
-        if (userKB == null)
-            return null;
+    public TriggeredLOI loadTLOI(String id) {
+        String tloiId = createTloiURI(id);
+        //if (domainKB == null) return null;
 
         this.rdf.startRead();
-        KBObject obj = userKB.getIndividual(tloiId);
+        KBObject obj = domainKB.getIndividual(tloiId);
         if (obj != null && obj.getName() != null) {
-            TriggeredLOI tloi = new TriggeredLOI();
-            tloi.setId(obj.getName());
-            tloi.setName(userKB.getLabel(obj));
-            tloi.setDescription(userKB.getComment(obj));
-            KBObject hasLOI = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_LOI));
-            if (hasLOI != null)
-                tloi.setParentLoiId(hasLOI.getName());
+            TriggeredLOI tloi = new TriggeredLOI(loadCommonResource(obj));
+            loadLOIExtras(tloi, obj);
 
-            KBObject parentHypObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_PARENT_HYPOTHESIS));
-            if (parentHypObj != null)
-                tloi.setParentHypothesisId(parentHypObj.getName());
+            KBObject parentLOI = domainKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_LINE_OF_INQUIRY));
+            if (parentLOI != null) // We do not load the LOI
+                tloi.setParentLoi(new LineOfInquiry(parentLOI.getValueAsString()));
+            KBObject parentGoal = domainKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_GOAL));
+            if (parentGoal != null) // We do not load the LOI
+                tloi.setParentGoal(new Goal(parentGoal.getValueAsString()));
+            KBObject status = domainKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_STATUS));
+            if (status != null)
+                tloi.setStatus(getStatusFromString(status.getValueAsString()));
+            KBObject queryResult = domainKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_RESULT));
+            if (queryResult != null)
+                tloi.setQueryResults(loadDataQueryResult(queryResult));
 
-            KBObject stObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_TLOI_STATUS));
-            if (stObj != null)
-                tloi.setStatus(getStatusFromString(stObj.getValue().toString()));
+            List<KBObject> wfInst = domainKB.getPropertyValues(obj, DISKOnt.getProperty(DISK.HAS_WORKFLOW_INST));
+            List<KBObject> mwfInst = domainKB.getPropertyValues(obj, DISKOnt.getProperty(DISK.HAS_META_WORKFLOW_INST));
 
-            KBObject notesObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES));
-            if (notesObj != null)
-                tloi.setNotes(notesObj.getValueAsString());
-
-            KBObject dateobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.DATE_CREATED));
-            if (dateobj != null)
-                tloi.setDateCreated(dateobj.getValueAsString());
-
-            KBObject dateModifiedObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.DATE_MODIFIED));
-            if (dateModifiedObj != null)
-                tloi.setDateModified(dateModifiedObj.getValueAsString());
-
-            KBObject authorobj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_AUTHOR));
-            if (authorobj != null)
-                tloi.setAuthor(authorobj.getValueAsString());
-
-            KBObject dataQueryObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_DATA_QUERY));
-            if (dataQueryObj != null)
-                tloi.setDataQuery(dataQueryObj.getValueAsString());
-
-            KBObject dataSourceObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE));
-            if (dataSourceObj != null)
-                tloi.setDataSource(dataSourceObj.getValueAsString());
-
-            KBObject tableVarObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES));
-            if (tableVarObj != null)
-                tloi.setTableVariables(tableVarObj.getValueAsString());
-
-            KBObject tableDescrObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION));
-            if (tableDescrObj != null)
-                tloi.setTableDescription(tableDescrObj.getValueAsString());
-
-            KBObject explanationObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_DATA_QUERY_DESCRIPTION));
-            if (explanationObj != null)
-                tloi.setDataQueryExplanation(explanationObj.getValueAsString());
-
-            KBObject confidenceType = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE));
-            if (confidenceType != null)
-                tloi.setConfidenceType(confidenceType.getValueAsString());
-
-            KBObject confidenceObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE));
-            if (confidenceObj != null)
-                tloi.setConfidenceValue(Double.valueOf(confidenceObj.getValueAsString()));
-
-            KBObject queryResultsObj = userKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_QUERY_RESULTS));
-            if (queryResultsObj != null)
-                tloi.setQueryResults(queryResultsObj.getValueAsString());
+            if (wfInst != null && wfInst.size() > 0) {
+                List<WorkflowInstantiation> list = new ArrayList<WorkflowInstantiation>();
+                for (KBObject t : wfInst) {
+                    list.add(loadWorkflowInstantiation(t));
+                }
+                tloi.setWorkflows(list);
+            }
+            if (mwfInst != null && mwfInst.size() > 0) {
+                List<WorkflowInstantiation> list = new ArrayList<WorkflowInstantiation>();
+                for (KBObject t : mwfInst) {
+                    list.add(loadWorkflowInstantiation(t));
+                }
+                tloi.setMetaWorkflows(list);
+            }
 
             this.rdf.end();
-
-            tloi.setWorkflows(loadWorkflowsBindings(userDomain, tloi.getId()));
-            tloi.setMetaWorkflows(loadMetaWorkflowsBindings(userDomain, tloi.getId()));
-
             return tloi;
         } else {
             this.rdf.end();
@@ -957,413 +1100,33 @@ public class DiskDB {
         }
     }
 
-    public boolean deleteTLOI(String username, String id) {
+    public boolean deleteTLOI(String id) {
         if (id == null)
             return false;
 
-        String userDomain = this.TLOIURI(username);
-        String tloiId = userDomain + "/" + id;
+        String tloiId = createTloiURI(id);
+        //if (domainKB == null) return false;
 
-        KBAPI userKB = getKB(userDomain);
-        if (userKB == null)
-            return false;
-
-        // Remove this TLOI
+        // Remove this TLOI TODO missing some props
         this.rdf.startRead();
-        KBObject item = userKB.getIndividual(tloiId);
+        KBObject item = domainKB.getIndividual(tloiId);
         this.rdf.end();
         if (item != null) {
             this.rdf.startWrite();
-            userKB.deleteObject(item, true, true);
-            return this.rdf.save(userKB) && this.rdf.end();
+            domainKB.deleteObject(item, true, true);
+            return this.rdf.save(domainKB) && this.rdf.end();
         } else {
             return false;
         }
     }
 
-    public List<TriggeredLOI> listTLOIs(String username) {
+    public List<TriggeredLOI> listTLOIs() {
         List<TriggeredLOI> list = new ArrayList<TriggeredLOI>();
-        String userDomain = this.TLOIURI(username);
-        KBAPI userKB = getKB(userDomain);
-
-        if (userKB != null) {
-            List<String> tloiIds = new ArrayList<String>();
-
-            this.rdf.startRead();
-            KBObject cls = DISKOnt.getClass(DISK.TLOI);
-            KBObject typeprop = userKB.getProperty(KBConstants.RDF_NS + "type");
-
-            for (KBTriple t : userKB.genericTripleQuery(null, typeprop, cls)) {
-                tloiIds.add(t.getSubject().getID());
-            }
-            this.rdf.end();
-
-            for (String tloiId : tloiIds) {
-                TriggeredLOI tloi = loadTLOI(username, tloiId.replaceAll("^.*\\/", ""));
-                if (tloi != null)
-                    list.add(tloi);
-            }
+        List<String> ids = listObjectIdPerClass(DISKOnt.getClass(DISK.TRIGGERED_LINE_OF_INQUIRY));
+        for (String id: ids) {
+            list.add(this.loadTLOI(id));
         }
-        return list;
-    }
-
-    // -- Workflows... or methods.
-    private void writeWorkflowsBindings(String username, LineOfInquiry loi) {
-        writeBindings(LOIURI(username), loi.getId(), DISKOnt.getProperty(DISK.HAS_WORKFLOW_BINDING),
-                loi.getWorkflows());
-    }
-
-    private void writeWorkflowsBindings(String username, TriggeredLOI tloi) {
-        writeBindings(TLOIURI(username), tloi.getId(), DISKOnt.getProperty(DISK.HAS_WORKFLOW_BINDING),
-                tloi.getWorkflows());
-    }
-
-    private void writeMetaWorkflowsBindings(String username, LineOfInquiry loi) {
-        writeBindings(LOIURI(username), loi.getId(), DISKOnt.getProperty(DISK.HAS_METAWORKFLOW_BINDING),
-                loi.getMetaWorkflows());
-    }
-
-    private void writeMetaWorkflowsBindings(String username, TriggeredLOI tloi) {
-        writeBindings(TLOIURI(username), tloi.getId(), DISKOnt.getProperty(DISK.HAS_METAWORKFLOW_BINDING),
-                tloi.getMetaWorkflows());
-    }
-
-    private void writeBindings(String userDomain, String id, KBObject bindingprop,
-            List<WorkflowBindings> bindingsList) {
-        if (bindingsList == null || bindingsList.size() == 0)
-            return;
-
-        String fullId = userDomain + "/" + id;
-        KBAPI userKB = getOrCreateKB(userDomain);
-
-        if (userKB != null) {
-            this.rdf.startWrite();
-            KBObject item = userKB.getIndividual(fullId); // This is a LOI or TLOI
-
-            for (WorkflowBindings bindings : bindingsList) {
-                String source = bindings.getSource();
-                String sourceURL = bindings.getSourceURL();
-                String description = bindings.getDescription();
-                MethodAdapter methodAdapter = this.methodAdapters != null ? this.methodAdapters.getMethodAdapterByName(source) : null;
-                if (methodAdapter == null) {
-                    System.out.println("Method adapter not found " + source);
-                    continue;
-                }
-                String workflowId = methodAdapter.getWorkflowId(bindings.getWorkflow());
-                String workflowuri = methodAdapter.getWorkflowUri(bindings.getWorkflow());
-                KBObject bindingobj = userKB.createObjectOfClass(null, DISKOnt.getClass(DISK.WORKFLOW_BINDING));
-                userKB.addPropertyValue(item, bindingprop, bindingobj);
-
-                userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_WORKFLOW), userKB.getResource(workflowId));
-                userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_SOURCE), userKB.createLiteral(source));
-                userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_SOURCE_URL), userKB.createLiteral(sourceURL));
-                if (description != null)
-                    userKB.setComment(bindingobj, description);
-
-                // Get Run details
-                for (WorkflowRun run: bindings.getRuns().values()) {
-                    KBObject newRunObj = userKB.createObjectOfClass(null, userKB.getResource(DISK.WORKFLOW_RUN));
-                    userKB.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_WORKFLOW_RUN) , newRunObj);
-                    if (run.getId() != null)
-                        userKB.setPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_ID),
-                                userKB.createLiteral(run.getId()));
-                    if (run.getLink() != null)
-                        userKB.setPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_RUN_LINK),
-                                userKB.createLiteral(run.getLink()));
-
-                    RuntimeInfo executionInfo = run.getExecutionInfo();
-                    if (executionInfo.status != null)
-                        userKB.setPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_STATUS),
-                                userKB.createLiteral(getStringFromStatus(executionInfo.status)));
-                    if (executionInfo.startTime > 0)
-                        userKB.setPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_RUN_START_DATE),
-                                userKB.createLiteral(executionInfo.startTime));
-                    if (executionInfo.endTime > 0)
-                        userKB.setPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_RUN_END_DATE),
-                                userKB.createLiteral(executionInfo.endTime));
-                    if (executionInfo.log != null)
-                        userKB.setPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_LOG),
-                                userKB.createLiteral(executionInfo.log));
-
-                    // Input Files
-                    Map<String, RunBinding> inputs = run.getInputs();
-                    if (inputs != null) {
-                        for (String name : inputs.keySet()) {
-                            RunBinding r = inputs.get(name);
-                            KBObject fileBinding = userKB.createObjectOfClass(null, DISKOnt.getClass(DISK.VARIABLE_BINDING));
-                            userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_VARIABLE), userKB.createLiteral(name));
-                            if (r.type == Type.LITERAL) {
-                                if (r.datatype != null) 
-                                    userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_DATATYPE), userKB.createLiteral(r.datatype));
-                                userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE), userKB.createLiteral(r.value));
-                            } else {
-                                userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_ID), userKB.createLiteral(r.id));
-                            }
-                            userKB.addPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_INPUT_FILE), fileBinding);
-                        }
-                    }
-
-                    // Outputs Files
-                    Map<String, RunBinding> outputs = run.getOutputs();
-                    if (outputs != null) {
-                        for (String name : outputs.keySet()) {
-                            RunBinding r = outputs.get(name);
-                            KBObject fileBinding = userKB.createObjectOfClass(null, DISKOnt.getClass(DISK.VARIABLE_BINDING));
-                            userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_VARIABLE), userKB.createLiteral(name));
-                            if (r.type == Type.LITERAL) {
-                                if (r.datatype != null) 
-                                    userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_DATATYPE), userKB.createLiteral(r.datatype));
-                                userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE), userKB.createLiteral(r.value));
-                            } else {
-                                userKB.setPropertyValue(fileBinding, DISKOnt.getProperty(DISK.HAS_ID), userKB.createLiteral(r.id));
-                            }
-                            userKB.addPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE), fileBinding);
-                        }
-                    }
-
-                    // Steps
-                    List<RuntimeInfo> steps = run.getStepsInfo();
-                    if (steps != null && steps.size() > 0) {
-                        for (RuntimeInfo r: steps) {
-                            KBObject execInfo = userKB.createObjectOfClass(null, DISKOnt.getClass(DISK.EXEC_INFO));
-                            if (r.status != null) 
-                                userKB.setPropertyValue(execInfo, DISKOnt.getProperty(DISK.HAS_STATUS), 
-                                        userKB.createLiteral(getStringFromStatus(executionInfo.status)));
-                            if (r.startTime > 0) {
-                                userKB.setPropertyValue(execInfo, DISKOnt.getProperty(DISK.HAS_RUN_START_DATE), 
-                                        userKB.createLiteral(r.startTime));
-                                if (r.endTime > 0)
-                                    userKB.setPropertyValue(execInfo, DISKOnt.getProperty(DISK.HAS_RUN_END_DATE), 
-                                            userKB.createLiteral(r.endTime));
-                            }
-                            if (r.log != null)
-                                userKB.setPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_LOG),
-                                        userKB.createLiteral(r.log));
-                            userKB.addPropertyValue(newRunObj, DISKOnt.getProperty(DISK.HAS_STEP), execInfo);
-                        }
-                    }
-                }
-
-                // Creating workflow data bindings
-                for (VariableBinding vBinding : bindings.getBindings()) {
-                    String varId = vBinding.getVariable();
-                    String binding = vBinding.getBinding();
-                    String cType = vBinding.getDatatype();
-
-                    String type = cType != null ? cType :  KBConstants.XSD_NS + "string"; // default type
-                    Value bindingValue = new Value(binding, type);
-                    if (cType != null && !cType.startsWith(KBConstants.XSD_NS)) {
-                        bindingValue.setType(Value.Type.URI);
-                    }
-
-                    KBObject varbindingobj = userKB.createObjectOfClass(null, DISKOnt.getClass(DISK.VARIABLE_BINDING));
-                    if (bindingValue.getType() == Value.Type.URI) {
-                        // We store the type of the binding on the binding object. We should store it on the binding itself
-                        // but most of the time the binding is a rdf-literal value.
-                        KBObject typeProp = userKB.getProperty(KBConstants.RDF_NS + "type");
-                        userKB.addTriple(varbindingobj, typeProp, userKB.getResource(type));
-                        //userKB.addClassForInstance(varbindingobj, userKB.getResource(type));
-                    }
-                    userKB.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_VARIABLE),
-                            userKB.getResource(workflowuri + "#" + varId));
-                    userKB.setPropertyValue(varbindingobj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE),
-                            this.createKBObjectFromValue(bindingValue, userKB));
-                    userKB.addPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING), varbindingobj);
-                }
-
-                String hypId = bindings.getMeta().getHypothesis();
-                String revhypId = bindings.getMeta().getRevisedHypothesis();
-                if (hypId != null)
-                    userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_VARIABLE),
-                            userKB.getResource(workflowuri + "#" + hypId));
-                if (revhypId != null)
-                    userKB.setPropertyValue(bindingobj, DISKOnt.getProperty(DISK.HAS_REVISED_HYPOTHESIS_VARIABLE),
-                            userKB.getResource(workflowuri + "#" + revhypId));
-            }
-
-            this.rdf.save(userKB);
-            this.rdf.end();
-        }
-    }
-
-    private List<WorkflowBindings> loadWorkflowsBindings(String userDomain, String id) {
-        return loadBindings(userDomain, id, DISKOnt.getProperty(DISK.HAS_WORKFLOW_BINDING));
-    }
-
-    private List<WorkflowBindings> loadMetaWorkflowsBindings(String userDomain, String id) {
-        return loadBindings(userDomain, id, DISKOnt.getProperty(DISK.HAS_METAWORKFLOW_BINDING));
-    }
-
-    private List<WorkflowBindings> loadBindings(String userDomain, String id, KBObject bindingprop) {
-        List<WorkflowBindings> list = new ArrayList<WorkflowBindings>();
-        String loiId = userDomain + "/" + id;
-        KBAPI kb = getOrCreateKB(userDomain);
-
-        if (kb != null) {
-            this.rdf.startWrite();
-            KBObject loiItem = kb.getIndividual(loiId);
-            KBObject typeprop = kb.getProperty(KBConstants.RDF_NS + "type");
-
-            for (KBTriple t : kb.genericTripleQuery(loiItem, bindingprop, null)) {
-                KBObject wbObj = t.getObject();
-                WorkflowBindings bindings = new WorkflowBindings();
-                KBObject sourceObj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_SOURCE));
-                MethodAdapter methodAdapter = null;
-                if (sourceObj != null) {
-                    String source = sourceObj.getValueAsString();
-                    bindings.setSource(source);
-                    methodAdapter = this.methodAdapters != null ? this.methodAdapters.getMethodAdapterByName(source) : null;
-                }
-
-                KBObject sourceUrlObj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_SOURCE_URL));
-                if (sourceUrlObj != null)
-                    bindings.setSourceURL(sourceUrlObj.getValueAsString());
-
-                String description = kb.getComment(wbObj);
-                if (description != null)
-                    bindings.setDescription(description);
-
-                List<KBObject> runObjs = kb.getPropertyValues(wbObj, DISKOnt.getProperty(DISK.HAS_WORKFLOW_RUN));
-                Map<String, WorkflowRun> runs = new HashMap<String, WorkflowRun>();
-                for (KBObject runObj: runObjs) {
-                    // Workflow Run details
-                    WorkflowRun run = new WorkflowRun();
-                    KBObject runIdObj = kb.getPropertyValue(runObj, DISKOnt.getProperty(DISK.HAS_ID));
-                    if (runIdObj != null)
-                        run.setId(runIdObj.getValue().toString());
-                    KBObject linkObj = kb.getPropertyValue(runObj, DISKOnt.getProperty(DISK.HAS_RUN_LINK));
-                    if (linkObj != null)
-                        run.setLink(linkObj.getValue().toString());
-
-                    RuntimeInfo executionInfo = new RuntimeInfo();
-                    KBObject statusObj = kb.getPropertyValue(runObj, DISKOnt.getProperty(DISK.HAS_STATUS));
-                    if (statusObj != null)
-                        executionInfo.status = getStatusFromString(statusObj.getValue().toString());
-                    KBObject logObj = kb.getPropertyValue(runObj, DISKOnt.getProperty(DISK.HAS_LOG));
-                    if (logObj != null)
-                        executionInfo.log = logObj.getValue().toString();
-                    KBObject runStartObj = kb.getPropertyValue(runObj, DISKOnt.getProperty(DISK.HAS_RUN_START_DATE));
-                    if (runStartObj != null)
-                        executionInfo.startTime = Integer.valueOf(runStartObj.getValue().toString());
-                    KBObject runEndObj = kb.getPropertyValue(runObj, DISKOnt.getProperty(DISK.HAS_RUN_END_DATE));
-                    if (runEndObj != null)
-                        executionInfo.endTime = Integer.valueOf(runEndObj.getValue().toString());
-                    run.setExecutionInfo(executionInfo);
-
-                    // Inputs / outputs
-                    Map<String, RunBinding> input = new HashMap<String, RunBinding>(),
-                            output = new HashMap<String, RunBinding>();
-                    for (KBObject inputObj : kb.getPropertyValues(runObj, DISKOnt.getProperty(DISK.HAS_INPUT_FILE))) {
-                        KBObject name = kb.getPropertyValue(inputObj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
-                        KBObject datatypeObj = kb.getPropertyValue(inputObj, DISKOnt.getProperty(DISK.HAS_DATATYPE));
-                        KBObject value = kb.getPropertyValue(inputObj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
-                        KBObject inputId = kb.getPropertyValue(inputObj, DISKOnt.getProperty(DISK.HAS_ID));
-                        RunBinding cur = new RunBinding();
-                        if (name == null || (value == null && inputId == null)) {
-                            System.err.println("Warning: File does not have the minimun required values");
-                        } else {
-                            if (value != null) {
-                                cur.type = Type.LITERAL;
-                                cur.value = value.getValueAsString();
-                                if (datatypeObj != null) cur.datatype = datatypeObj.getValueAsString();
-                            } else if (inputId != null) {
-                                cur.type = Type.URI;
-                                cur.id = inputId.getValueAsString();
-                            }
-                            input.put(name.getValueAsString(), cur);
-                        }
-                    }
-                    for (KBObject outObj : kb.getPropertyValues(runObj, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE))) {
-                        KBObject name = kb.getPropertyValue(outObj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
-                        KBObject datatypeObj = kb.getPropertyValue(outObj, DISKOnt.getProperty(DISK.HAS_DATATYPE));
-                        KBObject value = kb.getPropertyValue(outObj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
-                        KBObject outId = kb.getPropertyValue(outObj, DISKOnt.getProperty(DISK.HAS_ID));
-                        RunBinding cur = new RunBinding();
-                        if (name == null || (value == null && outId == null)) {
-                            System.err.println("Warning: File does not have the minimun required values");
-                        } else {
-                            if (value != null) {
-                                cur.type = Type.LITERAL;
-                                cur.value = value.getValueAsString();
-                                if (datatypeObj != null) cur.datatype = datatypeObj.getValueAsString();
-                            } else if (outId != null) {
-                                cur.type = Type.URI;
-                                cur.id = outId.getValueAsString();
-                            }
-                            output.put(name.getValueAsString(), cur);
-                        }
-                    }
-                    run.setInputs(input);
-                    run.setOutputs(output);
-
-                    // Steps
-                    List<RuntimeInfo> steps = new ArrayList<RuntimeInfo>();
-                    for (KBObject stepObj : kb.getPropertyValues(runObj, DISKOnt.getProperty(DISK.HAS_STEP))) {
-                        RuntimeInfo stepInfo = new RuntimeInfo();
-                        KBObject stepStatusObj = kb.getPropertyValue(stepObj, DISKOnt.getProperty(DISK.HAS_STATUS));
-                        if (stepStatusObj != null)
-                            stepInfo.status = getStatusFromString(stepStatusObj.getValue().toString());
-                        KBObject stepLogObj = kb.getPropertyValue(stepObj, DISKOnt.getProperty(DISK.HAS_LOG));
-                        if (stepLogObj != null)
-                            stepInfo.log = stepLogObj.getValue().toString();
-                        KBObject stepStartObj = kb.getPropertyValue(stepObj, DISKOnt.getProperty(DISK.HAS_RUN_START_DATE));
-                        if (stepStartObj != null)
-                            stepInfo.startTime = Integer.valueOf(stepStartObj.getValue().toString());
-                        KBObject stepEndObj = kb.getPropertyValue(stepObj, DISKOnt.getProperty(DISK.HAS_RUN_END_DATE));
-                        if (stepEndObj != null)
-                            stepInfo.endTime = Integer.valueOf(stepEndObj.getValue().toString());
-                        steps.add(stepInfo);
-                    }
-
-                    runs.put(run.getId(), run);
-                }
-                bindings.setRuns(runs);
-
-                // Workflow details
-                KBObject workflowobj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_WORKFLOW));
-                if (workflowobj != null && methodAdapter != null) {
-                    bindings.setWorkflow(workflowobj.getName());
-                    String link = methodAdapter.getWorkflowLink(workflowobj.getName());
-                    if (link != null)
-                        bindings.setWorkflowLink(link);
-                }
-
-                // Variable binding details
-                for (KBObject vbObj : kb.getPropertyValues(wbObj, DISKOnt.getProperty(DISK.HAS_VARIABLE_BINDING))) {
-                    KBObject varobj = kb.getPropertyValue(vbObj, DISKOnt.getProperty(DISK.HAS_VARIABLE));
-                    KBObject bindobj = kb.getPropertyValue(vbObj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE));
-                    VariableBinding vBinding = new VariableBinding(varobj.getName(), bindobj.getValueAsString());
-                    // Check for variable classes
-                    String cls = null;
-                    try {
-                        for (KBTriple tr : kb.genericTripleQuery(vbObj, typeprop, null)) {
-                            KBObject o = tr.getObject();
-                            if (o != null && !o.getValueAsString().startsWith("http://disk-project.org/ontology/disk#")) {
-                                cls = o.getValueAsString();
-                            }
-                        }
-                    } catch (Exception e) {
-                        System.err.println("An error has ocurred while quering " + vbObj + " a *;");
-                        e.printStackTrace();
-                    }
-                    if (cls != null) {
-                        vBinding.setDatatype(cls);
-                    }
-                    bindings.getBindings().add(vBinding);
-                }
-
-                KBObject hypobj = kb.getPropertyValue(wbObj, DISKOnt.getProperty(DISK.HAS_HYPOTHESIS_VARIABLE));
-                if (hypobj != null)
-                    bindings.getMeta().setHypothesis(hypobj.getName());
-                KBObject revhypobj = kb.getPropertyValue(wbObj,
-                        DISKOnt.getProperty(DISK.HAS_REVISED_HYPOTHESIS_VARIABLE));
-                if (revhypobj != null)
-                    bindings.getMeta().setRevisedHypothesis(revhypobj.getName());
-
-                list.add(bindings);
-            }
-            this.rdf.end();
-        }
+                //TriggeredLOI tloi = loadTLOI(username, tloiId.replaceAll("^.*\\/", ""));
         return list;
     }
 

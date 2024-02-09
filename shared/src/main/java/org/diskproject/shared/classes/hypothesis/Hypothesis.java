@@ -7,8 +7,6 @@ import org.diskproject.shared.classes.common.Graph;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 
 public class Hypothesis extends DISKResource {
-  //For revised hypotheses
-  String parentId;
   // The graph (for server) and question bindings (for UI)
   String questionId;
   List<VariableBinding> questionBindings;
@@ -16,7 +14,6 @@ public class Hypothesis extends DISKResource {
 
   public Hypothesis (String id, String name, String description, String parentId, Graph graph){
     super(id,name,description);
-	  this.parentId = parentId;
 	  this.graph = graph;
   }
 
@@ -38,14 +35,6 @@ public class Hypothesis extends DISKResource {
 	  return this.questionBindings;
   }
   
-  public void setParentId(String parentId) {
-    this.parentId = parentId;
-  }
-
-  public String getParentId() {
-    return parentId;
-  }
-
   public void setGraph(Graph graph) {
     this.graph = graph;
   }

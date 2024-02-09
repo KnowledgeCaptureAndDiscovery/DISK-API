@@ -6,8 +6,8 @@ import java.util.Map;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
-import org.diskproject.shared.classes.loi.WorkflowBindings;
 import org.diskproject.shared.classes.workflow.VariableBinding;
+import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 import org.diskproject.shared.classes.workflow.WorkflowRun.Status;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
@@ -32,12 +32,12 @@ public class ExecutionThread implements Runnable {
         else
             System.out.println("[R] Running execution thread");
 
-        List<WorkflowBindings> workflowList = this.metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows();
+        List<WorkflowInstantiation> workflowList = this.metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows();
         Status currentStatus = Status.RUNNING;
 
         // Start workflows from tloi
-        for (WorkflowBindings curWorkflow : workflowList) {
-            MethodAdapter methodAdapter = this.manager.getMethodAdapters().getMethodAdapterByName(curWorkflow.getSource());
+        for (WorkflowInstantiation curWorkflow : workflowList) {
+            MethodAdapter methodAdapter = this.manager.getMethodAdapters().getMethodAdapterByName(curWorkflow.getSource().getName());
             if (methodAdapter == null) {
                 currentStatus = Status.FAILED;
                 break;
@@ -47,10 +47,10 @@ public class ExecutionThread implements Runnable {
             }
 
             // Get workflow input details
-            Map<String, WorkflowVariable> inputVariables = methodAdapter.getWorkflowInputs(curWorkflow.getWorkflow());
-            List<VariableBinding> inputBindings = curWorkflow.getBindings();
+            Map<String, WorkflowVariable> inputVariables = methodAdapter.getWorkflowInputs(curWorkflow.getLink());
+            List<VariableBinding> inputBindings = curWorkflow.getDataBindings();
             this.printWorkflowRun(curWorkflow, inputBindings);
-            List<String> runIds = methodAdapter.runWorkflow(curWorkflow.getWorkflow(), inputBindings, inputVariables);
+            List<String> runIds = methodAdapter.runWorkflow(curWorkflow.getId(), inputBindings, inputVariables);
 
             if (runIds != null) {
                 System.out.println("[R] " + runIds.size() + " Workflows send: ");
@@ -59,14 +59,14 @@ public class ExecutionThread implements Runnable {
                     run.setId(rid);
                     run.setAsPending();
                     System.out.println("[R]   ID: " + rid);
-                    curWorkflow.addRun(run);
+                    //curWorkflow.addRun(run); FIXME
                 }
             } else {
                 currentStatus = Status.FAILED;
                 System.out.println("[R] Error: Could not run workflow");
             }
         }
-        tloi.setStatus(currentStatus);
+        //tloi.setStatus(currentStatus); TODO!
         manager.updateTLOI(tloi);
 
         // Start monitoring
@@ -77,9 +77,9 @@ public class ExecutionThread implements Runnable {
         }
     }
     
-    public void printWorkflowRun(WorkflowBindings wf, List<VariableBinding> inputBindings) {
+    public void printWorkflowRun(WorkflowInstantiation wf, List<VariableBinding> inputBindings) {
         // Execute workflow
-        System.out.println("[R] Executing " + wf.getWorkflow() + " with " + inputBindings.size() + " parameters:");
+        System.out.println("[R] Executing " + wf.getLink() + " with " + inputBindings.size() + " parameters:");
         for (VariableBinding v : inputBindings) {
             List<String> l = v.isArray() ? v.getBindings() : null;
             int i = 0;

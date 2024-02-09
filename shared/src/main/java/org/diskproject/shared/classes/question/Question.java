@@ -11,6 +11,10 @@ public class Question {
   QuestionCategory category;
   List<QuestionVariable> variables;
 
+  public Question (String id) {
+    this.id = id;
+  }
+
   public Question (String id, String name, String template, List<Triple> pattern, List<QuestionVariable> vars) {
 	  this.id = id;
 	  this.name = name;

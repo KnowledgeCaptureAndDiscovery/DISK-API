@@ -4,14 +4,12 @@ public class Triple {
   String subject;
   String predicate;
   Value object;
-  //TripleDetails details;
 
-  public Triple(String subject, String predicate, Value object)//, TripleDetails details)
+  public Triple(String subject, String predicate, Value object)
   {
 	  this.subject = subject;
 	  this.predicate = predicate;
 	  this.object = object;
-	  //this.details = details;
   }
   
   public Triple(){}
@@ -40,14 +38,6 @@ public class Triple {
     this.object = object;
   }
   
-  /*public TripleDetails getDetails() {
-    return details;
-  }
-
-  public void setDetails(TripleDetails details) {
-    this.details = details;
-  }*/
-
   public String toString() {
     return "<"+this.subject+"> <"+this.predicate+"> "+this.object;
   }

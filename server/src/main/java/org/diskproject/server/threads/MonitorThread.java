@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
-import org.diskproject.shared.classes.loi.WorkflowBindings;
+import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 import org.diskproject.shared.classes.workflow.WorkflowRun.RuntimeInfo;
 import org.diskproject.shared.classes.workflow.WorkflowRun.Status;
@@ -19,7 +19,7 @@ public class MonitorThread implements Runnable {
     TriggeredLOI tloi;
     List<String> runList;                   // runList = [runId1, runId2, ...]
     Map<String, WorkflowRun> runInfo;       // runInfo[runId1] = WorkflowRun
-    Map<String, WorkflowBindings> runToWf;  // runToWf[runId1] = WorkflowBindings
+    Map<String, WorkflowInstantiation> runToWf;  // runToWf[runId1] = WorkflowBindings
     Map<String, Integer> runToIndex;        // runToIndex[runId1] = 0,1...
 
     public MonitorThread (ThreadManager manager, TriggeredLOI tloi, boolean metamode) {
@@ -28,23 +28,24 @@ public class MonitorThread implements Runnable {
         this.metamode = metamode;
 
         this.runInfo = new HashMap<String, WorkflowRun>();
-        this.runToWf = new HashMap<String, WorkflowBindings>();
+        this.runToWf = new HashMap<String, WorkflowInstantiation>();
         this.runToIndex = new HashMap<String, Integer>();
         this.runList = new ArrayList<String>();
 
         Integer index = 0;
-        for (WorkflowBindings curWorkflow : (metamode ? this.tloi.getMetaWorkflows() : this.tloi.getWorkflows())) {
-            for (WorkflowRun run : curWorkflow.getRuns().values()) {
-                RuntimeInfo exec = run.getExecutionInfo();
-                Status st = exec.status;
-                String runId = run.getId();
-                if (st == Status.PENDING || st == Status.QUEUED || st == Status.RUNNING) {
-                    runList.add(runId);
-                    runInfo.put(runId, run);
-                    runToWf.put(runId, curWorkflow);
-                    runToIndex.put(runId, index);
-                }
-            }
+        for (WorkflowInstantiation curWorkflow : (metamode ? this.tloi.getMetaWorkflows() : this.tloi.getWorkflows())) {
+            //FIXME:
+            //for (WorkflowRun run : curWorkflow.getRuns().values()) {
+            //    RuntimeInfo exec = run.getExecutionInfo();
+            //    Status st = exec.status;
+            //    String runId = run.getId();
+            //    if (st == Status.PENDING || st == Status.QUEUED || st == Status.RUNNING) {
+            //        runList.add(runId);
+            //        runInfo.put(runId, run);
+            //        runToWf.put(runId, curWorkflow);
+            //        runToIndex.put(runId, index);
+            //    }
+            //}
             index += 1;
         }
     }
@@ -74,11 +75,11 @@ public class MonitorThread implements Runnable {
         return Status.SUCCESSFUL;
     }
 
-    private void updateRun (WorkflowBindings wf, WorkflowRun run) {
+    private void updateRun (WorkflowInstantiation wf, WorkflowRun run) {
         this.runInfo.replace(run.getId(), run); // Updates status on the run list
-        wf.addRun(run); // This replaces old run.
+        //wf.addRun(run); // This replaces old run. FIXME
         Integer index = this.runToIndex.get(run.getId());
-        List<WorkflowBindings> list = this.metamode ? this.tloi.getMetaWorkflows() : this.tloi.getWorkflows();
+        List<WorkflowInstantiation> list = this.metamode ? this.tloi.getMetaWorkflows() : this.tloi.getWorkflows();
         list.set(index, wf); // Replaces run in the wf list
         if (this.metamode) this.tloi.setMetaWorkflows(list);
         else this.tloi.setWorkflows(list);
@@ -97,8 +98,8 @@ public class MonitorThread implements Runnable {
             System.out.println("[M] No more pending runs.");
             return;
         }
-        WorkflowBindings wf = runToWf.get(pendingRun.getId());
-        MethodAdapter methodAdapter = this.manager.getMethodAdapters().getMethodAdapterByName(wf.getSource());
+        WorkflowInstantiation wf = runToWf.get(pendingRun.getId());
+        MethodAdapter methodAdapter = this.manager.getMethodAdapters().getMethodAdapterByName(wf.getSource().getName());
         if (methodAdapter == null) {
             System.out.println("[M] Error: Method adapter not found: " + wf.getSource());
             return;
@@ -123,7 +124,7 @@ public class MonitorThread implements Runnable {
         updateRun(wf, updatedRun);
 
         Status status = getOverallStatus();
-        this.tloi.setStatus(status);
+        //this.tloi.setStatus(status); FIXME
         manager.updateTLOI(tloi);
 
         if (status == Status.SUCCESSFUL) {

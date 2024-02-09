@@ -29,7 +29,7 @@ public class WorkflowRun {
     }
   }
 
-  public static class RunBinding {
+  public static class RunBinding { // This is equivalent to Variable Binding
     public String id, datatype, value;
     public Type type;
   }
