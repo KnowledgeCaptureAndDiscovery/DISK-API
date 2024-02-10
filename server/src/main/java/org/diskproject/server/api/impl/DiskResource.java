@@ -1,6 +1,7 @@
 package org.diskproject.server.api.impl;
 
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
@@ -106,7 +107,13 @@ public class DiskResource implements DiskService {
 
   //--
   private void addAuthorFromRequest (DISKResource obj, HttpServletRequest request) {
-    String username = (String) request.getAttribute("username");
+    //Enumeration attr = request.getAttributeNames();
+    //while (attr.hasMoreElements()) {
+    //  String value =  attr.nextElement().toString();
+    //  System.out.println(value + " = " + request.getAttribute(value));
+    //}
+
+    String username = (String) request.getAttribute("username"); //username is an email.
     if (username != null) {
       Entity author = this.repo.getOrCreateEntity(username);
       obj.setAuthor(author);

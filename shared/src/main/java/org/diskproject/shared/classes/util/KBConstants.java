@@ -2,7 +2,8 @@ package org.diskproject.shared.classes.util;
 
 public class KBConstants {
     // Internal URI
-    public static final String DISK_URI     = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/disk/release/1.2.5/ontology.ttl";
+    //public static final String DISK_URI     = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/disk/release/1.2.5/ontology.ttl";
+    public static final String DISK_URI     = "https://raw.githubusercontent.com/KnowledgeCaptureAndDiscovery/DISK-Ontologies/1.3/disk/release/1.3.0/ontology.xml";
     public static final String HYP_URI      = "https://knowledgecaptureanddiscovery.github.io/DISK-Ontologies/hypothesis/release/0.0.3/ontology.xml";
     public static final String QUESTION_URI = "https://knowledgecaptureanddiscovery.github.io/QuestionOntology/release/v1.3.1/ontology.ttl";
 

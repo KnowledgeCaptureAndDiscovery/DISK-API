@@ -12,7 +12,7 @@ public class Goal extends DISKResource {
     List<VariableBinding> questionBindings;
     Graph graph;
 
-    public Goal () {}; //TODO: remove me
+    public Goal () {};
 
     public Goal (String id) {
         this.setId(id);

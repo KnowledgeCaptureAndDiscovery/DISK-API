@@ -11,6 +11,8 @@ public class Question {
   QuestionCategory category;
   List<QuestionVariable> variables;
 
+    public Question () {};
+
   public Question (String id) {
     this.id = id;
   }
