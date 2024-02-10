@@ -1062,6 +1062,6 @@ public class DiskRepository {
     }
 
     public Entity getOrCreateEntity(String username) {
-        return null;
+        return this.diskDB.loadOrRegisterEntity(username);
     }
 }

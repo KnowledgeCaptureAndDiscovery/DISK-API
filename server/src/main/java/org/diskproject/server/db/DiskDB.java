@@ -62,6 +62,7 @@ public class DiskDB {
             this.diskKB = this.rdf.getFactory().getKB(KBConstants.DISK_URI, OntSpec.PELLET, false, true);
         } catch (Exception e) {
             System.out.println("Error reading KB: " + KBConstants.DISK_URI);
+            e.printStackTrace();
             return;
         }
         //This maps the terms of the ontology to use for creating new DISK resources.
@@ -249,27 +250,37 @@ public class DiskDB {
         return new Endpoint(name.getValueAsString(), url.getValueAsString());
     }
 
-    public KBObject findOrWriteEntity (Entity src) {
-        // All entities should be unique
-        int id = src.getEmail().hashCode();
-        KBObject KBEntity = domainKB.getIndividual(createEntityURI(id));
-        //Check if this entity exists
-        Entity entity = loadEntity(domainKB, KBEntity);
-        if (entity != null) {
-            System.out.println("Entity " + src.getEmail() + " already exists.");
-        } else {
-            domainKB.setPropertyValue(KBEntity, DISKOnt.getProperty(DISK.HAS_NAME), domainKB.createLiteral(src.getName()));
-            domainKB.setPropertyValue(KBEntity, DISKOnt.getProperty(DISK.HAS_EMAIL), domainKB.createLiteral(src.getEmail()));
-        }
+    private KBObject writeEntity (Entity src) {
+        // This assumes the entity does not exists
+        KBObject KBEntity = domainKB.createObjectOfClass(src.getId(), DISKOnt.getClass(DISK.ENTITY));
+        domainKB.setPropertyValue(KBEntity, DISKOnt.getProperty(DISK.HAS_NAME), domainKB.createLiteral(src.getName()));
+        domainKB.setPropertyValue(KBEntity, DISKOnt.getProperty(DISK.HAS_EMAIL), domainKB.createLiteral(src.getEmail()));
         return KBEntity;
     }
 
-    private Entity loadEntity (KBAPI kb, KBObject author) {
-        KBObject name  = kb.getPropertyValue(author, DISKOnt.getProperty(DISK.HAS_NAME));
-        KBObject email = kb.getPropertyValue(author, DISKOnt.getProperty(DISK.HAS_EMAIL));
+    private Entity loadEntity (KBObject author) {
+        KBObject name  = domainKB.getPropertyValue(author, DISKOnt.getProperty(DISK.HAS_NAME));
+        KBObject email = domainKB.getPropertyValue(author, DISKOnt.getProperty(DISK.HAS_EMAIL));
         if (name == null || email == null)
             return null;
         return new Entity(author.getID(), name.getValueAsString(), email.getValueAsString());
+    }
+
+    public Entity loadOrRegisterEntity (String email) {
+        int id = email.hashCode();
+        this.rdf.startRead();
+        KBObject KBEntity = domainKB.getIndividual(createEntityURI(id));
+        Entity entity = loadEntity(KBEntity);
+        this.rdf.end();
+        if (entity == null) {
+            String name = email.split("@")[0];
+            entity = new Entity(String.valueOf(id), name, email);
+            this.rdf.startWrite();
+            this.writeEntity(entity);
+            this.rdf.save(domainKB);
+            this.rdf.end();
+        }
+        return entity;
     }
 
     private KBObject writeCommonResource (DISKResource obj, String uri, KBObject cls) {
@@ -289,8 +300,9 @@ public class DiskDB {
             domainKB.setPropertyValue(kbObj, DISKOnt.getProperty(DISK.HAS_USAGE_NOTES),
                     domainKB.createLiteral(obj.getNotes()));
         if (obj.getAuthor() != null) {
+            // At this point entity already exists
             domainKB.setPropertyValue(kbObj, DISKOnt.getProperty(DISK.HAS_AUTHOR),
-                    findOrWriteEntity(obj.getAuthor()));
+                    domainKB.getIndividual(obj.getAuthor().getId()));
         }
         return kbObj;
     }
@@ -304,7 +316,7 @@ public class DiskDB {
         if (created != null) current.setDateCreated(created.getValueAsString());
         if (updated != null) current.setDateModified(updated.getValueAsString());
         if (notes != null)   current.setNotes(notes.getValueAsString());
-        if (author != null)  current.setAuthor(loadEntity(domainKB, author));
+        if (author != null)  current.setAuthor(loadEntity(author));
         return current;
     }
 
@@ -346,8 +358,8 @@ public class DiskDB {
 
     public boolean writeGoal(Goal goal) {
         Boolean newGoal = goal.getId() == null || goal.getId().equals("");
-        if (newGoal) goal.setId(GUID.randomId("Goal"));
-        String fullId = createGoalURI(goal.getId());
+        if (newGoal) goal.setId(createGoalURI(GUID.randomId("Goal")));
+        String fullId = goal.getId();
         //if (domainKB == null) return false;
         this.rdf.startWrite();
         KBObject goalItem = this.writeCommonResource(goal, fullId, DISKOnt.getClass(DISK.GOAL));
@@ -460,7 +472,8 @@ public class DiskDB {
     public List<Goal> listGoals () {
         List<Goal> list = new ArrayList<Goal>();
         List<String> goalIds = listObjectIdPerClass(DISKOnt.getClass(DISK.GOAL));
-        for (String id: goalIds) {
+        for (String fullId: goalIds) {
+            String id = fullId.replaceAll("^.*\\/", "");
             list.add(this.loadGoal(id));
         }
         return list;
@@ -549,9 +562,8 @@ public class DiskDB {
 
     public boolean writeLOI(LineOfInquiry loi) {
         Boolean newLOI = loi.getId() == null || loi.getId().equals("");
-        if (newLOI) loi.setId(GUID.randomId("LOI"));
-
-        String loiId = createLoiURI(loi.getId());
+        if (newLOI) loi.setId(createLoiURI(GUID.randomId("LOI")));
+        String loiId = loi.getId();
         //if (domainKB == null) return false;
         this.rdf.startWrite();
 
@@ -663,7 +675,8 @@ public class DiskDB {
         List<LineOfInquiry> list = new ArrayList<LineOfInquiry>();
         List<String> ids = listObjectIdPerClass(DISKOnt.getClass(DISK.LINE_OF_INQUIRY));
 
-        for (String id: ids) {
+        for (String fullId: ids) {
+            String id = fullId.replaceAll("^.*\\/", "");
             list.add(this.loadLOI(id));
         }
         return list;
@@ -1008,8 +1021,8 @@ public class DiskDB {
 
     public boolean writeTLOI(TriggeredLOI tloi) {
         Boolean newTLOI = tloi.getId() == null || tloi.getId().equals("");
-        if (newTLOI) tloi.setId(GUID.randomId("TriggeredLOI"));
-        String tloiId = createTloiURI(tloi.getId());
+        if (newTLOI) tloi.setId(createTloiURI(GUID.randomId("TriggeredLOI")));
+        String tloiId = tloi.getId();
         //if (domainKB == null) return false;
 
         this.rdf.startWrite();
@@ -1123,7 +1136,8 @@ public class DiskDB {
     public List<TriggeredLOI> listTLOIs() {
         List<TriggeredLOI> list = new ArrayList<TriggeredLOI>();
         List<String> ids = listObjectIdPerClass(DISKOnt.getClass(DISK.TRIGGERED_LINE_OF_INQUIRY));
-        for (String id: ids) {
+        for (String fullId: ids) {
+            String id = fullId.replaceAll("^.*\\/", "");
             list.add(this.loadTLOI(id));
         }
                 //TriggeredLOI tloi = loadTLOI(username, tloiId.replaceAll("^.*\\/", ""));
