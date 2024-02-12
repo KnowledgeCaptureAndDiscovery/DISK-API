@@ -1,5 +1,5 @@
 
-# DISK
+# DISK [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10651265.svg)](https://doi.org/10.5281/zenodo.10651265)
 
 The DISK system automates the execution of scientific workflows triggered 
 on data changes. To do this DISK collects data from different data repositories
