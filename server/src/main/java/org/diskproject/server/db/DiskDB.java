@@ -370,10 +370,9 @@ public class DiskDB {
                     domainKB.createLiteral(questionId));
         List<VariableBinding> questionBindings = goal.getQuestionBindings();
         if (questionBindings != null && questionBindings.size() > 0) {
-            String prefix = fullId + "/bindings/";
             for (VariableBinding vb : questionBindings) {
                 domainKB.addPropertyValue(goalItem, DISKOnt.getProperty(DISK.HAS_QUESTION_BINDINGS), 
-                    writeVariableBinding(vb, prefix));
+                    writeVariableBinding(vb, fullId));
             }
         }
 
@@ -937,7 +936,7 @@ public class DiskDB {
             }
             return domainKB.createLiteral("[" + str + "]");
         }
-        return domainKB.createLiteral(binding.getBinding());
+        return domainKB.createLiteral(binding.getSingleBinding());
     }
 
     private void readLiteralAsBindingValue (String rawValue, VariableBinding vb) {
@@ -957,7 +956,7 @@ public class DiskDB {
             vb.setBindings(list);
         } else {
             vb.setIsArray(false);
-            vb.setBinding(rawValue);
+            vb.setSingleBinding(rawValue);
         }
     }
 
@@ -969,14 +968,13 @@ public class DiskDB {
         }
         KBObject vBindingObj = domainKB.createObjectOfClass(id, DISKOnt.getClass(DISK.VARIABLE_BINDING));
         if (vBinding.getVariable() != null)
-            domainKB.setPropertyValue(vBindingObj, DISKOnt.getClass(DISK.HAS_BINDING_VARIABLE), domainKB.createLiteral(vBinding.getVariable()));
+            domainKB.setPropertyValue(vBindingObj, DISKOnt.getProperty(DISK.HAS_BINDING_VARIABLE), domainKB.createLiteral(vBinding.getVariable()));
         if (vBinding.getDatatype() != null)
-            domainKB.setPropertyValue(vBindingObj, DISKOnt.getClass(DISK.HAS_DATATYPE), domainKB.createLiteral(vBinding.getDatatype()));
+            domainKB.setPropertyValue(vBindingObj, DISKOnt.getProperty(DISK.HAS_DATATYPE), domainKB.createLiteral(vBinding.getDatatype()));
         if (vBinding.getType() != null)
-            domainKB.setPropertyValue(vBindingObj, DISKOnt.getClass(DISK.HAS_TYPE), domainKB.createLiteral(vBinding.getType()));
-        if (vBinding.getBinding() != null) {
-            domainKB.setPropertyValue(vBindingObj, DISKOnt.getClass(DISK.HAS_BINDING_VALUE), createLiteralFromBindingValue(vBinding));
-        }
+            domainKB.setPropertyValue(vBindingObj, DISKOnt.getProperty(DISK.HAS_TYPE), domainKB.createLiteral(vBinding.getType()));
+        if (vBinding.getBinding() != null)
+            domainKB.setPropertyValue(vBindingObj, DISKOnt.getProperty(DISK.HAS_BINDING_VALUE), createLiteralFromBindingValue(vBinding));
         return vBindingObj;
     }
 

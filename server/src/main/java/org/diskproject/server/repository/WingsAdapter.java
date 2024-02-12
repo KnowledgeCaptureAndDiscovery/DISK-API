@@ -587,7 +587,7 @@ public class WingsAdapter extends MethodAdapter {
 					break;
 				}
 				String[] tempValues = value.split(",");
-				String[] vBindingValues = vBinding.getBinding().split(",");
+				String[] vBindingValues = vBinding.getSingleBinding().split(",");
 				for (int i = 0; i < vBindingValues.length; i++) {
 					boolean singleMatch = false;
 					for (int j = 0; j < tempValues.length; j++) {
@@ -1263,7 +1263,7 @@ public class WingsAdapter extends MethodAdapter {
 				VariableBinding vb = vbl.get(i);
 				if (vb.getVariable().equals(v.getName())) {
 					String curBinding = "\"" + wfName + v.getName() + "\":[";
-					String bindingValue = vb.getBinding();
+					String bindingValue = vb.getSingleBinding();
 
 					if (v.getDimensionality() ==  0) { // && !bindingValue.startsWith("[")) { FIXME!
 						curBinding += "\"" + (v.isParam() ? "" : dataID) + bindingValue + "\"";

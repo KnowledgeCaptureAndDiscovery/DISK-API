@@ -1014,7 +1014,7 @@ public class DiskRepository {
                 for (VariableBinding b: wb.getParameters()) { //FIXME: missing binding data here
                     String varName = b.getVariable();
                     if (outputAssignations.containsKey(varName)) {
-                        outputAssignations.put(varName, b.getBinding());
+                        outputAssignations.put(varName, b.getSingleBinding());
                     }
                 }
             }
