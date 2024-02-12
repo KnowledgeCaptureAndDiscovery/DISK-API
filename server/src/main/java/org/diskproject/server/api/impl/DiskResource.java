@@ -158,7 +158,7 @@ public class DiskResource implements DiskService {
   }
 
   @DELETE
-  @Path("goal/{id}")
+  @Path("goals/{id}")
   @Override
   public void deleteGoal(
       @PathParam("id") String id) {
@@ -166,7 +166,7 @@ public class DiskResource implements DiskService {
   }
 
   @GET
-  @Path("goal/{id}/query")
+  @Path("goals/{id}/query")
   @Override
   public List<TriggeredLOI> queryGoal(
       @PathParam("id") String id) {

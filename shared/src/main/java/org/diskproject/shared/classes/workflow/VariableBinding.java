@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class VariableBinding implements Serializable, Comparable<VariableBinding> {
   private static final long serialVersionUID = -847994634505985728L;
 
@@ -65,21 +67,33 @@ public class VariableBinding implements Serializable, Comparable<VariableBinding
     this.isArray = b;
   }
 
-  public String getBinding () {
+  public List<String> getBinding () {
+    return this.binding;
+  }
+
+  public void setBinding (List<String> bindings) {
+    this.binding = bindings;
+  }
+
+  @JsonIgnore
+  public String getSingleBinding () {
     return isArray || binding.size() == 0 ? null : binding.get(0);
   }
 
-  public void setBinding (String binding) {
+  @JsonIgnore
+  public void setSingleBinding (String binding) {
     if (!isArray) {
       this.binding = new ArrayList<String>();
       this.binding.add(binding);
     }
   }
 
+  @JsonIgnore
   public List<String> getBindings () {
     return isArray ? this.binding : null;
   }
 
+  @JsonIgnore
   public void setBindings (List<String> bindings) {
     if (isArray) {
       this.binding = bindings;
@@ -116,7 +130,8 @@ public class VariableBinding implements Serializable, Comparable<VariableBinding
   }
 
   public String toString () {
-    return variable+" = "+binding;
+    return "[" + variable + "|" + type + "|" + datatype + "]" + " = " 
+        + (isArray && binding!=null ? String.join(",", binding) : (binding != null && binding.size() == 1 ? binding.get(0) : "null"));
   }
 
   public int compareTo (VariableBinding o) {
