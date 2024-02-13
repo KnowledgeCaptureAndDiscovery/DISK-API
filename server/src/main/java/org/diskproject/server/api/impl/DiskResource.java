@@ -1,7 +1,6 @@
 package org.diskproject.server.api.impl;
 
 import java.io.IOException;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
