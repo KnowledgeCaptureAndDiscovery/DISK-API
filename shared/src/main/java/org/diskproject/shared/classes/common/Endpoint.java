@@ -3,6 +3,8 @@ package org.diskproject.shared.classes.common;
 public class Endpoint {
     private String name, url;
 
+    public Endpoint() {}
+
     public Endpoint(String name, String url) {
         this.name = name;
         this.url = url;

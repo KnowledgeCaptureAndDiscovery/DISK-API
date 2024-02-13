@@ -86,6 +86,9 @@ public class DiskDB {
         return this.DISKOnt;
     }
 
+    public String getLocalId(String fullId) {
+        return fullId.replaceAll("^.*\\/", "");
+    }
     public String createGoalURI (String id) {
         return this.domain + "/goals/" + id;
     }
@@ -235,6 +238,7 @@ public class DiskDB {
         //Check if this entity exists
         Endpoint endpoint = loadEndpoint(KBEndpoint);
         if (endpoint == null) {
+            //FIXME: Cannot create the endpoint here, we need to check that the endpoint is valid first
             System.out.println("Endpoint does not exist. Creating...");
             domainKB.setPropertyValue(KBEndpoint, DISKOnt.getProperty(DISK.HAS_SOURCE_NAME), domainKB.createLiteral(p.getName()));
             domainKB.setPropertyValue(KBEndpoint, DISKOnt.getProperty(DISK.HAS_SOURCE_URL), domainKB.createLiteral(p.getUrl()));
@@ -349,7 +353,7 @@ public class DiskDB {
             // These are necessary fields, should send an appropriate exception here.
             return null;
         } else {
-            if ((isCreating || (goal.getId().equals(id) && deleteGoal(id))) && writeGoal(goal)) {
+            if ((isCreating || (getLocalId(goal.getId()).equals(id) && deleteGoal(id))) && writeGoal(goal)) {
                 return isCreating ? goal : loadGoal(id);
             }
         }
@@ -472,7 +476,7 @@ public class DiskDB {
         List<Goal> list = new ArrayList<Goal>();
         List<String> goalIds = listObjectIdPerClass(DISKOnt.getClass(DISK.GOAL));
         for (String fullId: goalIds) {
-            String id = fullId.replaceAll("^.*\\/", "");
+            String id = getLocalId(fullId);
             list.add(this.loadGoal(id));
         }
         return list;
@@ -552,7 +556,7 @@ public class DiskDB {
             // These are necessary fields, should send an appropriate exception here.
             return null;
         } else {
-            if ((isCreating || (loi.getId().equals(id) && deleteLOI(id))) && writeLOI(loi)) {
+            if ((isCreating || (getLocalId(loi.getId()).equals(id) && deleteLOI(id))) && writeLOI(loi)) {
                 return isCreating ? loi : loadLOI(id);
             }
         }
@@ -675,7 +679,7 @@ public class DiskDB {
         List<String> ids = listObjectIdPerClass(DISKOnt.getClass(DISK.LINE_OF_INQUIRY));
 
         for (String fullId: ids) {
-            String id = fullId.replaceAll("^.*\\/", "");
+            String id = getLocalId(fullId);
             list.add(this.loadLOI(id));
         }
         return list;
@@ -1135,7 +1139,7 @@ public class DiskDB {
         List<TriggeredLOI> list = new ArrayList<TriggeredLOI>();
         List<String> ids = listObjectIdPerClass(DISKOnt.getClass(DISK.TRIGGERED_LINE_OF_INQUIRY));
         for (String fullId: ids) {
-            String id = fullId.replaceAll("^.*\\/", "");
+            String id = getLocalId(fullId);
             list.add(this.loadTLOI(id));
         }
                 //TriggeredLOI tloi = loadTLOI(username, tloiId.replaceAll("^.*\\/", ""));

@@ -6,6 +6,8 @@ public class DataQueryTemplate {
     private Endpoint endpoint;
     private String template, description, variablesToShow, footnote;
 
+    public DataQueryTemplate () {}
+
     public DataQueryTemplate (DataQueryTemplate src) {
         this.endpoint = src.getEndpoint();
         this.template = src.getTemplate();
