@@ -1,16 +1,19 @@
 package org.diskproject.server.managers;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.diskproject.server.adapters.AirFlowAdapter;
+import org.diskproject.server.db.DiskDB;
 import org.diskproject.server.repository.WingsAdapter;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.Config.MethodAdapterConfig;
 import org.diskproject.server.util.ConfigKeys;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
+import org.diskproject.shared.classes.common.Endpoint;
 import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
 
@@ -75,6 +78,10 @@ public class MethodAdapterManager {
         return list;
     }
 
+    public Collection<MethodAdapter> values () {
+        return this.byUrl.values();
+    }
+
     public List<WorkflowVariable> getWorkflowVariablesByName (String sourceName, String id) {
         MethodAdapter cur = this.getMethodAdapterByName(sourceName);
         if (cur != null)
@@ -95,5 +102,12 @@ public class MethodAdapterManager {
             txt += name + " -> " + byName.get(name).getEndpointUrl() + "\n";
         }
         return txt;
+    }
+
+    public void registerAdapters (DiskDB db) {
+        for (MethodAdapter adp: this.values()) {
+            Endpoint cur = db.registerEndpoint(new Endpoint(adp.getName(), adp.getEndpointUrl()));
+            adp.setId(cur.getId());
+        }
     }
 }

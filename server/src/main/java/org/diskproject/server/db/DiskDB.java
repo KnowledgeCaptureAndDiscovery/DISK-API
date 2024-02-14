@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.diskproject.server.managers.MethodAdapterManager;
 import org.diskproject.server.repository.DiskRDF;
 import org.diskproject.server.util.KBCache;
 import org.diskproject.server.util.KBUtils;
@@ -44,12 +43,10 @@ public class DiskDB {
     private DiskRDF rdf;
     private KBAPI diskKB, domainKB;
     private KBCache DISKOnt;
-    public MethodAdapterManager methodAdapters;
 
-    public DiskDB (String domain, DiskRDF rdf, MethodAdapterManager methodAdapters) {
+    public DiskDB (String domain, DiskRDF rdf) {
         this.domain = domain;
         this.rdf = rdf;
-        this.methodAdapters = methodAdapters;
         this.loadKB();
         this.domainKB = getOrCreateKB(domain);
         if (this.domainKB == null) //TODO: check this.
@@ -230,19 +227,34 @@ public class DiskDB {
         return triples;
     }
 
-    // -- Common
-    private KBObject findOrWriteEndpoint (Endpoint p) {
-        // All entities should be unique
-        int id = p.toString().hashCode();
-        KBObject KBEndpoint = domainKB.getIndividual(createEndpointURI(id));
-        //Check if this entity exists
+    // -- Endpoints
+    public Endpoint registerEndpoint (Endpoint item) {
+        int id = (item.getName() + item.getUrl()).hashCode();
+        item.setId(createEndpointURI(id));
+
+        this.rdf.startRead();
+        KBObject KBEndpoint = domainKB.getIndividual(item.getId());
         Endpoint endpoint = loadEndpoint(KBEndpoint);
+        this.rdf.end();
         if (endpoint == null) {
-            //FIXME: Cannot create the endpoint here, we need to check that the endpoint is valid first
-            System.out.println("Endpoint does not exist. Creating...");
-            domainKB.setPropertyValue(KBEndpoint, DISKOnt.getProperty(DISK.HAS_SOURCE_NAME), domainKB.createLiteral(p.getName()));
-            domainKB.setPropertyValue(KBEndpoint, DISKOnt.getProperty(DISK.HAS_SOURCE_URL), domainKB.createLiteral(p.getUrl()));
+            System.out.println("Configuration changed! Adding endpoint:");
+            this.rdf.startWrite();
+            this.writeEndpoint(item);
+            this.rdf.save(domainKB);
+            this.rdf.end();
+            System.out.println(item);
+            return item;
         }
+        return endpoint;
+    }
+
+    // -- Common
+    private KBObject writeEndpoint (Endpoint p) {
+        KBObject KBEndpoint = domainKB.createObjectOfClass(p.getId(), DISKOnt.getClass(DISK.ENDPOINT));
+        domainKB.setPropertyValue(KBEndpoint, DISKOnt.getProperty(DISK.HAS_SOURCE_NAME),
+                domainKB.createLiteral(p.getName()));
+        domainKB.setPropertyValue(KBEndpoint, DISKOnt.getProperty(DISK.HAS_SOURCE_URL),
+                domainKB.createLiteral(p.getUrl()));
         return KBEndpoint;
     }
 
@@ -251,7 +263,7 @@ public class DiskDB {
         KBObject url  = domainKB.getPropertyValue(endpoint, DISKOnt.getProperty(DISK.HAS_SOURCE_URL));
         if (name == null || url == null)
             return null;
-        return new Endpoint(name.getValueAsString(), url.getValueAsString());
+        return new Endpoint(name.getValueAsString(), url.getValueAsString(), endpoint.getID());
     }
 
     private KBObject writeEntity (Entity src) {
@@ -492,7 +504,7 @@ public class DiskDB {
         if (dataQuery.getDescription() != null)
             domainKB.setComment(dq, dataQuery.getDescription());
         if (dataQuery.getEndpoint() != null)
-            domainKB.setPropertyValue(dq, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE), findOrWriteEndpoint(dataQuery.getEndpoint()));
+            domainKB.setPropertyValue(dq, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE), domainKB.getIndividual(dataQuery.getEndpoint().getId()));
         if (dataQuery.getTemplate() != null)
             domainKB.setPropertyValue(dq, DISKOnt.getProperty(DISK.HAS_QUERY_TEMPLATE), domainKB.createLiteral(dataQuery.getTemplate()));
         if (dataQuery.getVariablesToShow() != null)
@@ -696,7 +708,7 @@ public class DiskDB {
         if (seed.getDescription() != null)
             domainKB.setComment(seedObj, seed.getDescription());
         if (seed.getSource() != null)
-            domainKB.setPropertyValue(seedObj, DISKOnt.getClass(DISK.HAS_WORKFLOW_SOURCE), findOrWriteEndpoint(seed.getSource()));
+            domainKB.setPropertyValue(seedObj, DISKOnt.getClass(DISK.HAS_WORKFLOW_SOURCE), domainKB.getResource(seed.getSource().getId()));
         if (seed.getLink() != null)
             domainKB.setPropertyValue(seedObj, DISKOnt.getClass(DISK.HAS_WORKFLOW), domainKB.createLiteral(seed.getLink()) );
         

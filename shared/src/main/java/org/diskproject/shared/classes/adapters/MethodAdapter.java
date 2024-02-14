@@ -16,6 +16,7 @@ public abstract class MethodAdapter {
     private String password;
     private String description;
     private Float version; 
+    private String id;
 
     public static class FileAndMeta {
         public byte[] data;
@@ -68,6 +69,14 @@ public abstract class MethodAdapter {
     
     protected String getPassword () {
         return this.password;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String toString () {

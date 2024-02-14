@@ -6,6 +6,7 @@ import java.util.Map;
 public abstract class DataAdapter {
     private String endpointUrl, name, username, password, description;
     private String prefix, namespace, prefixResolution;
+    private String id;
 
     public DataAdapter(String URI, String name) {
         this.endpointUrl = URI;
@@ -68,6 +69,14 @@ public abstract class DataAdapter {
     
     public String toString () {
         return "[" + this.name + "] " + (this.username != null ? this.username + "@" : "") + this.endpointUrl;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public abstract List<DataResult> query (String queryString) throws Exception;

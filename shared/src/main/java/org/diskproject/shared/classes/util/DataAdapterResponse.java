@@ -3,7 +3,7 @@ package org.diskproject.shared.classes.util;
 import org.diskproject.shared.classes.adapters.DataAdapter;
 
 public class DataAdapterResponse {
-    public String url, name, prefix, namespace, description, prefixResolution;
+    public String url, name, prefix, namespace, description, prefixResolution, id;
 
     public DataAdapterResponse (DataAdapter dataAdapter) {
         this.url = dataAdapter.getEndpointUrl();
@@ -18,5 +18,7 @@ public class DataAdapterResponse {
             this.description = dataAdapter.getDescription();
         if (dataAdapter.getPrefixResolution() != null)
             this.prefixResolution = dataAdapter.getPrefixResolution();
+        if (dataAdapter.getId() != null)
+            this.id = dataAdapter.getId();
     }
 }

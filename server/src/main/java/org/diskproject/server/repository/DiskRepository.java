@@ -116,10 +116,14 @@ public class DiskRepository {
         // Threads
         this.threadManager = new ThreadManager(methodAdapters, this);  // FIXME: instead of this should be the db & adapters.
         // These read/write RDF
-        this.diskDB = new DiskDB(server, this.rdf, this.methodAdapters);
+        this.diskDB = new DiskDB(server, this.rdf);
         this.questionDB = new QuestionDB(this.rdf, this.dataAdapters);
         this.vocabularyManager = new VocabularyManager(this.rdf);
         this.addInternalVocabularies();
+
+        // Register adapters as Endpoints on the RDF store
+        this.dataAdapters.registerAdapters(diskDB);
+        this.methodAdapters.registerAdapters(diskDB);
     }
 
     public void shutdownExecutors() {
