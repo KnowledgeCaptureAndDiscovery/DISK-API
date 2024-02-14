@@ -3,13 +3,16 @@ package org.diskproject.server.managers;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import org.diskproject.server.adapters.GraphDBAdapter;
 import org.diskproject.server.adapters.SparqlAdapter;
+import org.diskproject.server.db.DiskDB;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.Config.DataAdapterConfig;
 import org.diskproject.server.util.ConfigKeys;
 import org.diskproject.shared.classes.adapters.DataAdapter;
+import org.diskproject.shared.classes.common.Endpoint;
 
 public class DataAdapterManager {
     protected Map<String, DataAdapter> byUrl, byName;
@@ -83,5 +86,12 @@ public class DataAdapterManager {
 
     public Collection<DataAdapter> values () {
         return this.byUrl.values();
+    }
+
+    public void registerAdapters (DiskDB db) {
+        for (DataAdapter adp: this.values()) {
+            Endpoint cur = db.registerEndpoint(new Endpoint(adp.getName(), adp.getEndpointUrl()));
+            adp.setId(cur.getId());
+        }
     }
 }
