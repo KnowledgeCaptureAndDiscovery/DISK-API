@@ -20,7 +20,7 @@ import org.apache.http.util.EntityUtils;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
-import org.diskproject.shared.classes.workflow.Workflow;
+import org.diskproject.shared.classes.workflow.WorkflowTemplate;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 public class AirFlowAdapter extends MethodAdapter {
@@ -59,8 +59,8 @@ public class AirFlowAdapter extends MethodAdapter {
     }
 
     @Override
-    public List<Workflow> getWorkflowList() {
-        List<Workflow> list = new ArrayList<Workflow>();
+    public List<WorkflowTemplate> getWorkflowList() {
+        List<WorkflowTemplate> list = new ArrayList<WorkflowTemplate>();
         return list;
     }
 

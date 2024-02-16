@@ -14,7 +14,8 @@ import org.diskproject.server.util.Config.MethodAdapterConfig;
 import org.diskproject.server.util.ConfigKeys;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.common.Endpoint;
-import org.diskproject.shared.classes.workflow.Workflow;
+import org.diskproject.shared.classes.util.WorkflowTemplateResponse;
+import org.diskproject.shared.classes.workflow.WorkflowTemplate;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
 
 public class MethodAdapterManager {
@@ -68,11 +69,13 @@ public class MethodAdapterManager {
         return null;
     }
 
-    public List<Workflow> getWorkflowList () {
-        List<Workflow> list = new ArrayList<Workflow>();
+    public List<WorkflowTemplateResponse> getWorkflowList () {
+        List<WorkflowTemplateResponse> list = new ArrayList<WorkflowTemplateResponse>();
         for (MethodAdapter adapter : this.byUrl.values()) {
-            for (Workflow wf : adapter.getWorkflowList()) {
-                list.add(wf);
+            for (WorkflowTemplate wf : adapter.getWorkflowList()) {
+                list.add(new WorkflowTemplateResponse(wf, 
+                    new Endpoint(adapter.getName(), adapter.getEndpointUrl(), adapter.getId())
+                ));
             }
         }
         return list;

@@ -6,8 +6,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class WorkflowSeed implements Comparable<WorkflowSeed> {
-    String id, link, description;
-    List<VariableBinding> parameters, inputs;
+    String id, link, description, name;
+    List<VariableBinding> parameters, inputs, outputs;
     Endpoint source;
 
     public WorkflowSeed (WorkflowSeed src) {
@@ -59,12 +59,30 @@ public class WorkflowSeed implements Comparable<WorkflowSeed> {
         this.source = source;
     }
 
+    public List<VariableBinding> getOutputs() {
+        return outputs;
+    }
+
+    public void setOutputs(List<VariableBinding> outputs) {
+        this.outputs = outputs;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+
     @Override
     public String toString() {
         Collections.sort(parameters);
         Collections.sort(inputs);
+        Collections.sort(outputs);
         int i = 0;
-        String description = source.toString() + "{";
+        String description = source.toString() + "|" + this.getLink() + "{";
         for (VariableBinding param : parameters) {
             if (i > 0)
                 description += ", ";
@@ -75,6 +93,12 @@ public class WorkflowSeed implements Comparable<WorkflowSeed> {
             if (i > 0)
                 description += ", ";
             description += inp.getVariable() + " = " + inp.getBinding();
+            i++;
+        }
+        for (VariableBinding ou : outputs) {
+            if (i > 0)
+                description += ", ";
+            description += ou.getVariable() + " = " + ou.getBinding();
             i++;
         }
         description += "}";
