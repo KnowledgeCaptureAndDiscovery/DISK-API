@@ -3,7 +3,6 @@ package org.diskproject.server.managers;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 import org.diskproject.server.adapters.GraphDBAdapter;
 import org.diskproject.server.adapters.SparqlAdapter;

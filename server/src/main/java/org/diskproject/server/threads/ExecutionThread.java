@@ -81,7 +81,7 @@ public class ExecutionThread implements Runnable {
         // Execute workflow
         System.out.println("[R] Executing " + wf.getLink() + " with " + inputBindings.size() + " parameters:");
         for (VariableBinding v : inputBindings) {
-            List<String> l = v.isArray() ? v.getBindings() : null;
+            List<String> l = v.getIsArray() ? v.getBindings() : null;
             int i = 0;
             if (l != null) {
                 System.out.println("[R] - " + v.getVariable() + ": ");

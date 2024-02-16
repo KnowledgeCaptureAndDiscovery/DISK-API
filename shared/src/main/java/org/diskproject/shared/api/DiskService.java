@@ -22,9 +22,9 @@ import org.diskproject.shared.classes.question.VariableOption;
 import org.diskproject.shared.classes.util.DataAdapterResponse;
 import org.diskproject.shared.classes.util.ExternalDataRequest;
 import org.diskproject.shared.classes.util.QuestionOptionsRequest;
+import org.diskproject.shared.classes.util.WorkflowTemplateResponse;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
-import org.diskproject.shared.classes.workflow.Workflow;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -156,7 +156,7 @@ public interface DiskService {
    */
   @GET
   @Path("workflows")
-  public List<Workflow> listWorkflows();
+  public List<WorkflowTemplateResponse> listWorkflows();
 
   @GET
   @Path("workflows/{source}/{id}")

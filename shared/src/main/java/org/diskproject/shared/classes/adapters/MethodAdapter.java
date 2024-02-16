@@ -6,7 +6,7 @@ import java.util.Set;
 
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
-import org.diskproject.shared.classes.workflow.Workflow;
+import org.diskproject.shared.classes.workflow.WorkflowTemplate;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 public abstract class MethodAdapter {
@@ -83,7 +83,7 @@ public abstract class MethodAdapter {
         return "[" + this.name + "] " + (this.username != null ? this.username + "@" : "") + this.endpointUrl;
     }
     
-	public abstract List<Workflow> getWorkflowList();
+	public abstract List<WorkflowTemplate> getWorkflowList();
 
 	public abstract List<WorkflowVariable> getWorkflowVariables(String id);
 

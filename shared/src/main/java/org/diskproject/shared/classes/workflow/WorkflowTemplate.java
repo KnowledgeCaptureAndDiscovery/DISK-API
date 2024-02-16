@@ -1,13 +1,13 @@
 package org.diskproject.shared.classes.workflow;
 
-public class Workflow {
-  String id, name, link, source;
+public class WorkflowTemplate {
+  String id, name, link, sourceName;
 
-  public Workflow (String id, String name, String link, String source) {
+  public WorkflowTemplate (String id, String name, String link, String source) {
     this.id = id;
     this.name = name;
     this.link = link;
-    this.source = source;
+    this.sourceName = source;
   }
 
   public String getId() {
@@ -34,11 +34,11 @@ public class Workflow {
     this.link = link;
   }
 
-  public String getSource () {
-    return source;
+  public String getSourceName() {
+    return sourceName;
   }
 
-  public void setSource (String source) {
-    this.source = source;
+  public void setSourceName(String sourceName) {
+    this.sourceName = sourceName;
   }
 }

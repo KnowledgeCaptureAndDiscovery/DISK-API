@@ -43,7 +43,7 @@ import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
-import org.diskproject.shared.classes.workflow.Workflow;
+import org.diskproject.shared.classes.workflow.WorkflowTemplate;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 import org.diskproject.shared.classes.workflow.WorkflowRun.RunBinding;
 import org.diskproject.shared.classes.workflow.WorkflowRun.RuntimeInfo;
@@ -140,10 +140,10 @@ public class WingsAdapter extends MethodAdapter {
 				+ "/workflows/" + id + ".owl";
 	}
 
-	public List<Workflow> getWorkflowList() {
+	public List<WorkflowTemplate> getWorkflowList() {
 		String getTemplatesUrl = "users/" + this.getUsername() + "/" + this.domain +"/workflows/getTemplatesListJSON"; 
 		String resp = this.get(getTemplatesUrl, null);
-		List<Workflow> wList = new ArrayList<Workflow>();
+		List<WorkflowTemplate> wList = new ArrayList<WorkflowTemplate>();
 
 		try {
 			JsonArray arr = (JsonArray) jsonParser.parse(resp);
@@ -151,7 +151,7 @@ public class WingsAdapter extends MethodAdapter {
 			for (int i  = 0; i < len; i++) {
 				String fullId = arr.get(i).getAsString();
 				String localId = fullId.replaceAll("^.*#", "");
-				wList.add(new Workflow(fullId, localId, getWorkflowLink(localId), this.getName()));
+				wList.add(new WorkflowTemplate(fullId, localId, getWorkflowLink(localId), this.getName()));
 			}
 		} catch (Exception e) {
 			System.err.println("Error decoding " + resp);

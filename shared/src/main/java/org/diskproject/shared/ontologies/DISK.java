@@ -32,6 +32,7 @@ public class DISK {
     public static final String HAS_EXECUTION = "hasExecution";                  // Workflow instantiation -> Execution
     public static final String HAS_INPUT_FILE = "hasInputFile";                 // Execution -> Variable binding
     public static final String HAS_INPUT = "hasInput";                          // Workflow seed -> Variable binding
+    public static final String HAS_OUTPUT = "hasOutput";                        // Workflow seed -> Variable binding
     public static final String HAS_LINE_OF_INQUIRY = "hasLineOfInquiry";        // TLOI -> LOI
     public static final String HAS_OUTPUT_FILE = "hasOutputFile";               // Execution -> Variable binding
     public static final String HAS_PARAMETER = "hasParameter";                  // Workflow seed -> Variable binding

@@ -31,8 +31,6 @@ import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.adapters.MethodAdapter.FileAndMeta;
 import org.diskproject.shared.classes.common.Entity;
 import org.diskproject.shared.classes.hypothesis.Goal;
-import org.diskproject.shared.classes.hypothesis.Hypothesis;
-import org.diskproject.shared.classes.loi.DataQueryTemplate;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.workflow.WorkflowRun.RunBinding;
@@ -54,7 +52,6 @@ import edu.isi.kcap.ontapi.KBTriple;
 import edu.isi.kcap.ontapi.OntSpec;
 import edu.isi.kcap.ontapi.SparqlQuerySolution;
 import javax.ws.rs.NotFoundException;
-import javax.xml.ws.Endpoint;
 
 public class DiskRepository {
     static DiskRepository singleton;
