@@ -40,7 +40,6 @@ import org.diskproject.shared.classes.util.QuestionOptionsRequest;
 import org.diskproject.shared.classes.util.WorkflowTemplateResponse;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
-import org.diskproject.shared.classes.workflow.WorkflowTemplate;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -174,7 +173,7 @@ public class DiskResource implements DiskService {
     response.setContentType("application/json");
     response.setCharacterEncoding("utf-8");
     try {
-      return this.repo.queryHypothesis(id);
+      return this.repo.queryGoal(id);
     } catch (NotFoundException e) {
       try {
         ErrorMessage error = new ErrorMessage(e.getMessage());

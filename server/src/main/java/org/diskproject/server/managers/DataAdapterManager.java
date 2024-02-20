@@ -12,9 +12,12 @@ import org.diskproject.server.util.Config.DataAdapterConfig;
 import org.diskproject.server.util.ConfigKeys;
 import org.diskproject.shared.classes.adapters.DataAdapter;
 import org.diskproject.shared.classes.common.Endpoint;
+import org.diskproject.shared.classes.loi.DataQueryTemplate;
+import org.diskproject.shared.classes.loi.LineOfInquiry;
 
 public class DataAdapterManager {
     protected Map<String, DataAdapter> byUrl, byName;
+    protected Map<String, DataAdapter> byId;  // By endpoints ID
    
     public DataAdapterManager () {
         this.byUrl = new HashMap<String, DataAdapter>();
@@ -87,10 +90,53 @@ public class DataAdapterManager {
         return this.byUrl.values();
     }
 
+    /**
+     * Create records for each adapter into the RDF database.
+     * @param db Diskdb where to register the adapters.
+     */
     public void registerAdapters (DiskDB db) {
+        this.byId = new HashMap<String, DataAdapter>();
         for (DataAdapter adp: this.values()) {
             Endpoint cur = db.registerEndpoint(new Endpoint(adp.getName(), adp.getEndpointUrl()));
-            adp.setId(cur.getId());
+            String id = cur.getId();
+            adp.setId(id);
+            this.byId.put(id, adp);
         }
+    }
+
+    /**
+     * Finds a data adapter by their endpoint id.
+     * Only works after registerAdapters, as the id is dependent of the database.
+     * @param   id    Id of the endpoint that represents the data adapter.
+     * @return  The data adater with that endpoint id.
+     */
+    public DataAdapter getMethodAdapterById (String id) {
+        if (this.byId != null && this.byId.containsKey(id))
+            return this.byId.get(id);
+        return null;
+    }
+
+    /**
+     * Finds a data adapter by their endpoint.
+     * Only works after registerAdapters, as endpoints are dependent of the database.
+     * @param   endpoint    Endpoint that represents the data adapter.
+     * @return  The data adater for that endpoint.
+     */
+    public DataAdapter getMethodAdapterByEndpoint (Endpoint endpoint) {
+        if (endpoint != null && endpoint.getId() != null)
+            return this.getMethodAdapterById(endpoint.getId());
+        return null;
+    }
+
+    /**
+     * Finds a data adapter by their endpoint.
+     * Only works after registerAdapters, as endpoints are dependent of the database.
+     * @param   endpoint    Endpoint that represents the data adapter.
+     * @return  The data adater for that endpoint.
+     */
+    public DataAdapter getMethodAdapterByLOI (LineOfInquiry loi) {
+        DataQueryTemplate dqt = loi.getDataQueryTemplate();
+        Endpoint e = dqt == null ? null : dqt.getEndpoint();
+        return e == null ? null : getMethodAdapterByEndpoint(e);
     }
 }

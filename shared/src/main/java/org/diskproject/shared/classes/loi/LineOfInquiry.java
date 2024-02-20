@@ -34,10 +34,14 @@ public class LineOfInquiry extends DISKResource {
         this.metaWorkflowSeeds = new ArrayList<WorkflowSeed>();
     }
 
-    public LineOfInquiry(String id, String name, String description){
-        super(id,name,description);
-        this.workflowSeeds = new ArrayList<WorkflowSeed>();
-        this.metaWorkflowSeeds = new ArrayList<WorkflowSeed>();
+    public LineOfInquiry(String id, String name, LineOfInquiry src){
+        super(id,name,src.getDescription());
+        this.updateCondition = src.getUpdateCondition();
+        this.question = src.getQuestion();
+        this.dataQueryTemplate = src.getDataQueryTemplate();
+        this.workflowSeeds = src.getWorkflowSeeds();
+        this.metaWorkflowSeeds = src.getMetaWorkflowSeeds();
+        this.goalQuery = src.getGoalQuery();
     }
 
     public DataQueryTemplate getDataQueryTemplate () {
