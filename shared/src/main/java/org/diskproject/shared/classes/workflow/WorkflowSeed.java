@@ -2,6 +2,7 @@ package org.diskproject.shared.classes.workflow;
 
 import org.diskproject.shared.classes.common.Endpoint;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -13,10 +14,13 @@ public class WorkflowSeed implements Comparable<WorkflowSeed> {
     public WorkflowSeed (WorkflowSeed src) {
         this.id = src.getId();
         this.link = src.getLink();
+        this.name = src.getName();
         this.description = src.getDescription();
-        this.parameters = src.getParameters();
-        this.inputs = src.getInputs();
         this.source = src.getSource();
+        //FIXME
+        this.parameters = new ArrayList<VariableBinding>(src.getParameters());
+        this.inputs = new ArrayList<VariableBinding>(src.getInputs());
+        this.outputs = new ArrayList<VariableBinding>(src.getOutputs());
     }
 
     public WorkflowSeed () {
@@ -78,28 +82,34 @@ public class WorkflowSeed implements Comparable<WorkflowSeed> {
 
     @Override
     public String toString() {
-        Collections.sort(parameters);
-        Collections.sort(inputs);
-        Collections.sort(outputs);
-        int i = 0;
         String description = source.toString() + "|" + this.getLink() + "{";
-        for (VariableBinding param : parameters) {
-            if (i > 0)
-                description += ", ";
-            description += param.getVariable() + " = " + param.getBinding();
-            i++;
+        int i = 0;
+        if (parameters != null) {
+            Collections.sort(parameters);
+            for (VariableBinding param : parameters) {
+                if (i > 0)
+                    description += ", ";
+                description += param.getVariable() + " = " + param.getBinding();
+                i++;
+            }
         }
-        for (VariableBinding inp : inputs) {
-            if (i > 0)
-                description += ", ";
-            description += inp.getVariable() + " = " + inp.getBinding();
-            i++;
+        if (inputs != null) {
+            Collections.sort(inputs);
+            for (VariableBinding inp : inputs) {
+                if (i > 0)
+                    description += ", ";
+                description += inp.getVariable() + " = " + inp.getBinding();
+                i++;
+            }
         }
-        for (VariableBinding ou : outputs) {
-            if (i > 0)
-                description += ", ";
-            description += ou.getVariable() + " = " + ou.getBinding();
-            i++;
+        if (outputs != null) {
+            Collections.sort(outputs);
+            for (VariableBinding ou : outputs) {
+                if (i > 0)
+                    description += ", ";
+                description += ou.getVariable() + " = " + ou.getBinding();
+                i++;
+            }
         }
         description += "}";
         return description;

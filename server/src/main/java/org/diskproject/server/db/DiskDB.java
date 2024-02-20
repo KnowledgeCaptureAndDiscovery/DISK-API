@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.checkerframework.checker.units.qual.t;
+
 import org.diskproject.server.repository.DiskRDF;
 import org.diskproject.server.util.KBCache;
 import org.diskproject.server.util.KBUtils;
@@ -530,7 +532,7 @@ public class DiskDB {
     }
 
     private KBObject writeDataQueryResults (DataQueryResult queryResults) {
-        KBObject dq = domainKB.createObjectOfClass(GUID.randomId("dqt"), DISKOnt.getClass(DISK.DATA_QUERY_TEMPLATE));
+        KBObject dq = domainKB.createObjectOfClass(GUID.randomId("dqr"), DISKOnt.getClass(DISK.DATA_QUERY_RESULTS));
         KBObject qr = _writeDataQueryTemplate(queryResults, dq);
         if (queryResults.getQuery() != null)
             domainKB.setPropertyValue(qr, DISKOnt.getProperty(DISK.HAS_QUERY), domainKB.createLiteral(queryResults.getQuery()));
@@ -700,10 +702,10 @@ public class DiskDB {
     private KBObject writeWorkflowSeed (WorkflowSeed seed, String parentId) {
         String prefix = parentId != null ? parentId + "/seeds/" : null;
         KBObject seedObj = domainKB.createObjectOfClass(prefix != null ? prefix + GUID.randomId("") : null , DISKOnt.getClass(DISK.WORKFLOW_SEED));
-        return _writeWorkflowSeed(seed, seedObj, parentId);
+        return _writeWorkflowSeed(seed, seedObj);
     }
 
-    private KBObject _writeWorkflowSeed (WorkflowSeed seed, KBObject seedObj, String parentId) {
+    private KBObject _writeWorkflowSeed (WorkflowSeed seed, KBObject seedObj) {
         if (seed.getName() != null)
             domainKB.setLabel(seedObj, seed.getName());
         if (seed.getDescription() != null)
@@ -717,19 +719,19 @@ public class DiskDB {
         if (parameters != null && parameters.size() > 0) {
             for (VariableBinding vBinding: parameters) {
                 domainKB.addPropertyValue(seedObj, DISKOnt.getProperty(DISK.HAS_PARAMETER), 
-                    writeVariableBinding(vBinding, parentId));
+                    writeVariableBinding(vBinding, seedObj.getID()));
             }
         }
         if (inputs != null && inputs.size() > 0) {
             for (VariableBinding vBinding: inputs) {
                 domainKB.addPropertyValue(seedObj, DISKOnt.getProperty(DISK.HAS_INPUT), 
-                    writeVariableBinding(vBinding, parentId));
+                    writeVariableBinding(vBinding, seedObj.getID()));
             }
         }
         if (outputs != null && outputs.size() > 0) {
             for (VariableBinding vBinding: outputs) {
                 domainKB.addPropertyValue(seedObj, DISKOnt.getProperty(DISK.HAS_OUTPUT), 
-                    writeVariableBinding(vBinding, parentId));
+                    writeVariableBinding(vBinding, seedObj.getID()));
             }
         }
         return seedObj;
@@ -775,7 +777,8 @@ public class DiskDB {
     private KBObject writeWorkflowInstantiation (WorkflowInstantiation inst, String parentId) {
         String prefix = parentId != null ? parentId + "/instantiations/" : null;
         KBObject seedObj = domainKB.createObjectOfClass(prefix != null ? prefix + GUID.randomId("") : null , DISKOnt.getClass(DISK.WORKFLOW_INSTANTIATION));
-        KBObject instObj = _writeWorkflowSeed(inst, seedObj, parentId);
+        KBObject instObj = _writeWorkflowSeed(inst, seedObj);
+        String instId = instObj.getID();
 
         if (inst.getStatus() != null)
             domainKB.setPropertyValue(instObj, DISKOnt.getClass(DISK.HAS_STATUS), domainKB.createLiteral(getStringFromStatus(inst.getStatus())) );
@@ -784,7 +787,7 @@ public class DiskDB {
         if (data != null && data.size() > 0) {
             for (VariableBinding vBinding: data) {
                 domainKB.addPropertyValue(instObj, DISKOnt.getProperty(DISK.HAS_DATA_BINDINGS), 
-                    writeVariableBinding(vBinding, parentId));
+                    writeVariableBinding(vBinding, instId));
             }
         }
 
@@ -792,7 +795,7 @@ public class DiskDB {
         if (execs != null && execs.size() > 0) {
             for (Execution exec: execs) {
                 domainKB.addPropertyValue(instObj, DISKOnt.getProperty(DISK.HAS_EXECUTION), 
-                    writeExecution(exec, parentId));
+                    writeExecution(exec, instId));
             }
         }
         return instObj;
@@ -1052,7 +1055,6 @@ public class DiskDB {
         Boolean newTLOI = tloi.getId() == null || tloi.getId().equals("");
         if (newTLOI) tloi.setId(createTloiURI(GUID.randomId("TriggeredLOI")));
         String tloiId = tloi.getId();
-        //if (domainKB == null) return false;
 
         this.rdf.startWrite();
         KBObject tloiItem = writeCommonResource(tloi, tloiId, DISKOnt.getClass(DISK.TRIGGERED_LINE_OF_INQUIRY));
@@ -1112,27 +1114,27 @@ public class DiskDB {
             KBObject status = domainKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_STATUS));
             if (status != null)
                 tloi.setStatus(getStatusFromString(status.getValueAsString()));
-            KBObject queryResult = domainKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_RESULT));
+            KBObject queryResult = domainKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_QUERY_RESULTS));
             if (queryResult != null)
                 tloi.setQueryResults(loadDataQueryResult(queryResult));
 
             List<KBObject> wfInst = domainKB.getPropertyValues(obj, DISKOnt.getProperty(DISK.HAS_WORKFLOW_INST));
             List<KBObject> mwfInst = domainKB.getPropertyValues(obj, DISKOnt.getProperty(DISK.HAS_META_WORKFLOW_INST));
+            List<WorkflowInstantiation> wfList = new ArrayList<WorkflowInstantiation>();
+            List<WorkflowInstantiation> metaWfList = new ArrayList<WorkflowInstantiation>();
 
             if (wfInst != null && wfInst.size() > 0) {
-                List<WorkflowInstantiation> list = new ArrayList<WorkflowInstantiation>();
                 for (KBObject t : wfInst) {
-                    list.add(loadWorkflowInstantiation(t));
+                    wfList.add(loadWorkflowInstantiation(t));
                 }
-                tloi.setWorkflows(list);
             }
             if (mwfInst != null && mwfInst.size() > 0) {
-                List<WorkflowInstantiation> list = new ArrayList<WorkflowInstantiation>();
                 for (KBObject t : mwfInst) {
-                    list.add(loadWorkflowInstantiation(t));
+                    metaWfList.add(loadWorkflowInstantiation(t));
                 }
-                tloi.setMetaWorkflows(list);
             }
+            tloi.setWorkflows(wfList);
+            tloi.setMetaWorkflows(metaWfList);
 
             this.rdf.end();
             return tloi;
@@ -1167,9 +1169,11 @@ public class DiskDB {
         List<String> ids = listObjectIdPerClass(DISKOnt.getClass(DISK.TRIGGERED_LINE_OF_INQUIRY));
         for (String fullId: ids) {
             String id = getLocalId(fullId);
-            list.add(this.loadTLOI(id));
+            TriggeredLOI cur = this.loadTLOI(id);
+            if (cur != null) {
+                list.add(cur);
+            }
         }
-                //TriggeredLOI tloi = loadTLOI(username, tloiId.replaceAll("^.*\\/", ""));
         return list;
     }
 

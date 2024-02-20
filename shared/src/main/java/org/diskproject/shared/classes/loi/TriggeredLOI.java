@@ -1,12 +1,12 @@
 package org.diskproject.shared.classes.loi;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.diskproject.shared.classes.DISKResource;
 import org.diskproject.shared.classes.common.Status;
 import org.diskproject.shared.classes.hypothesis.Goal;
-import org.diskproject.shared.classes.util.GUID;
 import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
 
 public class TriggeredLOI extends LineOfInquiry implements Comparable<TriggeredLOI> {
@@ -23,17 +23,22 @@ public class TriggeredLOI extends LineOfInquiry implements Comparable<TriggeredL
     public TriggeredLOI() {
     }
 
-    public TriggeredLOI(LineOfInquiry loi, String hypothesisId) {
-        super(GUID.randomId("TriggeredLOI"), "Triggered: " + loi.getName(), loi.getDescription());
+    public TriggeredLOI(LineOfInquiry loi, Goal goal) {
+        super("", "Triggered: " + loi.getName(), loi);
+        this.status = Status.PENDING;
+        this.parentGoal = goal;
+        this.parentLoi = loi;
+        this.workflows = new ArrayList<WorkflowInstantiation>();
+        this.metaWorkflows = new ArrayList<WorkflowInstantiation>();
     }
 
     public String toString() {
-        Collections.sort(this.workflows);
-        Collections.sort(this.metaWorkflows);
+        if (this.workflows != null) Collections.sort(this.workflows);
+        if (this.metaWorkflows != null) Collections.sort(this.metaWorkflows);
         return (this.parentGoal != null ? this.parentGoal.getId() : "") + "-"
-                + (this.parentLoi != null ? this.parentGoal.getId() : "") + "-"
-                + this.getWorkflowSeeds() + "-"
-                + this.getMetaWorkflowSeeds();
+                + (this.parentLoi != null ? this.parentLoi.getId() : "") + "-"
+                + (this.getWorkflows() != null ? this.getWorkflows() : "NULL") + "-"
+                + (this.getMetaWorkflows() != null ? this.getMetaWorkflows() : "NULL");
     }
 
     public int compareTo(TriggeredLOI o) {

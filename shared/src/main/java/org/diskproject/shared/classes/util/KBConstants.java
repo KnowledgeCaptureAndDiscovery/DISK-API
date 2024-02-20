@@ -22,9 +22,9 @@ public class KBConstants {
     public static String getAllPrefixes () {
         return "PREFIX xsd:  <" + KBConstants.XSD_NS + ">\n"
              + "PREFIX rdfs: <" + KBConstants.RDFS_NS + ">\n"
-             + "PREFIX rdf:  <" + KBConstants.RDF_NS + ">\n"
-             + "PREFIX disk: <" + KBConstants.DISK_NS + ">\n"
-             + "PREFIX sqo: <" + KBConstants.QUESTION_NS + ">\n"
-             + "PREFIX hyp: <" + KBConstants.HYP_NS + ">\n";
+             + "PREFIX rdf:  <" + KBConstants.RDF_NS + ">\n";
+            // + "PREFIX disk: <" + KBConstants.DISK_NS + ">\n"
+            // + "PREFIX sqo: <" + KBConstants.QUESTION_NS + ">\n"
+            // + "PREFIX hyp: <" + KBConstants.HYP_NS + ">\n";
     }
 }

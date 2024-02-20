@@ -106,7 +106,7 @@ public class VocabularyManager {
     public String getPrefixes() {
         String txt = "";
         for (Vocabulary v: this.vocabularies.values()) {
-            txt += String.format("PREFIX %s: <%s>\n", v.getNamespace(), v.getPrefix());
+            txt += String.format("PREFIX %s: <%s>\n", v.getPrefix(), v.getNamespace());
         }
         return txt;
     }

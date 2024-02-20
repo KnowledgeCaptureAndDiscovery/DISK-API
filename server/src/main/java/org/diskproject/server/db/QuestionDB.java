@@ -280,7 +280,7 @@ public class QuestionDB {
         return null;
     }
 
-    public List<Question> listHypothesesQuestions() {
+    public List<Question> listQuestions() {
         return new ArrayList<Question>(this.allQuestions.values());
     }
 
@@ -354,6 +354,14 @@ public class QuestionDB {
         }
         optionsCache.put(varName + query, options);
         return options;
+    }
+
+    public Question getQuestion (String id) {
+        return this.allQuestions.get(id);
+    }
+
+    public QuestionVariable getVariable (String id) {
+        return this.allVariables.get(id);
     }
 
     public String createQuestionOptionsQuery (Question q, List<QuestionVariable> includedVariables) {

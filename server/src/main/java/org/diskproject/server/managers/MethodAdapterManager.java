@@ -20,7 +20,11 @@ import org.diskproject.shared.classes.workflow.WorkflowVariable;
 
 public class MethodAdapterManager {
     protected Map<String, MethodAdapter> byUrl, byName;
+    protected Map<String, MethodAdapter> byId;  // By endpoints ID
    
+    /**
+     * Manages and indexes a group of method adapters.
+     */
     public MethodAdapterManager () {
         this.byUrl = new HashMap<String, MethodAdapter>();
         this.byName = new HashMap<String, MethodAdapter>();
@@ -63,6 +67,11 @@ public class MethodAdapterManager {
         return null;
     }
 
+    /**
+     * Finds a method adapter by its name.
+     * @param   name    Name of the method adapter.
+     * @return  The method adater with that name.
+     */
     public MethodAdapter getMethodAdapterByName (String name) {
         if (this.byName.containsKey(name))
             return this.byName.get(name);
@@ -107,10 +116,41 @@ public class MethodAdapterManager {
         return txt;
     }
 
+    /**
+     * Create records for each adapter into the RDF database.
+     * @param db Diskdb where to register the adapters.
+     */
     public void registerAdapters (DiskDB db) {
+        this.byId = new HashMap<String, MethodAdapter>();
         for (MethodAdapter adp: this.values()) {
             Endpoint cur = db.registerEndpoint(new Endpoint(adp.getName(), adp.getEndpointUrl()));
-            adp.setId(cur.getId());
+            String id = cur.getId();
+            adp.setId(id);
+            byId.put(id, adp);
         }
+    }
+
+    /**
+     * Finds a method adapter by their endpoint id.
+     * Only works after registerAdapters, as the id is dependent of the database.
+     * @param   id    Id of the endpoint that represents the method adapter.
+     * @return  The method adater with that endpoint id.
+     */
+    public MethodAdapter getMethodAdapterById (String id) {
+        if (this.byId != null && this.byId.containsKey(id))
+            return this.byId.get(id);
+        return null;
+    }
+
+    /**
+     * Finds a method adapter by their endpoint.
+     * Only works after registerAdapters, as endpoints are dependent of the database.
+     * @param   endpoint    Endpoint that represents the method adapter.
+     * @return  The method adater for that endpoint.
+     */
+    public MethodAdapter getMethodAdapterByEndpoint (Endpoint endpoint) {
+        if (endpoint != null && endpoint.getId() != null)
+            return this.getMethodAdapterById(endpoint.getId());
+        return null;
     }
 }

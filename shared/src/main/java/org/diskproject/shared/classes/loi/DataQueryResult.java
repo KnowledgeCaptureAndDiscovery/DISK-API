@@ -1,7 +1,5 @@
 package org.diskproject.shared.classes.loi;
 
-import org.diskproject.shared.classes.common.Endpoint;
-
 public class DataQueryResult extends DataQueryTemplate {
     private String query, results;
 
@@ -9,8 +7,10 @@ public class DataQueryResult extends DataQueryTemplate {
         super(src);
     }
 
-    public DataQueryResult(String template, Endpoint endpoint) {
-        super(template, endpoint);
+    public DataQueryResult (DataQueryTemplate src, String query, String results) {
+        super(src);
+        this.query = query;
+        this.results = results;
     }
 
     public String getQuery() {
