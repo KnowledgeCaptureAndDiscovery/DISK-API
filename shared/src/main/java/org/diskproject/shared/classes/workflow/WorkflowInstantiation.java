@@ -32,6 +32,7 @@ public class WorkflowInstantiation extends WorkflowSeed {
     public List<Execution> getExecutions() {
         return executions;
     }
+
     public void setExecutions(List<Execution> executions) {
         this.executions = executions;
     }

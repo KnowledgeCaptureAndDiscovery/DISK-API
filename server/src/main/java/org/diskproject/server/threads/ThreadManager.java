@@ -53,6 +53,7 @@ public class ThreadManager {
     }
 
     public void executeTLOI (TriggeredLOI tloi, Boolean meta) {
+        //Continue here, we do not need the loi anymore.
         LineOfInquiry loi = disk.getLOI(tloi.getParentLoi().getId());
         if (meta) {
             tloi.setStatus(Status.RUNNING);
@@ -69,10 +70,11 @@ public class ThreadManager {
     }
 
     public void updateTLOI (TriggeredLOI tloi) {
-        disk.updateTriggeredLOI(tloi.getId(), tloi);
+        String localId = tloi.getId().replaceAll("^.*\\/", "");
+        disk.updateTriggeredLOI(localId, tloi);
     }
 
-    public void processFinishedRun (TriggeredLOI tloi, WorkflowSeed wf, WorkflowRun run, boolean meta) {
+    public void processFinishedRun (TriggeredLOI tloi, WorkflowSeed wf, Execution run, boolean meta) {
         LineOfInquiry loi = disk.getLOI(tloi.getParentLoi().getId());
         MethodAdapter methodAdapter = this.getMethodAdapters().getMethodAdapterByName(wf.getSource().getName());
         disk.processWorkflowOutputs(tloi, loi, wf, run, methodAdapter, meta);

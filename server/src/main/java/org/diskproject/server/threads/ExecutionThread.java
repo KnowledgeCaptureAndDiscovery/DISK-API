@@ -1,15 +1,16 @@
 package org.diskproject.server.threads;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.diskproject.shared.classes.adapters.MethodAdapter;
+import org.diskproject.shared.classes.common.Status;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
+import org.diskproject.shared.classes.workflow.Execution;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
-import org.diskproject.shared.classes.workflow.WorkflowRun.Status;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
 
 public class ExecutionThread implements Runnable {
@@ -47,26 +48,27 @@ public class ExecutionThread implements Runnable {
             }
 
             // Get workflow input details
-            Map<String, WorkflowVariable> inputVariables = methodAdapter.getWorkflowInputs(curWorkflow.getLink());
+            Map<String, WorkflowVariable> inputVariables = methodAdapter.getWorkflowInputs(curWorkflow.getName());
             List<VariableBinding> inputBindings = curWorkflow.getDataBindings();
             this.printWorkflowRun(curWorkflow, inputBindings);
-            List<String> runIds = methodAdapter.runWorkflow(curWorkflow.getId(), inputBindings, inputVariables);
+            List<String> runIds = methodAdapter.runWorkflow(curWorkflow.getName(), inputBindings, inputVariables);
 
             if (runIds != null) {
                 System.out.println("[R] " + runIds.size() + " Workflows send: ");
+                List<Execution> runs = new ArrayList<Execution>();
                 for (String rid : runIds) {
-                    WorkflowRun run = new WorkflowRun();
-                    run.setId(rid);
-                    run.setAsPending();
+                    Execution run = new Execution(rid);
+                    run.setStatus(Status.PENDING);
                     System.out.println("[R]   ID: " + rid);
-                    //curWorkflow.addRun(run); FIXME
+                    runs.add(run);
                 }
+                curWorkflow.setExecutions(runs);
             } else {
                 currentStatus = Status.FAILED;
                 System.out.println("[R] Error: Could not run workflow");
             }
         }
-        //tloi.setStatus(currentStatus); TODO!
+        tloi.setStatus(currentStatus);
         manager.updateTLOI(tloi);
 
         // Start monitoring
@@ -81,16 +83,17 @@ public class ExecutionThread implements Runnable {
         // Execute workflow
         System.out.println("[R] Executing " + wf.getLink() + " with " + inputBindings.size() + " parameters:");
         for (VariableBinding v : inputBindings) {
-            List<String> l = v.getIsArray() ? v.getBindings() : null;
-            int i = 0;
-            if (l != null) {
-                System.out.println("[R] - " + v.getVariable() + ": ");
-                for (String b : l) {
-                    System.out.println("[R]    " + String.valueOf(i) + ") " + b);
-                    i++;
+            if (!v.getVariable().startsWith("_")) {
+                if (v.getIsArray()) {
+                    int i = 0;
+                    System.out.println("[R] - " + v.getVariable() + ": ");
+                    for (String b : v.getBindings()) {
+                        System.out.println("[R]    " + String.valueOf(i) + ") " + b);
+                        i++;
+                    }
+                } else {
+                    System.out.println("[R] - " + v.getVariable() + ": " + v.getSingleBinding());
                 }
-            } else {
-                System.out.println("[R] - " + v.getVariable() + ": " + v.getBinding());
             }
         }
     }

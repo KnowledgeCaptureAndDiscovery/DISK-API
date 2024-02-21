@@ -1,4 +1,4 @@
-package org.diskproject.server.repository;
+package org.diskproject.server.adapters.wings;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -43,11 +43,12 @@ import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
 import org.diskproject.shared.classes.workflow.VariableBinding;
+import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
 import org.diskproject.shared.classes.workflow.WorkflowTemplate;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 import org.diskproject.shared.classes.workflow.WorkflowRun.RunBinding;
 import org.diskproject.shared.classes.workflow.WorkflowRun.RuntimeInfo;
-import org.diskproject.shared.classes.workflow.WorkflowRun.Status;
+import org.diskproject.shared.classes.common.Status;
 import org.diskproject.shared.classes.common.Value;
 
 import com.google.gson.Gson;
@@ -507,13 +508,13 @@ public class WingsAdapter extends MethodAdapter {
 	}
 	
     public Status getStatusFromString (String statusStr) {
-		if (statusStr == null || statusStr.equals(""))
+		try {
+			return Status.valueOf(statusStr);
+		} catch (Exception e) {
+			if (statusStr != null && statusStr.equals("SUCCESS"))
+				return Status.SUCCESSFUL;
 			return Status.PENDING;
-        return statusStr.equals("SUCCESS") ? Status.SUCCESSFUL
-                : (statusStr.equals("FAILED") || statusStr.equals("FAILURE")   ? Status.FAILED
-                        : (statusStr.equals("RUNNING") ? Status.RUNNING
-                                : (statusStr.equals("QUEUED") ? Status.QUEUED : Status.PENDING)));
-
+		}
     }
 
 	// TODO: Hackish function. Fix it !!!! *IMPORTANT*
@@ -621,9 +622,16 @@ public class WingsAdapter extends MethodAdapter {
 		return true;
 	}
 
+	public List<String> runWorkflow (WorkflowInstantiation wf) {
+		String wfURI = WFLOWID(wf.getName());
+		System.out.println(wfURI + " == " + wf.getLink());
+		return null;
+	}
+
 	@Override
 	public List<String> runWorkflow(String workflowName, List<VariableBinding> vBindings, Map<String, WorkflowVariable> inputVariables) {
 		workflowName = WFLOWID(workflowName);
+
 		String toPost = null, getData = null, getParams = null, getExpansions = null;
 		JsonObject response = null;
 		try {
@@ -645,7 +653,8 @@ public class WingsAdapter extends MethodAdapter {
 				return null;
 			}
 		} catch (Exception e) {
-			System.err.println("Error planning data for workflow run. " + e.getMessage());
+			e.printStackTrace();
+			System.err.println("Error planning data for workflow run. ");
 			System.err.println("REQUEST: " + toPost);
 			System.err.println("RESPONSE: " + getData);
 			return null;
@@ -1262,33 +1271,22 @@ public class WingsAdapter extends MethodAdapter {
 			for (int i = 0; i < vbl.size(); i++) {
 				VariableBinding vb = vbl.get(i);
 				if (vb.getVariable().equals(v.getName())) {
-					String curBinding = "\"" + wfName + v.getName() + "\":[";
-					String bindingValue = vb.getSingleBinding();
-
-					if (v.getDimensionality() ==  0) { // && !bindingValue.startsWith("[")) { FIXME!
-						curBinding += "\"" + (v.isParam() ? "" : dataID) + bindingValue + "\"";
+					String curBinding = "\"" + wfName + v.getName() + "\":";
+					String prefix = v.isParam() ? "" : dataID;
+					if (v.getDimensionality() ==  0) {
+						//String escList = vb.toJsonList(prefix).replaceAll("\"", Matcher.quoteReplacement("\\\""));
+						String escList = vb.toJsonList(prefix).replaceAll("\"", "");
+						curBinding += "[\"" + (vb.getIsArray() ?
+								escList : prefix + vb.getSingleBinding()) + "\"]";
 					} else {
-						if (v.getDimensionality() == 0) {
-							System.err.println("WARNING: Variable " + v.getName() + " has dimensionality 0 but the binding is an array");
-						}
-						String[] dBs = bindingValue
-								.replaceFirst("^\\[", "")
-								.replaceFirst("\\]$", "")
-								.split("\\s*,\\s*");
-						for (int j = 0; j < dBs.length; j++) {
-							if (dBs[j].length() > 0) {
-								curBinding += "\"" + (v.isParam() ? "" : dataID) + dBs[j] + "\",";
-							}
-						}
-						curBinding = curBinding.substring(0, curBinding.length() - 1); //rm extra comma
+						curBinding += (vb.getIsArray() ? vb.toJsonList(prefix) : ("\"" + prefix + vb.getSingleBinding() + "\""));
 					}
 
-
 					if (v.isParam()) {
-						paramBindings += curBinding + "],";
+						paramBindings += curBinding + ",";
 						paramAdded = true;
 					} else {
-						dataBindings += curBinding + "],";
+						dataBindings += curBinding + ",";
 						dataAdded = true;
 					}
 				}
@@ -1302,7 +1300,7 @@ public class WingsAdapter extends MethodAdapter {
 		return output;
 	}
 
-	private String postWithSpecifiedMediaType(String pageId, String data, String type, String type2) {
+	private String postWithSpecifiedMediaType(String pageId, String data, String type, String contentType) {
 		this.login();
 		CloseableHttpClient client = HttpClientBuilder.create()
 				.setDefaultCookieStore(this.cookieStore).build();
@@ -1310,7 +1308,7 @@ public class WingsAdapter extends MethodAdapter {
 			HttpPost securedResource = new HttpPost(server + "/" + pageId);
 			securedResource.setEntity(new StringEntity(data));
 			securedResource.addHeader("Accept", type);
-			securedResource.addHeader("Content-type", type2);
+			securedResource.addHeader("Content-type", contentType);
 			CloseableHttpResponse httpResponse = client.execute(securedResource);
 			try {
 				HttpEntity responseEntity = httpResponse.getEntity();
@@ -1442,13 +1440,6 @@ public class WingsAdapter extends MethodAdapter {
 		return this.fetchDataFromWings(dataId);
 	}
 
-
-
-  //data_id=http://datascience4all.org/wings-portal-new/export/users/dkhider/ClimateDisk/data/library.owl#Output-9xo020zkzzlut84luu7bp1z16
-  //newname=Output-9xo020zkzzlut84luu7bp1z16
-  //metadata_json={
-  //  "type":["http://datascience4all.org/wings-portal-new/export/users/dkhider/ClimateDisk/data/ontology.owl#TimeSeries"]
-  //}'
 
 	@Override
 	public boolean registerData (String id, String type) {

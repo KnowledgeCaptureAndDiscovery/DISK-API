@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.diskproject.server.adapters.AirFlowAdapter;
+import org.diskproject.server.adapters.wings.WingsAdapter;
 import org.diskproject.server.db.DiskDB;
-import org.diskproject.server.repository.WingsAdapter;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.Config.MethodAdapterConfig;
 import org.diskproject.server.util.ConfigKeys;

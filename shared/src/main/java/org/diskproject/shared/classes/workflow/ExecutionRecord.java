@@ -6,6 +6,15 @@ public class ExecutionRecord {
     private String log, startDate, endDate;
     private Status status;
 
+    @Override
+    public String toString () {
+        String txt = "{" + (status == null ? "NULL" : status.name()) + ":[";
+        txt += (startDate == null ? "NULL" : startDate) + "-";
+        txt += (endDate == null ? "NULL" : endDate) + "]";
+        if (log != null) txt += "\"" + log + "\"";
+        return txt;
+    }
+
     public ExecutionRecord (ExecutionRecord src) {
         this.log = src.getLog();
         this.startDate = src.getStartDate();

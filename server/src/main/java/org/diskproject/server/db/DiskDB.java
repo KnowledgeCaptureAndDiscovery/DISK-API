@@ -997,8 +997,8 @@ public class DiskDB {
     private KBObject writeVariableBinding (VariableBinding vBinding, String prefix) {
         String id = null;
         if (vBinding.getVariable() != null && prefix !=null && !prefix.equals("")) {
-            String[] fragments = vBinding.getVariable().split("/");
-            id = prefix + "/bindings/" + fragments[fragments.length-1];
+            String[] fragments = vBinding.getVariable().split("/"); //This generally is the variable name
+            id = prefix + "/bindings/" + GUID.randomId(fragments[fragments.length-1]);
         }
         KBObject vBindingObj = domainKB.createObjectOfClass(id, DISKOnt.getClass(DISK.VARIABLE_BINDING));
         if (vBinding.getVariable() != null)
