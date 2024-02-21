@@ -3,13 +3,10 @@ package org.diskproject.shared.classes.workflow;
 import java.util.List;
 import java.util.Map;
 
+import org.diskproject.shared.classes.common.Status;
 import org.diskproject.shared.classes.common.Value.Type;
 
 public class WorkflowRun {
-  public static enum Status {
-    QUEUED, RUNNING, FAILED, SUCCESSFUL, PENDING
-  };
-
   public static class RuntimeInfo {
     public Status status;
     public String log;

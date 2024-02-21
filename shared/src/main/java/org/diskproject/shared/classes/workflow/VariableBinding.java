@@ -172,6 +172,21 @@ public class VariableBinding implements Serializable, Comparable<VariableBinding
         + (isArray && binding!=null ? String.join(",", binding) : (binding != null && binding.size() == 1 ? binding.get(0) : "null"));
   }
 
+  @JsonIgnore
+  public String toJsonList (String prefix) {
+    prefix = prefix == null ? "" : prefix;
+    String txt = "[";
+    int i = 1;
+    for (String value: this.binding) {
+      txt += "\"" + prefix + value + "\"";
+      if (i != this.binding.size()) {
+        txt +=  ", ";
+        i++;
+      }
+    }
+    return txt + "]";
+  }
+
   public int compareTo (VariableBinding o) {
     return this.toString().compareTo(o.toString());
   }

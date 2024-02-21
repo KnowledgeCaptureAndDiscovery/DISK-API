@@ -1,22 +1,28 @@
 package org.diskproject.shared.classes.workflow;
 
-import org.diskproject.shared.classes.common.Status;
 import org.diskproject.shared.classes.hypothesis.GoalResult;
 
 import java.util.List;
 
 public class Execution extends ExecutionRecord {
-    private String externalId;
+    private String externalId, link;
     private GoalResult result;
     private List<ExecutionRecord> steps;
     private List<VariableBinding> inputs, outputs;
 
-    public Execution(ExecutionRecord src) {
-        super(src);
+    @Override
+    public String toString () {
+        String txt = "[EX=";
+        if (externalId != null) txt += externalId;
+        return txt + super.toString() + "]";
     }
 
-    public Execution(Status status, String start, String end, String log) {
-        super(status, start, end, log);
+    public Execution (String id) {
+        this.externalId = id;
+    }
+
+    public Execution(ExecutionRecord src) {
+        super(src);
     }
 
     public String getExternalId() {
@@ -25,6 +31,14 @@ public class Execution extends ExecutionRecord {
 
     public void setExternalId(String externalId) {
         this.externalId = externalId;
+    }
+
+    public String getLink() {
+        return link;
+    }
+
+    public void setLink(String link) {
+        this.link = link;
     }
 
     public GoalResult getResult() {

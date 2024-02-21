@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.apache.jena.query.QueryParseException;
 
@@ -43,7 +44,9 @@ import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.util.QuestionOptionsRequest;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
+import org.diskproject.shared.classes.workflow.Execution;
 import org.diskproject.shared.classes.workflow.VariableBinding;
+import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
 import org.diskproject.shared.classes.workflow.WorkflowSeed;
 import org.diskproject.shared.ontologies.DISK;
@@ -529,7 +532,7 @@ public class DiskRepository {
                     }
 
                     loiMatch.setQueryResults(solutions, query);
-                    tlois.add(loiMatch.createTLOI());
+                    tlois.add(uploadData(loiMatch.createTLOI()));
                 } else {
                     System.out.println("Warning: No data source or template. " + cur.getId());
                 }
@@ -539,13 +542,85 @@ public class DiskRepository {
         return checkExistingTLOIs(tlois);
     }
 
+    private TriggeredLOI uploadData (TriggeredLOI tloi) {
+        //Check and upload files.
+        DataAdapter dataAdapter = dataAdapters.getMethodAdapterByEndpoint(tloi.getDataQueryTemplate().getEndpoint());
+        List<WorkflowInstantiation> wf = new ArrayList<WorkflowInstantiation>(),
+                mwf = new ArrayList<WorkflowInstantiation>();
+        for (WorkflowInstantiation i: tloi.getWorkflows()) {
+            wf.add(uploadData(i, dataAdapter));
+        }
+        for (WorkflowInstantiation i: tloi.getMetaWorkflows()) {
+            mwf.add(uploadData(i, dataAdapter));
+        }
+        tloi.setWorkflows(wf);
+        tloi.setMetaWorkflows(mwf);
+        return tloi;
+    }
+
+    private WorkflowInstantiation uploadData (WorkflowInstantiation inst, DataAdapter dataAdapter) {
+        Map<String,VariableBinding> dataBindings = new HashMap<String,VariableBinding>();
+        for (VariableBinding b: inst.getDataBindings()) {
+            dataBindings.put(b.getVariable(), b);
+        }
+        //Check and upload files.
+        Map<String,Map<String,String>> uploaded = new HashMap<String,Map<String,String>>();
+        for (VariableBinding b: inst.getInputs()) {
+            VariableBinding val = dataBindings.get(b.getVariable());
+            if (val != null) {
+                //All of these variables should be links
+                List<String> dsUrls = new ArrayList<String>();
+                for (String url: val.getBinding()) {
+                    if (url.startsWith("http")) { //Better way to check this later
+                        dsUrls.add(url);
+                    } else {
+                        System.out.println("Error: Input binding is not an URL. " + b.toString());
+                    }
+                }
+
+                try {
+                    Map<String, String> urlToName = addData(dsUrls,
+                            methodAdapters.getMethodAdapterByEndpoint(inst.getSource()), 
+                            dataAdapter, b.getDatatype());
+                    uploaded.put(b.getVariable(), urlToName);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        //Now, we have the IDs we need on WINGs. Replace the dataBindings.
+        List<VariableBinding> newDataBindings = new ArrayList<VariableBinding>();
+        for (VariableBinding b: inst.getDataBindings()) {
+            Map<String, String> urlToName = uploaded.get(b.getVariable());
+            if (urlToName != null) {
+                VariableBinding newBinding = new VariableBinding(b);
+                b.setVariable("_" + b.getVariable());
+                List<String> replacedUrls = new ArrayList<String>();
+                for (String val: newBinding.getBinding()) {
+                    String newVal = urlToName.get(val);
+                    if (newVal != null) {
+                        replacedUrls.add(newVal);
+                    } else {
+                        //This should never happend
+                        replacedUrls.add(val);
+                    }
+                }
+                newBinding.setBinding(replacedUrls);
+                newDataBindings.add(newBinding);
+            }
+            newDataBindings.add(b);
+        }
+        inst.setDataBindings(newDataBindings);
+        return inst;
+    }
+
     // This replaces all triggered lines of inquiry already executed.
     private List<TriggeredLOI> checkExistingTLOIs(List<TriggeredLOI> tlois) {
         List<TriggeredLOI> checked = new ArrayList<TriggeredLOI>();
         Map<String, List<TriggeredLOI>> cache = new HashMap<String, List<TriggeredLOI>>();
         for (TriggeredLOI tloi : tlois) {
             String parentLoiId = tloi.getParentLoi().getId();
-            System.out.println("Checking " + tloi.getId() + " (" + parentLoiId + ")");
+            //System.out.println("Checking " + tloi.getId() + " (" + parentLoiId + ")");
             if (!cache.containsKey(parentLoiId)) {
                 cache.put(parentLoiId,
                         getTLOIsForHypothesisAndLOI(tloi.getParentGoal().getId(), parentLoiId));
@@ -708,8 +783,9 @@ public class DiskRepository {
      * Threads
      */
 
-    public void processWorkflowOutputs (TriggeredLOI tloi, LineOfInquiry loi, WorkflowSeed workflow, WorkflowRun run, MethodAdapter methodAdapter, boolean meta) {
-        Map<String, RunBinding> outputs = run.getOutputs();
+    public void processWorkflowOutputs (TriggeredLOI tloi, LineOfInquiry loi, WorkflowSeed workflow, Execution run, MethodAdapter methodAdapter, boolean meta) {
+        Map<String, RunBinding> outputs = null ; //run.getOutputs();
+        System.out.println("Should process results now!");
         if (outputs == null) return;
 
         Map<String,String> outputAssignations = new HashMap<String,String>();
