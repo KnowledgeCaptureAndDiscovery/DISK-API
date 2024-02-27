@@ -10,6 +10,7 @@ import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.question.Question;
 import org.diskproject.shared.classes.question.QuestionVariable;
+import org.diskproject.shared.classes.util.KBConstants.SPECIAL;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
 import org.diskproject.shared.classes.workflow.WorkflowSeed;
@@ -83,7 +84,7 @@ public class Match {
                 }
                 if (raw.startsWith("?")) {
                     reqVariables.add(raw);
-                } else if (raw.equals("_CSV_")) {
+                } else if (raw.equals(SPECIAL.CSV)) {
                     isCSV = true;
                 }
             }
@@ -250,7 +251,7 @@ public class Match {
                 String wfBiding = varB.getBinding().get(0);
                 VariableBinding newDatabinding = new VariableBinding(varB);
                 List<String> newBindingValues = new ArrayList<String>();
-                if (wfBiding.equals("_CSV_")) {
+                if (wfBiding.equals(SPECIAL.CSV)) {
                     newBindingValues.add(csvURL);
                 } else if (wfBiding.startsWith("?")) {
                     String name = wfBiding.substring(1);

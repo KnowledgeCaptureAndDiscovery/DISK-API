@@ -42,14 +42,10 @@ import org.apache.http.util.EntityUtils;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
+import org.diskproject.shared.classes.workflow.Execution;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
 import org.diskproject.shared.classes.workflow.WorkflowTemplate;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
-import org.diskproject.shared.classes.workflow.WorkflowRun.RunBinding;
-import org.diskproject.shared.classes.workflow.WorkflowRun.RuntimeInfo;
-import org.diskproject.shared.classes.common.Status;
-import org.diskproject.shared.classes.common.Value;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -355,129 +351,7 @@ public class WingsAdapter extends MethodAdapter {
 		return false;
 	}
 
-	private WorkflowRun parseExecutionDetails (String details) {
-		JsonObject runobj = jsonParser.parse(details).getAsJsonObject();
-		JsonObject execution = null, variables = null;//, constraints = null;
-		WorkflowRun curRun = new WorkflowRun();
-
-		try {
-			JsonElement xw = runobj.get("execution");
-			execution = xw.getAsJsonObject();
-		} catch (Exception e) {
-			System.err.println("Error parsing execution details: Cannot parse execution.");
-		}
-		if (execution == null)
-			return null;
-
-		// Get run info.
-		RuntimeInfo runInfo = null;
-		JsonObject runInfoJson = execution.get("runtimeInfo").getAsJsonObject();
-		JsonElement id = execution.get("id");
-		JsonElement status = runInfoJson.get("status");
-		JsonElement log = runInfoJson.get("log");
-		JsonElement tsStart = runInfoJson.get("startTime");
-		JsonElement tsEnd = runInfoJson.get("endTime");
-		if (status != null && id != null) {
-			curRun.setId(id.getAsString());
-			runInfo = new RuntimeInfo();
-			runInfo.status = getStatusFromString(status.getAsString());
-			runInfo.log = log == null ? "" : log.getAsString();
-			if (tsStart != null) runInfo.startTime = tsStart.getAsInt();
-			if (tsEnd != null) runInfo.endTime = tsEnd.getAsInt();
-		} else {
-			System.err.println("Error parsing execution details: Cannot get run status.");
-		}
-		if (runInfo == null) 
-			return null;
-		curRun.setExecutionInfo(runInfo);
-
-		// Get steps info.
-		List<RuntimeInfo> stepInfo = null;
-		if (execution != null) {
-			JsonObject queueJson = execution.get("queue").getAsJsonObject();
-			JsonArray stepsArray = queueJson.get("steps").getAsJsonArray();
-			stepInfo = new ArrayList<RuntimeInfo>();
-			for (JsonElement step: stepsArray) {
-				RuntimeInfo info = new RuntimeInfo();
-				JsonObject rInfo = step.getAsJsonObject().get("runtimeInfo").getAsJsonObject();
-				JsonElement stepStatus = rInfo.get("status");
-				JsonElement stepLog = rInfo.get("log");
-				JsonElement stepStart = rInfo.get("startTime");
-				JsonElement stepEnd = rInfo.get("endTime");
-				if (stepStatus != null) {
-					info.status = getStatusFromString(stepStatus.getAsString());
-					info.log = stepLog == null ? "" : stepLog.getAsString();
-					if (stepStart != null) info.startTime = stepStart.getAsInt();
-					if (stepEnd != null) info.endTime = stepEnd.getAsInt();
-				} else {
-					System.err.println("Error parsing execution details: Cannot get step status.");
-				}
-			}
-		}
-
-		if (stepInfo != null)
-			curRun.setStepsInfo(stepInfo);
-
-		try {
-			variables = runobj.get("variables").getAsJsonObject();
-		} catch (Exception e) {
-			System.out.println(details);
-		}
-
-		Map<String, RunBinding> input = null, output = null;
-		if (variables != null) {
-			input = new HashMap<String, RunBinding>();
-			JsonArray inputArray = variables.get("input").getAsJsonArray();
-			for (JsonElement cur : inputArray) {
-				JsonObject curObj = cur.getAsJsonObject();
-				JsonElement bindingObj = curObj.get("binding"); //.getAsJsonObject();
-				JsonElement inputTypeObj = curObj.get("type");//.getAsInt();
-				JsonElement nameObj = curObj.get("id");
-				if (nameObj != null && inputTypeObj != null && bindingObj != null) {
-					RunBinding curInput = new RunBinding();
-					JsonObject bindingsJson = bindingObj.getAsJsonObject();
-					String name = nameObj.getAsString().replaceAll("^.*\\#", "");
-					curInput.type = inputTypeObj.getAsInt() == 1 ? Value.Type.URI : Value.Type.LITERAL;
-					// --
-					JsonElement idObj = bindingsJson.get("id");
-					if (idObj != null) curInput.id = idObj.getAsString();
-					JsonElement valueJson = bindingsJson.get("value");
-					if (valueJson != null) curInput.value = valueJson.getAsString();
-					JsonElement datatypeJson = bindingsJson.get("datatype");
-					if (datatypeJson != null) curInput.datatype = datatypeJson.getAsString();
-					input.put(name, curInput);
-				}
-			}
-
-			output = new HashMap<String, RunBinding>();
-			JsonArray outputArray = variables.get("output").getAsJsonArray();
-			for (JsonElement cur : outputArray) {
-				JsonObject curObj = cur.getAsJsonObject();
-				JsonElement bindingObj = curObj.get("binding"); //.getAsJsonObject();
-				JsonElement inputTypeObj = curObj.get("type");//.getAsInt();
-				JsonElement nameObj = curObj.get("id");
-				if (nameObj != null && inputTypeObj != null && bindingObj != null) {
-					RunBinding curOutput = new RunBinding();
-					JsonObject bindingsJson = bindingObj.getAsJsonObject();
-					String name = nameObj.getAsString().replaceAll("^.*\\#", "");
-					curOutput.type = inputTypeObj.getAsInt() == 1 ? Value.Type.URI : Value.Type.LITERAL;
-					// --
-					JsonElement idObj = bindingsJson.get("id");
-					if (idObj != null) curOutput.id = idObj.getAsString();
-					JsonElement valueJson = bindingsJson.get("value");
-					if (valueJson != null) curOutput.value = valueJson.getAsString();
-					JsonElement datatypeJson = bindingsJson.get("datatype");
-					if (datatypeJson != null) curOutput.datatype = datatypeJson.getAsString();
-					output.put(name, curOutput);
-				}
-			}
-		}
-		if (input != null) curRun.setInputs(input);
-		if (output != null) curRun.setOutputs(output);
-		return curRun;
-	}
-
-	public WorkflowRun getWorkflowRunStatus(String runid) {
+	public Execution getWorkflowRunStatus(String runid) {
 		String execId = RUNID(runid);
 		String runjson = null;
 		try {
@@ -492,7 +366,7 @@ public class WingsAdapter extends MethodAdapter {
 		if (runjson == null)
 			return null;
 
-		WorkflowRun wfRunStatus = parseExecutionDetails(runjson);
+		Execution wfRunStatus = WingsParser.parseExecution(runjson);
 		if (wfRunStatus == null) {
 			System.out.println(runjson);
 			return null;
@@ -506,16 +380,6 @@ public class WingsAdapter extends MethodAdapter {
 		wfRunStatus.setLink(link);
 		return wfRunStatus;
 	}
-	
-    public Status getStatusFromString (String statusStr) {
-		try {
-			return Status.valueOf(statusStr);
-		} catch (Exception e) {
-			if (statusStr != null && statusStr.equals("SUCCESS"))
-				return Status.SUCCESSFUL;
-			return Status.PENDING;
-		}
-    }
 
 	// TODO: Hackish function. Fix it !!!! *IMPORTANT*
 	private String getWorkflowRunWithSameBindings(String templateId, List<VariableBinding> vBindings) {
@@ -622,6 +486,7 @@ public class WingsAdapter extends MethodAdapter {
 		return true;
 	}
 
+	//TODO
 	public List<String> runWorkflow (WorkflowInstantiation wf) {
 		String wfURI = WFLOWID(wf.getName());
 		System.out.println(wfURI + " == " + wf.getLink());
@@ -1431,7 +1296,7 @@ public class WingsAdapter extends MethodAdapter {
 	}
 
 	@Override
-	public WorkflowRun getRunStatus(String runId) {
+	public Execution getRunStatus(String runId) {
 		return this.getWorkflowRunStatus(runId);
 	}
 
@@ -1439,7 +1304,6 @@ public class WingsAdapter extends MethodAdapter {
 	public FileAndMeta fetchData(String dataId) {
 		return this.fetchDataFromWings(dataId);
 	}
-
 
 	@Override
 	public boolean registerData (String id, String type) {

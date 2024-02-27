@@ -8,22 +8,16 @@ import java.util.concurrent.TimeUnit;
 
 import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.common.Status;
-import org.diskproject.shared.classes.common.Value.Type;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.workflow.Execution;
-import org.diskproject.shared.classes.workflow.ExecutionRecord;
-import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
-import org.diskproject.shared.classes.workflow.WorkflowRun.RunBinding;
-import org.diskproject.shared.classes.workflow.WorkflowRun.RuntimeInfo;
 
 public class MonitorThread implements Runnable {
     ThreadManager manager;
     boolean metamode;
     TriggeredLOI tloi;
     List<String> runList;                   // runList = [runId1, runId2, ...]
-    Map<String, Execution> runInfo;       // runInfo[runId1] = WorkflowRun
+    Map<String, Execution> runInfo;         // runInfo[runId1] = WorkflowRun
     Map<String, WorkflowInstantiation> runToWf;  // runToWf[runId1] = WorkflowBindings
     Map<String, Integer> runToIndex;        // runToIndex[runId1] = 0,1...
 
@@ -80,7 +74,7 @@ public class MonitorThread implements Runnable {
 
     private void updateRun (WorkflowInstantiation wf, Execution run) {
         this.runInfo.replace(run.getExternalId(), run); // Updates status on the run list
-        //wf.addRun(run); // This replaces old run. FIXME
+        wf.addOrReplaceExecution(run);
         Integer index = this.runToIndex.get(run.getExternalId());
         List<WorkflowInstantiation> list = this.metamode ? this.tloi.getMetaWorkflows() : this.tloi.getWorkflows();
         list.set(index, wf); // Replaces run in the wf list
@@ -89,6 +83,7 @@ public class MonitorThread implements Runnable {
 
         // Process outputs
         if (run.getStatus() == Status.SUCCESSFUL) {
+            updateWorkflowStatus();
             this.manager.processFinishedRun(this.tloi, wf, run, metamode);
         }
     }
@@ -108,7 +103,7 @@ public class MonitorThread implements Runnable {
             }
 
             String runId = pendingRun.getExternalId().replaceAll("^.*#", "");
-            Execution updatedRun = workflowRunToExecution(methodAdapter.getRunStatus(runId));
+            Execution updatedRun = methodAdapter.getRunStatus(runId);
 
             // If we cannot get the status but the run was pending, it means that the run is in the WINGS queue.
             if (updatedRun == null || updatedRun.getStatus() == null) {
@@ -127,18 +122,20 @@ public class MonitorThread implements Runnable {
         this.tloi.setStatus(status);
         manager.updateTLOI(tloi);
 
-        if (status == Status.SUCCESSFUL) {
-            if (metamode) {
-                System.out.println("[M] " + this.tloi.getId() + " was successfully executed.");
-            } else {
-                System.out.println("[M] Starting metamode after " + this.runList.size() + " runs.");
-                this.manager.executeTLOI(tloi, true);
-            }
-        } else if (status == Status.FAILED) {
-            if (metamode) {
-                System.out.println("[M] " + this.tloi.getId() + " was executed with errors.");
-            } else {
-                System.out.println("[M] " + this.tloi.getId() + " will not run metamode. Some runs failed.");
+        if (status == Status.SUCCESSFUL || status == Status.FAILED) {
+            if (status == Status.SUCCESSFUL) {
+                if (metamode) {
+                    System.out.println("[M] " + this.tloi.getId() + " was successfully executed.");
+                } else {
+                    System.out.println("[M] Starting metamode after " + this.runList.size() + " runs.");
+                    this.manager.executeTLOI(tloi, true);
+                }
+            } else if (status == Status.FAILED) {
+                if (metamode) {
+                    System.out.println("[M] " + this.tloi.getId() + " was executed with errors.");
+                } else {
+                    System.out.println("[M] " + this.tloi.getId() + " will not run metamode. Some runs failed.");
+                }
             }
         } else {
             System.out.println("[M] " + this.tloi.getId() + " still pending.");
@@ -146,58 +143,20 @@ public class MonitorThread implements Runnable {
         }
     }
 
-    private Execution workflowRunToExecution (WorkflowRun run) {
-        if (run == null)
-            return null;
-        Execution e = new Execution(run.getId());
-        if (run.getLink() != null)
-            e.setLink(run.getLink());
-
-        RuntimeInfo info = run.getExecutionInfo();
-        if (info != null) {
-            if (info.status != null) e.setStatus(info.status);
-            if (info.log != null) e.setLog(info.log.endsWith("\n") ? info.log.substring(0,info.log.length()-1) : info.log );
-            if (info.startTime > 0)  e.setStartDate(String.valueOf(info.startTime));
-            if (info.endTime > 0)  e.setEndDate(String.valueOf(info.endTime));
-        }
-        List<RuntimeInfo> stepsInfo = run.getStepsInfo();
-        List<ExecutionRecord> steps = new ArrayList<ExecutionRecord>();
-        if (stepsInfo != null && stepsInfo.size() > 0) {
-            for (RuntimeInfo rInfo: stepsInfo) {
-                ExecutionRecord step = new ExecutionRecord();
-                if (rInfo.status != null) step.setStatus(rInfo.status);
-                if (rInfo.log != null) step.setLog(rInfo.log);
-                if (rInfo.startTime > 0)  step.setStartDate(String.valueOf(rInfo.startTime));
-                if (rInfo.endTime > 0)  step.setEndDate(String.valueOf(rInfo.endTime));
-            }
-        }
-        e.setSteps(steps);
-        Map<String, RunBinding> inputs = run.getInputs();
-        List<VariableBinding> newInputBindings = new ArrayList<VariableBinding>();
-        if (inputs != null && inputs.size() > 0) {
-            for (String name: inputs.keySet()) {
-                VariableBinding newVarBinding = new VariableBinding();
-                RunBinding runBinding = inputs.get(name);
-                newVarBinding.setVariable(name);
-                if (runBinding.id != null && runBinding.type == Type.URI) {
-                    newVarBinding.setSingleBinding(runBinding.id);
-                    newVarBinding.setType(VariableBinding.BindingTypes.DISK_DATA.name());
-                } else if (runBinding.value != null) {
-                    newVarBinding.setSingleBinding(runBinding.value);
-                    newVarBinding.setType(VariableBinding.BindingTypes.DEFAULT.name());
+    private void updateWorkflowStatus() {
+        List<WorkflowInstantiation> list = metamode ? tloi.getMetaWorkflows() : tloi.getWorkflows();
+        for (WorkflowInstantiation inst: list) {
+            inst.setStatus(Status.SUCCESSFUL);
+            for (Execution e: inst.getExecutions()) {
+                if (e.getStatus() != Status.SUCCESSFUL) {
+                    inst.setStatus(e.getStatus());
+                    break;
                 }
-                if (runBinding.datatype != null) newVarBinding.setDatatype(runBinding.datatype);
             }
         }
-        e.setInputs(newInputBindings);
-
-        Map<String, RunBinding> outputs = run.getOutputs();
-        List<VariableBinding> newOutputBindings = new ArrayList<VariableBinding>();
-        if (outputs != null && outputs.size() > 0) {
-
+        System.out.println("Update wf status:");
+        for (WorkflowInstantiation inst: list) {
+            System.out.println(inst.getStatus());
         }
-        e.setInputs(newOutputBindings);
-
-        return e;
     }
 }

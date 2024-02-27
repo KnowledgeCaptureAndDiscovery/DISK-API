@@ -62,6 +62,7 @@ public class VariableBinding implements Serializable, Comparable<VariableBinding
     binding = new ArrayList<String>();
     binding.add(b);
     isArray = false;
+    type = BindingTypes.DEFAULT;
   }
 
   public VariableBinding (String v, String b, String t) {
@@ -116,10 +117,9 @@ public class VariableBinding implements Serializable, Comparable<VariableBinding
 
   @JsonIgnore
   public void setSingleBinding (String binding) {
-    if (!isArray) {
-      this.binding = new ArrayList<String>();
-      this.binding.add(binding);
-    }
+    this.isArray = false;
+    this.binding = new ArrayList<String>();
+    this.binding.add(binding);
   }
 
   @JsonIgnore
@@ -129,9 +129,8 @@ public class VariableBinding implements Serializable, Comparable<VariableBinding
 
   @JsonIgnore
   public void setBindings (List<String> bindings) {
-    if (isArray) {
-      this.binding = bindings;
-    }
+    this.binding = bindings;
+    this.isArray = true;
   }
   
   public String getDatatype () {
@@ -150,14 +149,15 @@ public class VariableBinding implements Serializable, Comparable<VariableBinding
     this.filetype = t;
   }*/
 
-  //public BindingTypes getBindingType () {
-  //  return bindingType;
-  //}
+  @JsonIgnore
+  public BindingTypes getBindingType () {
+    return type;
+  }
 
-  //public void setBindingType (BindingTypes t) {
-  //  this.bindingType = t;
-  //  this.type = t.name();
-  //}
+  @JsonIgnore
+  public void setBindingType (BindingTypes t) {
+    this.type = t;
+  }
 
   public String getType () {
     return this.type.name();

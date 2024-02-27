@@ -12,9 +12,23 @@ public class Execution extends ExecutionRecord {
 
     @Override
     public String toString () {
-        String txt = "[EX=";
-        if (externalId != null) txt += externalId;
-        return txt + super.toString() + "]";
+        String txt = "execution={\n  id: " + (externalId == null ? "null" : externalId);
+        txt += ",\n  link: " + (link == null ? "null" : link);
+        txt += ",\n  result: " + (result == null ? "null" : result.toString());
+        txt += ",\n  info: " + super.toString().replaceAll("\n", "\n  ");
+        txt += ",\n  inputs: [";
+        if (inputs != null) for (VariableBinding vb: inputs) {
+            txt += "\n    " + vb.toString();
+        }
+        txt += "\n  ],\n  outputs: [";
+        if (outputs != null) for (VariableBinding vb: outputs) {
+            txt += "\n    " + vb.toString();
+        }
+        txt += "\n  ],\n  steps: [";
+        if (steps != null) for (ExecutionRecord er: steps) {
+            txt += "\n    " + er.toString().replaceAll("\n", "\n    ");
+        }
+        return txt + "\n  ]\n}";
     }
 
     public Execution (String id) {
