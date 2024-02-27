@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.checkerframework.checker.units.qual.t;
-
 import org.diskproject.server.repository.DiskRDF;
 import org.diskproject.server.util.KBCache;
 import org.diskproject.server.util.KBUtils;
@@ -40,7 +38,7 @@ import edu.isi.kcap.ontapi.KBTriple;
 import edu.isi.kcap.ontapi.OntSpec;
 
 public class DiskDB {
-    private static SimpleDateFormat dateformatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX");
+    private static SimpleDateFormat dateformatter = new SimpleDateFormat(KBConstants.DATE_FORMAT);
     private String domain;
     private DiskRDF rdf;
     private KBAPI diskKB, domainKB;
@@ -85,7 +83,7 @@ public class DiskDB {
         return this.DISKOnt;
     }
 
-    public String getLocalId(String fullId) {
+    static public String getLocalId(String fullId) {
         return fullId.replaceAll("^.*\\/", "");
     }
     public String createGoalURI (String id) {
@@ -776,12 +774,13 @@ public class DiskDB {
 
     private KBObject writeWorkflowInstantiation (WorkflowInstantiation inst, String parentId) {
         String prefix = parentId != null ? parentId + "/instantiations/" : null;
-        KBObject seedObj = domainKB.createObjectOfClass(prefix != null ? prefix + GUID.randomId("") : null , DISKOnt.getClass(DISK.WORKFLOW_INSTANTIATION));
+        String fullId = prefix != null ? prefix + GUID.randomId("") : null;
+        KBObject seedObj = domainKB.createObjectOfClass(fullId, DISKOnt.getClass(DISK.WORKFLOW_INSTANTIATION));
         KBObject instObj = _writeWorkflowSeed(inst, seedObj);
         String instId = instObj.getID();
 
         if (inst.getStatus() != null)
-            domainKB.setPropertyValue(instObj, DISKOnt.getClass(DISK.HAS_STATUS), domainKB.createLiteral(getStringFromStatus(inst.getStatus())) );
+            domainKB.setPropertyValue(instObj, DISKOnt.getProperty(DISK.HAS_STATUS), domainKB.createLiteral(inst.getStatus().name()) );
 
         List<VariableBinding> data = inst.getDataBindings();
         if (data != null && data.size() > 0) {
@@ -805,7 +804,7 @@ public class DiskDB {
         WorkflowInstantiation inst = new WorkflowInstantiation(loadWorkflowSeed(instObj));
 
         KBObject status = domainKB.getPropertyValue(instObj, DISKOnt.getProperty(DISK.HAS_STATUS));
-        if (status != null) inst.setStatus(getStatusFromString(status.getValueAsString()));
+        if (status != null) inst.setStatus(Status.fromString(status.getValueAsString()));
 
         List<KBObject> data = domainKB.getPropertyValues(instObj, DISKOnt.getProperty(DISK.HAS_DATA_BINDINGS));
         List<VariableBinding> dList = new ArrayList<VariableBinding>();
@@ -841,7 +840,7 @@ public class DiskDB {
         if ( exec.getEndDate() != null )
             domainKB.setPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_RUN_END_DATE), domainKB.createLiteral(exec.getEndDate()));
         if (exec.getStatus() != null)
-            domainKB.setPropertyValue(execObj, DISKOnt.getClass(DISK.HAS_STATUS), domainKB.createLiteral(getStringFromStatus(exec.getStatus())));
+            domainKB.setPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_STATUS), domainKB.createLiteral(exec.getStatus().name()));
         return execObj;
     }
 
@@ -854,21 +853,23 @@ public class DiskDB {
         KBObject endDate = domainKB.getPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_RUN_END_DATE));
         if (endDate != null) record.setEndDate(endDate.getValueAsString());
         KBObject status = domainKB.getPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_STATUS));
-        if (status != null) record.setStatus(getStatusFromString(status.getValueAsString()));
+        if (status != null) record.setStatus(Status.fromString(status.getValueAsString()));
         return record;
     }
 
     private KBObject writeExecution (Execution exec, String parentId) {
         String prefix = parentId != null ? parentId + "/executions/" : null;
+        String localId = prefix != null ? prefix + GUID.randomId("") : null;
         KBObject execObj = _writeExecutionRecord(exec, domainKB.createObjectOfClass(
-            prefix != null ? prefix + GUID.randomId("") : null,
-            DISKOnt.getClass(DISK.EXECUTION_RECORD))
+            localId, DISKOnt.getClass(DISK.EXECUTION_RECORD))
         );
 
         if (exec.getExternalId() != null)
-            domainKB.setPropertyValue(execObj, DISKOnt.getClass(DISK.HAS_RUN_LINK), domainKB.createLiteral(exec.getExternalId()));
+            domainKB.setPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_ID), domainKB.createLiteral(exec.getExternalId()));
+        if (exec.getLink() != null)
+            domainKB.setPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_RUN_LINK), domainKB.createLiteral(exec.getLink()));
         if (exec.getResult() != null) {
-            domainKB.setPropertyValue(execObj, DISKOnt.getClass(DISK.HAS_RESULT), writeGoalResult(exec.getResult(), parentId));
+            domainKB.setPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_RESULT), writeGoalResult(exec.getResult(), parentId));
         }
 
         List<VariableBinding> inputs = exec.getInputs(), outputs = exec.getOutputs();
@@ -897,52 +898,51 @@ public class DiskDB {
 
     private Execution loadExecution (KBObject execObj) {
         Execution execution = new Execution(loadExecutionRecord(execObj));
-
-        KBObject externalId = domainKB.getPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_RUN_LINK));
-        if (externalId != null) execution.setStatus(getStatusFromString(externalId.getValueAsString()));
+        KBObject externalId = domainKB.getPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_ID));
+        KBObject link = domainKB.getPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_RUN_LINK));
         KBObject result = domainKB.getPropertyValue(execObj, DISKOnt.getProperty(DISK.HAS_RESULT));
-        if (result != null) execution.setResult(loadGoalResult(result));
-
         List<KBObject> inputs = domainKB.getPropertyValues(execObj, DISKOnt.getProperty(DISK.HAS_INPUT_FILE));
-        if (inputs != null && inputs.size() > 0) {
-            List<VariableBinding> list = new ArrayList<VariableBinding>();
-            for (KBObject t: inputs) {
-                list.add(loadVariableBinding(t));
-            }
-            execution.setInputs(list);
-        }
         List<KBObject> outputs = domainKB.getPropertyValues(execObj, DISKOnt.getProperty(DISK.HAS_OUTPUT_FILE));
-        if (outputs != null && outputs.size() > 0) {
-            List<VariableBinding> list = new ArrayList<VariableBinding>();
-            for (KBObject t: outputs) {
-                list.add(loadVariableBinding(t));
-            }
-            execution.setInputs(list);
-        }
-
         List<KBObject> steps = domainKB.getPropertyValues(execObj, DISKOnt.getProperty(DISK.HAS_STEP));
-        if (steps != null && steps.size() > 0) {
-            List<ExecutionRecord> list = new ArrayList<ExecutionRecord>();
-            for (KBObject t: steps) {
-                list.add(loadExecutionRecord(t));
-            }
-            execution.setSteps(list);
+        List<VariableBinding> inList = new ArrayList<VariableBinding>();
+        List<VariableBinding> outList = new ArrayList<VariableBinding>();
+        List<ExecutionRecord> stepList = new ArrayList<ExecutionRecord>();
+
+        if (externalId != null) execution.setExternalId(externalId.getValueAsString());
+        if (link != null) execution.setLink(link.getValueAsString());
+        if (result != null) execution.setResult(loadGoalResult(result));
+        if (inputs != null && inputs.size() > 0) for (KBObject t: inputs) {
+            inList.add(loadVariableBinding(t));
         }
+        if (outputs != null && outputs.size() > 0) for (KBObject t: outputs) {
+            outList.add(loadVariableBinding(t));
+        }
+        if (steps != null && steps.size() > 0) for (KBObject t: steps) {
+            stepList.add(loadExecutionRecord(t));
+        }
+        execution.setInputs(inList);
+        execution.setOutputs(outList);
+        execution.setSteps(stepList);
         return execution;
     }
 
     private KBObject writeGoalResult (GoalResult result, String parentId) {
-        String prefix = parentId != null ? parentId + "/results/" : null;
-        KBObject resultObj = domainKB.createObjectOfClass(
-            prefix != null ? prefix + GUID.randomId("") : null,
-            DISKOnt.getClass(DISK.GOAL_RESULT));
+        String fullId = parentId != null ? parentId + "/results/" + GUID.randomId("") : null;
+        KBObject resultObj = domainKB.createObjectOfClass(fullId, DISKOnt.getClass(DISK.GOAL_RESULT));
 
         if (result.getConfidenceType() != null)
-            domainKB.setPropertyValue(resultObj, DISKOnt.getClass(DISK.HAS_CONFIDENCE_TYPE),
+            domainKB.setPropertyValue(resultObj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE),
                     domainKB.createLiteral(result.getConfidenceType()));
         if (result.getConfidenceValue() != null) {
-            domainKB.setPropertyValue(resultObj, DISKOnt.getClass(DISK.HAS_CONFIDENCE_VALUE),
+            domainKB.setPropertyValue(resultObj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE),
                     domainKB.createLiteral(result.getConfidenceValue()));
+        }
+        List<VariableBinding> bindings = result.getExtras();
+        if (bindings != null && bindings.size() > 0) {
+            for (VariableBinding vBinding: bindings) {
+                domainKB.addPropertyValue(resultObj, DISKOnt.getProperty(DISK.HAS_DATA_BINDINGS), 
+                    writeVariableBinding(vBinding, fullId));
+            }
         }
         return resultObj;
     }
@@ -952,7 +952,14 @@ public class DiskDB {
         KBObject typeObj = domainKB.getPropertyValue(resultObj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_TYPE));
         if (typeObj != null) result.setConfidenceType(typeObj.getValueAsString());
         KBObject valueObj = domainKB.getPropertyValue(resultObj, DISKOnt.getProperty(DISK.HAS_CONFIDENCE_VALUE));
-        if (valueObj != null) result.setConfidenceValue(valueObj.getValueAsString());
+        if (valueObj != null) result.setConfidenceValue(Double.parseDouble(valueObj.getValueAsString()));
+
+        List<KBObject> bindings = domainKB.getPropertyValues(resultObj, DISKOnt.getProperty(DISK.HAS_DATA_BINDINGS));
+        List<VariableBinding> list = new ArrayList<VariableBinding>();
+        if (bindings != null && bindings.size() > 0) for (KBObject t: bindings) {
+            list.add(loadVariableBinding(t));
+        }
+        result.setExtras(list);
         return result;
     }
 
@@ -983,7 +990,8 @@ public class DiskDB {
                 if (v.startsWith("'") && v.endsWith("'")) {
                     list.add(v.substring(1, v.length()-1));
                 } else {
-                    System.out.println("Something when wrong");
+                    //Whats happening is that we get the mean value array as in an array [[]]
+                    System.out.println("Something when wrong decoding binding value:" + rawValue);
                     list.add(v);
                 }
             }
@@ -1037,14 +1045,6 @@ public class DiskDB {
             tloi.setDateModified(now);
         }
 
-        if (!isCreating) {
-            //Updates only notes
-            TriggeredLOI orig = loadTLOI(id);
-            if (orig != null) {
-                orig.setNotes(tloi.getNotes());
-                tloi = orig;
-            }
-        }
         if ((isCreating || deleteTLOI(id)) && writeTLOI(tloi)) {
             return tloi;
         }
@@ -1068,7 +1068,7 @@ public class DiskDB {
             domainKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_GOAL), hypObj);
         }
         if (tloi.getStatus() != null) {
-            KBObject statusObj = domainKB.createLiteral(getStringFromStatus(tloi.getStatus()));
+            KBObject statusObj = domainKB.createLiteral(tloi.getStatus().name());
             domainKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_STATUS), statusObj);
         }
         if (tloi.getQueryResults() != null) {
@@ -1113,7 +1113,7 @@ public class DiskDB {
                 tloi.setParentGoal(new Goal(parentGoal.getValueAsString()));
             KBObject status = domainKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_STATUS));
             if (status != null)
-                tloi.setStatus(getStatusFromString(status.getValueAsString()));
+                tloi.setStatus(Status.fromString(status.getValueAsString()));
             KBObject queryResult = domainKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_QUERY_RESULTS));
             if (queryResult != null)
                 tloi.setQueryResults(loadDataQueryResult(queryResult));
@@ -1175,21 +1175,5 @@ public class DiskDB {
             }
         }
         return list;
-    }
-
-    public Status getStatusFromString(String statusStr) {
-        return statusStr.equals("SUCCESS") || statusStr.equals("SUCCESSFUL") ? Status.SUCCESSFUL
-                : (statusStr.equals("FAILED") || statusStr.equals("FAILURE") ? Status.FAILED
-                        : (statusStr.equals("RUNNING") ? Status.RUNNING
-                                : (statusStr.equals("QUEUED") ? Status.QUEUED : Status.PENDING)));
-
-    }
-
-    public String getStringFromStatus(Status status) {
-        return status == Status.SUCCESSFUL ? "SUCCESS"
-                : (status == Status.FAILED ? "FAILED"
-                        : (status == Status.RUNNING ? "RUNNING"
-                                : (status == Status.QUEUED ? "QUEUED" : "PENDING")));
-
     }
 }

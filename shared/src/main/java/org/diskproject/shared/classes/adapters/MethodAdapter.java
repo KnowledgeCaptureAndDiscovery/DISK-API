@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
+import org.diskproject.shared.classes.workflow.Execution;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowTemplate;
 import org.diskproject.shared.classes.workflow.WorkflowRun;
@@ -103,7 +104,7 @@ public abstract class MethodAdapter {
 
 	public abstract List<String> runWorkflow (String wfId, List<VariableBinding> vBindings, Map<String, WorkflowVariable> inputVariables);
 
-	public abstract WorkflowRun getRunStatus (String runId);
+	public abstract Execution getRunStatus (String runId);
 
 	public abstract FileAndMeta fetchData (String dataId);
 

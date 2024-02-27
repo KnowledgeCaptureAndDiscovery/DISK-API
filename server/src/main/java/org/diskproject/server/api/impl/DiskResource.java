@@ -40,7 +40,7 @@ import org.diskproject.shared.classes.util.QuestionOptionsRequest;
 import org.diskproject.shared.classes.util.WorkflowTemplateResponse;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
+import org.diskproject.shared.classes.workflow.Execution;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.Gson;
@@ -345,7 +345,7 @@ public class DiskResource implements DiskService {
   @GET
   @Override
   @Path("runs/{source}/{id}")
-  public WorkflowRun monitorWorkflow(
+  public Execution monitorWorkflow(
       @PathParam("source") String source,
       @PathParam("id") String id) {
     return this.repo.getWorkflowRunStatus(source, id);

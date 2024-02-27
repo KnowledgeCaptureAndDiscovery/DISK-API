@@ -58,7 +58,8 @@ public class KeycloakAuthenticationFilter implements ContainerRequestFilter {
                 requestContext.setProperty("username", email);
                 return;
             } catch (InvalidParameterException e) {
-                e.printStackTrace();
+                System.err.println(e.getMessage());
+                //e.printStackTrace();
             }
         }
 

@@ -2,8 +2,11 @@ package org.diskproject.shared.classes.workflow;
 
 import org.diskproject.shared.classes.common.Status;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class WorkflowInstantiation extends WorkflowSeed {
     Status status;
@@ -35,6 +38,26 @@ public class WorkflowInstantiation extends WorkflowSeed {
 
     public void setExecutions(List<Execution> executions) {
         this.executions = executions;
+    }
+
+    @JsonIgnore
+    public void addOrReplaceExecution (Execution e) {
+        if (this.executions == null)
+            this.executions = new ArrayList<Execution>();
+        List<Execution> newExec = new ArrayList<Execution>();
+        boolean added = false;
+        for (Execution cur: this.executions) {
+            if (cur.getExternalId().equals(e.getExternalId())) {
+                newExec.add(e);
+                added = true;
+            } else {
+                newExec.add(cur);
+            }
+        }
+        if (!added) {
+            newExec.add(e);
+        }
+        this.setExecutions(newExec);
     }
 
     @Override

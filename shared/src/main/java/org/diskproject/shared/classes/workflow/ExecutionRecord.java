@@ -8,11 +8,11 @@ public class ExecutionRecord {
 
     @Override
     public String toString () {
-        String txt = "{" + (status == null ? "NULL" : status.name()) + ":[";
-        txt += (startDate == null ? "NULL" : startDate) + "-";
-        txt += (endDate == null ? "NULL" : endDate) + "]";
-        if (log != null) txt += "\"" + log + "\"";
-        return txt;
+        String txt = "{\n  status: " + (status == null ? "null" : status.name());
+        txt += ",\n  startDate: " + (startDate == null ? "null" : startDate);
+        txt += ",\n  endDate: " + (endDate == null ? "null" : endDate);
+        txt += ",\n  log: " + (log == null ? "null" : "\"" + log + "\"");
+        return txt + "\n}";
     }
 
     public ExecutionRecord (ExecutionRecord src) {

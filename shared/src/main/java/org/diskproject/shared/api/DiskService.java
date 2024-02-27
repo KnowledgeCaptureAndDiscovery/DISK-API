@@ -25,7 +25,7 @@ import org.diskproject.shared.classes.util.QuestionOptionsRequest;
 import org.diskproject.shared.classes.util.WorkflowTemplateResponse;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
+import org.diskproject.shared.classes.workflow.Execution;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Path("")
@@ -166,7 +166,7 @@ public interface DiskService {
 
   @GET
   @Path("runs/{source}/{id}")
-  public WorkflowRun monitorWorkflow(
+  public Execution monitorWorkflow(
       @PathParam("source") String source,
       @PathParam("id") String id);
 

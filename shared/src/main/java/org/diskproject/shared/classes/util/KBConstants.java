@@ -27,4 +27,19 @@ public class KBConstants {
             // + "PREFIX sqo: <" + KBConstants.QUESTION_NS + ">\n"
             // + "PREFIX hyp: <" + KBConstants.HYP_NS + ">\n";
     }
+
+    // Date config, how is written on the db
+    public static final String DATE_FORMAT      = "yyyy-MM-dd'T'HH:mm:ssX";
+
+    public static final class SPECIAL {
+        public static final String CSV          = "_CSV_";
+        public static final String NO_STORE     = "_DO_NO_STORE_";
+        public static final String DOWNLOAD     = "_DOWNLOAD_ONLY_";
+        public static final String IMAGE        = "_IMAGE_";
+        public static final String VISUALIZE    = "_VISUALIZE_";
+        public static final String BRAIN_VIZ    = "_BRAIN_VISUALIZATION_";
+        public static final String CONFIDENCE_V = "_CONFIDENCE_VALUE_";
+        public static final String RUN_DATES    = "_RUN_DATE_";
+        public static final String SHINY_LOG    = "_SHINY_LOG_";
+    }
 }

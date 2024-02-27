@@ -19,9 +19,9 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
+import org.diskproject.shared.classes.workflow.Execution;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowTemplate;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 public class AirFlowAdapter extends MethodAdapter {
     private PoolingHttpClientConnectionManager connectionManager;
@@ -111,7 +111,7 @@ public class AirFlowAdapter extends MethodAdapter {
     }
 
     @Override
-    public WorkflowRun getRunStatus(String runId) {
+    public Execution getRunStatus(String runId) {
         // Auto-generated method stub
         return null;
     }

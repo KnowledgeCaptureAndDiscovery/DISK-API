@@ -13,10 +13,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import org.apache.jena.query.QueryParseException;
 
+import org.diskproject.server.adapters.wings.WingsParser;
 import org.diskproject.server.db.DiskDB;
 import org.diskproject.server.db.QuestionDB;
 import org.diskproject.server.managers.DataAdapterManager;
@@ -34,20 +34,20 @@ import org.diskproject.shared.classes.adapters.MethodAdapter.FileAndMeta;
 import org.diskproject.shared.classes.common.Entity;
 import org.diskproject.shared.classes.common.Status;
 import org.diskproject.shared.classes.hypothesis.Goal;
+import org.diskproject.shared.classes.hypothesis.GoalResult;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
-import org.diskproject.shared.classes.workflow.WorkflowRun.RunBinding;
 import org.diskproject.shared.classes.question.Question;
 import org.diskproject.shared.classes.question.VariableOption;
 import org.diskproject.shared.classes.util.DataAdapterResponse;
 import org.diskproject.shared.classes.util.KBConstants;
 import org.diskproject.shared.classes.util.QuestionOptionsRequest;
+import org.diskproject.shared.classes.util.KBConstants.SPECIAL;
 import org.diskproject.shared.classes.vocabulary.Vocabulary;
-import org.diskproject.shared.classes.workflow.WorkflowVariable;
+import org.diskproject.shared.classes.workflow.VariableBinding.BindingTypes;
 import org.diskproject.shared.classes.workflow.Execution;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
 import org.diskproject.shared.classes.workflow.WorkflowSeed;
 import org.diskproject.shared.ontologies.DISK;
 
@@ -67,7 +67,7 @@ public class DiskRepository {
     private DiskDB diskDB;
     private QuestionDB questionDB;
 
-    private static SimpleDateFormat dateformatter = new SimpleDateFormat("HH:mm:ss yyyy-MM-dd");
+    private static SimpleDateFormat dateformatter = new SimpleDateFormat(KBConstants.DATE_FORMAT);
     Pattern varPattern = Pattern.compile("\\?(.+?)\\b");
     Pattern varCollPattern = Pattern.compile("\\[\\s*\\?(.+?)\\s*\\]");
 
@@ -513,10 +513,10 @@ public class DiskRepository {
                     }
                     List<DataResult> solutions = queryCache.get(cacheId);
                     if (solutions.size() == 0) {
-                        System.out.println("LOI " + cur.getId() + " got no results. ");
+                        System.out.println("LOI " + DiskDB.getLocalId(cur.getId()) + " got no results. ");
                         continue;
                     } else {
-                        System.out.println("LOI " + cur.getId() + " got " + solutions.size() + " results. ");
+                        System.out.println("LOI " + DiskDB.getLocalId(cur.getId()) + " got " + solutions.size() + " results. ");
                     }
 
                     if (loiMatch.fullCSV) {
@@ -769,7 +769,7 @@ public class DiskRepository {
         return getTLOIsForHypothesisAndLOI(hypId, loiId);
     }
 
-    public WorkflowRun getWorkflowRunStatus(String source, String id) {
+    public Execution getWorkflowRunStatus(String source, String id) {
         MethodAdapter methodAdapter = this.methodAdapters.getMethodAdapterByName(source);
         return methodAdapter != null ? methodAdapter.getRunStatus(id) : null;
     }
@@ -783,69 +783,75 @@ public class DiskRepository {
      * Threads
      */
 
-    public void processWorkflowOutputs (TriggeredLOI tloi, LineOfInquiry loi, WorkflowSeed workflow, Execution run, MethodAdapter methodAdapter, boolean meta) {
-        Map<String, RunBinding> outputs = null ; //run.getOutputs();
-        System.out.println("Should process results now!");
-        if (outputs == null) return;
-
-        Map<String,String> outputAssignations = new HashMap<String,String>();
-        for (WorkflowVariable wb: methodAdapter.getWorkflowVariables(workflow.getId())) {
-            if (!wb.isInput() || wb.isOutput()) { // This could be more strict
-                outputAssignations.put(wb.getName(), "DO_NO_STORE");
-            }
+    private Double processPValue (MethodAdapter methodAdapter, String dataid) {
+        String wingsP = downloadAsString(methodAdapter, dataid);
+        Double pVal = null;
+        try {
+            String strPVal = wingsP != null ? wingsP.split("\n", 2)[0] : "";
+            pVal = Double.valueOf(strPVal);
+        } catch (Exception e) {
+            System.err.println("[M] Error: " + dataid + " is a non valid p-value: " + wingsP);
         }
-        // We need to get the loi var assignations
-        String id = workflow.getId();
-        for (WorkflowSeed wb: (meta? loi.getMetaWorkflowSeeds() : loi.getWorkflowSeeds())) {
-            if (id.contains(wb.getId())) {
-                for (VariableBinding b: wb.getParameters()) { //FIXME: missing binding data here
-                    String varName = b.getVariable();
-                    if (outputAssignations.containsKey(varName)) {
-                        outputAssignations.put(varName, b.getSingleBinding());
+        if (pVal != null) {
+            System.out.println("[M] Detected p-value: " + pVal);
+            return pVal;
+        }
+        return null;
+    }
+
+    private String downloadAsString (MethodAdapter methodAdapter, String dataid) {
+        FileAndMeta fm = methodAdapter.fetchData(dataid);
+        byte[] byteConf = fm.data;
+        return byteConf != null ? new String(byteConf, StandardCharsets.UTF_8) : null;
+    }
+
+    public void processWorkflowOutputs (WorkflowSeed workflow, Execution run, boolean meta) {
+        MethodAdapter methodAdapter = methodAdapters.getMethodAdapterByEndpoint(workflow.getSource());
+        List<VariableBinding> generatedOutputs = run.getOutputs();
+        List<VariableBinding> variableOutputs  = workflow.getOutputs();
+        GoalResult newResult = new GoalResult();
+
+        for (VariableBinding definitions: variableOutputs) {
+            for (VariableBinding values: generatedOutputs) {
+                if (definitions.getVariable().equals(values.getVariable())) {
+                    String binding = definitions.getBinding().get(0);
+                    // The following require only one input file to be processed:
+                    if (!values.getIsArray() && values.getBindingType() == BindingTypes.DISK_DATA) {
+                        if (binding.equals(SPECIAL.CONFIDENCE_V)) {
+                            Double pVal = processPValue(methodAdapter, values.getSingleBinding());
+                            if (pVal != null) {
+                                newResult.setConfidenceType("p-Value"); //FIXME, set a way to determine the kind of confidence we use.
+                                newResult.setConfidenceValue(pVal);
+                            }
+                        } else if (binding.equals(SPECIAL.BRAIN_VIZ) || binding.equals(SPECIAL.SHINY_LOG)) {
+                            String v = downloadAsString(methodAdapter, values.getSingleBinding());
+                            if (v != null) {
+                                VariableBinding newbinding = new VariableBinding(values.getVariable(), v);
+                                newbinding.setDatatype(KBConstants.XSD_NS + "string");
+                                newResult.addValue(newbinding);
+                            }
+                        }
+                    }  
+                    // The following can be a single value or a list.
+                    if (binding.equals(SPECIAL.DOWNLOAD) || binding.equals(SPECIAL.IMAGE) || binding.equals(SPECIAL.VISUALIZE)) {
+                        //Should upload the file to minio.
+                        List<String> uris = new ArrayList<String>();
+                        for (String v: values.getBinding()) {
+                            System.out.println("[M] Downloading: " + v);
+                            FileAndMeta fm = methodAdapter.fetchData(v);
+                            uris.add(this.externalStorage.upload(WingsParser.getLocalId(v) , fm.contentType, fm.data));
+                        }
+                        if (uris.size() > 0) {
+                            // Here we add the new bindings to the results
+                            VariableBinding newBinding = new VariableBinding(values);
+                            newBinding.setBinding(uris);
+                            newResult.addValue(newBinding);
+                        }
                     }
                 }
             }
         }
-
-        // Now process generated outputs.
-        for (String outname : outputs.keySet()) {
-            String varBinding = outputAssignations.get(outname);
-            //for (String varName: outputAssignations.keySet()) {
-                //String varBinding = outputAssignations.get(varName);
-                if (varBinding == null) {
-                    System.out.println("[M] Variable binding not found for " + outname);
-                } else if (varBinding.contains("_DO_NO_STORE_") ||
-                    varBinding.contains("_DOWNLOAD_ONLY_") ||
-                    varBinding.contains("_IMAGE_") ||
-                    varBinding.contains("_VISUALIZE_")) {
-                    // DO NOTHING, some of these should be upload to MINIO
-                } else if (varBinding.contains("_CONFIDENCE_VALUE_")) {
-                    System.out.println("OUT: " + outname);
-                    //System.out.println("var: " + varName);
-                    System.out.println("bin: " + varBinding);
-
-                    String dataid = outputs.get(outname).id;
-                    FileAndMeta fm = methodAdapter.fetchData(dataid);
-                    byte[] byteConf = fm.data;
-                    String wingsP = byteConf != null ? new String(byteConf, StandardCharsets.UTF_8) : null;
-                    Double pVal = null;
-                    try {
-                        String strPVal = wingsP != null ? wingsP.split("\n", 2)[0] : "";
-                        pVal = Double.valueOf(strPVal);
-                    } catch (Exception e) {
-                        System.err.println("[M] Error: " + dataid + " is a non valid p-value: " + wingsP);
-                    }
-                    if (pVal != null) {
-                        System.out.println("[M] Detected p-value: " + pVal);
-                        //FIXME:
-                        //tloi.setConfidenceValue(pVal);
-                        //tloi.setConfidenceType("P-VALUE");
-                    }
-                } else {
-                    System.out.println("Output information not found");
-                }
-            //}
-        }
+        run.setResult(newResult);
     }
 
     public Entity getOrCreateEntity(String username) {

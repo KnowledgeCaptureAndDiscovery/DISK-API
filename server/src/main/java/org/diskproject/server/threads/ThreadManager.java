@@ -18,7 +18,6 @@ import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.workflow.Execution;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
 import org.diskproject.shared.classes.workflow.WorkflowSeed;
 import org.diskproject.shared.classes.workflow.WorkflowVariable;
 
@@ -75,15 +74,13 @@ public class ThreadManager {
     }
 
     public void processFinishedRun (TriggeredLOI tloi, WorkflowSeed wf, Execution run, boolean meta) {
-        LineOfInquiry loi = disk.getLOI(tloi.getParentLoi().getId());
-        MethodAdapter methodAdapter = this.getMethodAdapters().getMethodAdapterByName(wf.getSource().getName());
-        disk.processWorkflowOutputs(tloi, loi, wf, run, methodAdapter, meta);
+        disk.processWorkflowOutputs(wf, run, meta);
     }
 
     private boolean addMetaBindings (TriggeredLOI tloi) {
         List<String> dates = new ArrayList<String>();
         Map<String, List<String>> files = new HashMap<String, List<String>>();
-            System.out.println("Adding data to metaworkflow");
+            System.out.println("[M] Adding data to metaworkflow");
         boolean allOk = true;
         //Get all 
         String thisParentLoiId = tloi.getParentLoi().getId();
