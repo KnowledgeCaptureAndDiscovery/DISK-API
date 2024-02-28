@@ -2,9 +2,12 @@ package org.diskproject.shared.classes.loi;
 
 import org.diskproject.shared.classes.common.Endpoint;
 
+import java.util.List;
+
 public class DataQueryTemplate {
     private Endpoint endpoint;
-    private String template, description, variablesToShow, footnote;
+    private String template, description, footnote;
+    private List<String> variablesToShow;
 
     public DataQueryTemplate () {}
 
@@ -37,11 +40,11 @@ public class DataQueryTemplate {
         this.description = description;
     }
 
-    public String getVariablesToShow() {
+    public List<String> getVariablesToShow() {
         return variablesToShow;
     }
 
-    public void setVariablesToShow(String variablesToShow) {
+    public void setVariablesToShow(List<String> variablesToShow) {
         this.variablesToShow = variablesToShow;
     }
 

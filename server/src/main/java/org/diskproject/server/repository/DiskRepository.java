@@ -544,7 +544,7 @@ public class DiskRepository {
 
     private TriggeredLOI uploadData (TriggeredLOI tloi) {
         //Check and upload files.
-        DataAdapter dataAdapter = dataAdapters.getMethodAdapterByEndpoint(tloi.getDataQueryTemplate().getEndpoint());
+        DataAdapter dataAdapter = dataAdapters.getMethodAdapterByEndpoint(tloi.getQueryResults().getEndpoint());
         List<WorkflowInstantiation> wf = new ArrayList<WorkflowInstantiation>(),
                 mwf = new ArrayList<WorkflowInstantiation>();
         for (WorkflowInstantiation i: tloi.getWorkflows()) {

@@ -106,38 +106,38 @@ public class ThreadManager {
             }
         }
 
-        for (WorkflowSeed wf: tloi.getMetaWorkflowSeeds()) {
+        /*for (WorkflowSeed wf: tloi.getMetaWorkflowSeeds()) {
             MethodAdapter adapter = this.methodAdapters.getMethodAdapterByName(wf.getSource().getName());
             List<WorkflowVariable> vars = adapter.getWorkflowVariables(wf.getId());
-            // Check this also TODO
-            //for (VariableBinding vb: wf.getBindings()) {
-            //    String binding = vb.getBinding();
-            //    if (binding.equals("_RUN_DATE_")) {
-            //        vb.setBinding("[" + String.join(",", dates) + "]");
-            //    } else {
-            //        if (binding.startsWith("[") && binding.endsWith("]")) {
-            //            binding = binding.substring(1, binding.length() -1);
-            //        }
-            //        for (String outName: files.keySet()) {
-            //            if (binding.equals("!" + outName)) {
-            //                vb.setBinding("[" + String.join(",", files.get(outName)) + "]");
-            //                String type = null;
-            //                for (WorkflowVariable wv: vars) {
-            //                    if (vb.getVariable().equals(wv.getName()) && wv.getType().size() > 0) {
-            //                        type = wv.getType().get(0);
-            //                    }
-            //                }
-            //                System.out.println("type: " + type);
-            //                // Upload files:
-            //                for (String dataid: files.get(outName)) {
-            //                    if (!adapter.registerData(dataid, type));
-            //                        allOk = false;
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
-        }
+             Check this also TODO
+            for (VariableBinding vb: wf.getBindings()) {
+                String binding = vb.getBinding();
+                if (binding.equals("_RUN_DATE_")) {
+                    vb.setBinding("[" + String.join(",", dates) + "]");
+                } else {
+                    if (binding.startsWith("[") && binding.endsWith("]")) {
+                        binding = binding.substring(1, binding.length() -1);
+                    }
+                    for (String outName: files.keySet()) {
+                        if (binding.equals("!" + outName)) {
+                            vb.setBinding("[" + String.join(",", files.get(outName)) + "]");
+                            String type = null;
+                            for (WorkflowVariable wv: vars) {
+                                if (vb.getVariable().equals(wv.getName()) && wv.getType().size() > 0) {
+                                    type = wv.getType().get(0);
+                                }
+                            }
+                            System.out.println("type: " + type);
+                            // Upload files:
+                            for (String dataid: files.get(outName)) {
+                                if (!adapter.registerData(dataid, type));
+                                    allOk = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }*/
 
         return allOk;
     }

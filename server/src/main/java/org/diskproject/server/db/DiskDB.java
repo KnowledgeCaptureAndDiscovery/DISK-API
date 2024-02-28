@@ -3,6 +3,7 @@ package org.diskproject.server.db;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -20,6 +21,7 @@ import org.diskproject.shared.classes.hypothesis.Goal;
 import org.diskproject.shared.classes.hypothesis.GoalResult;
 import org.diskproject.shared.classes.loi.DataQueryResult;
 import org.diskproject.shared.classes.loi.DataQueryTemplate;
+import org.diskproject.shared.classes.loi.LOICommon;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.question.Question;
@@ -507,8 +509,10 @@ public class DiskDB {
             domainKB.setPropertyValue(dq, DISKOnt.getProperty(DISK.HAS_DATA_SOURCE), domainKB.getIndividual(dataQuery.getEndpoint().getId()));
         if (dataQuery.getTemplate() != null)
             domainKB.setPropertyValue(dq, DISKOnt.getProperty(DISK.HAS_QUERY_TEMPLATE), domainKB.createLiteral(dataQuery.getTemplate()));
-        if (dataQuery.getVariablesToShow() != null)
-            domainKB.setPropertyValue(dq, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES), domainKB.createLiteral(dataQuery.getVariablesToShow()));
+        if (dataQuery.getVariablesToShow() != null) {
+            String arrString = "[" + String.join(",",dataQuery.getVariablesToShow()) + "]";
+            domainKB.setPropertyValue(dq, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES), domainKB.createLiteral(arrString));
+        }
         if (dataQuery.getFootnote() != null)
             domainKB.setPropertyValue(dq, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION), domainKB.createLiteral(dataQuery.getFootnote()));
         return dq;
@@ -521,8 +525,14 @@ public class DiskDB {
         if (domainKB.getComment(objTemplate) != null)
             dataQuery.setDescription(domainKB.getComment(objTemplate));
         KBObject objVars = domainKB.getPropertyValue(objTemplate, DISKOnt.getProperty(DISK.HAS_TABLE_VARIABLES));
-        if (objVars != null)
-            dataQuery.setVariablesToShow(objVars.getValueAsString());
+        if (objVars != null) {
+            String raw = objVars.getValueAsString();
+            if (raw.startsWith("[") && raw.endsWith("]")) {
+                dataQuery.setVariablesToShow(Arrays.asList(raw.substring(1, raw.length()-1).split(",")));
+            } else {
+                System.out.println("Could not read table variables: " + raw);
+            }
+        }
         KBObject objFootnotes = domainKB.getPropertyValue(objTemplate, DISKOnt.getProperty(DISK.HAS_TABLE_DESCRIPTION));
         if (objFootnotes != null)
             dataQuery.setFootnote(objFootnotes.getValueAsString());
@@ -583,7 +593,24 @@ public class DiskDB {
         this.rdf.startWrite();
 
         KBObject loiItem = writeCommonResource(loi, loiId, DISKOnt.getClass(DISK.LINE_OF_INQUIRY));
-        writeLOIExtras(loi, loiItem);
+        writeLOICommon(loi, loiItem);
+        if (loi.getDataQueryTemplate() != null) {
+            KBObject dqt = writeDataQueryTemplate(loi.getDataQueryTemplate());
+            domainKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY), dqt);
+        }
+        List<WorkflowSeed> wf = loi.getWorkflowSeeds(), mwf = loi.getMetaWorkflowSeeds();
+        if (wf != null && wf.size() > 0) {
+            for (WorkflowSeed wfSeed: wf) {
+                domainKB.addPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_WORKFLOW_SEED), 
+                    writeWorkflowSeed(wfSeed, loi.getId()));
+            }
+        }
+        if (mwf != null && mwf.size() > 0) {
+            for (WorkflowSeed wfSeed: mwf) {
+                domainKB.addPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_META_WORKFLOW_SEED), 
+                    writeWorkflowSeed(wfSeed, loi.getId()));
+            }
+        }
         this.rdf.save(domainKB);
         this.rdf.end();
 
@@ -602,55 +629,10 @@ public class DiskDB {
         }
 
         LineOfInquiry loi = new LineOfInquiry(loadCommonResource(loiItem));
-        loadLOIExtras(loi, loiItem);
-        this.rdf.end();
-        return loi;
-    }
-
-    private void writeLOIExtras (LineOfInquiry loi, KBObject loiItem) {
-        domainKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_UPDATE_CONDITION),
-                domainKB.createLiteral(loi.getUpdateCondition()));
-        if (loi.getGoalQuery() != null) {
-            domainKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_GOAL_QUERY),
-                    domainKB.createLiteral(loi.getGoalQuery()));
-        }
-        if (loi.getDataQueryTemplate() != null) {
-            KBObject dqt = writeDataQueryTemplate(loi.getDataQueryTemplate());
-            domainKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY), dqt);
-        }
-        String questionId = loi.getQuestion().getId();
-        if (questionId != null)
-            domainKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION),
-                    domainKB.createLiteral(questionId));
-        List<WorkflowSeed> wf = loi.getWorkflowSeeds(), mwf = loi.getMetaWorkflowSeeds();
-        if (wf != null && wf.size() > 0) {
-            for (WorkflowSeed wfSeed: wf) {
-                domainKB.addPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_WORKFLOW_SEED), 
-                    writeWorkflowSeed(wfSeed, loi.getId()));
-            }
-        }
-        if (mwf != null && mwf.size() > 0) {
-            for (WorkflowSeed wfSeed: mwf) {
-                domainKB.addPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_META_WORKFLOW_SEED), 
-                    writeWorkflowSeed(wfSeed, loi.getId()));
-            }
-        }
-    }
-
-    private void loadLOIExtras (LineOfInquiry loi, KBObject loiItem) {
-        KBObject goalQueryObj = domainKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_GOAL_QUERY));
-        if (goalQueryObj != null)
-            loi.setGoalQuery(goalQueryObj.getValueAsString());
+        loadLOICommon(loi, loiItem);
         KBObject dataQueryObj = domainKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_DATA_QUERY));
         if (dataQueryObj != null)
             loi.setDataQueryTemplate(loadDataQueryTemplate(dataQueryObj));
-        KBObject questionobj = domainKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION));
-        if (questionobj != null)
-            loi.setQuestion(new Question(questionobj.getValueAsString()));
-        KBObject updateCondObj = domainKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_UPDATE_CONDITION));
-        if (updateCondObj != null)
-            loi.setUpdateCondition( Integer.parseInt(updateCondObj.getValueAsString()) );
-
         List<KBObject> wfSeeds  = domainKB.getPropertyValues(loiItem, DISKOnt.getProperty(DISK.HAS_WORKFLOW_SEED));
         List<KBObject> mwfSeeds = domainKB.getPropertyValues(loiItem, DISKOnt.getProperty(DISK.HAS_META_WORKFLOW_SEED));
         List<WorkflowSeed> wList = new ArrayList<WorkflowSeed>(), mList = new ArrayList<WorkflowSeed>();
@@ -667,6 +649,36 @@ public class DiskDB {
         }
         loi.setWorkflowSeeds(wList);
         loi.setMetaWorkflowSeeds(mList);
+
+        this.rdf.end();
+        return loi;
+    }
+
+    private void writeLOICommon (LOICommon loi, KBObject loiItem) {
+        domainKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_UPDATE_CONDITION),
+                domainKB.createLiteral(loi.getUpdateCondition()));
+        if (loi.getGoalQuery() != null) {
+            domainKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_GOAL_QUERY),
+                    domainKB.createLiteral(loi.getGoalQuery()));
+        }
+        String questionId = loi.getQuestion().getId();
+        if (questionId != null)
+            domainKB.setPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION),
+                    domainKB.createLiteral(questionId));
+
+    }
+
+    private void loadLOICommon (LOICommon loi, KBObject loiItem) {
+        KBObject goalQueryObj = domainKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_GOAL_QUERY));
+        if (goalQueryObj != null)
+            loi.setGoalQuery(goalQueryObj.getValueAsString());
+        KBObject questionobj = domainKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_QUESTION));
+        if (questionobj != null)
+            loi.setQuestion(new Question(questionobj.getValueAsString()));
+        KBObject updateCondObj = domainKB.getPropertyValue(loiItem, DISKOnt.getProperty(DISK.HAS_UPDATE_CONDITION));
+        if (updateCondObj != null)
+            loi.setUpdateCondition( Integer.parseInt(updateCondObj.getValueAsString()) );
+
     }
 
     public boolean deleteLOI(String id) {
@@ -1058,7 +1070,7 @@ public class DiskDB {
 
         this.rdf.startWrite();
         KBObject tloiItem = writeCommonResource(tloi, tloiId, DISKOnt.getClass(DISK.TRIGGERED_LINE_OF_INQUIRY));
-        writeLOIExtras(tloi, tloiItem);
+        writeLOICommon(tloi, tloiItem);
         if (tloi.getParentLoi() != null) {
             KBObject loiObj = domainKB.getResource(tloi.getParentLoi().getId());
             domainKB.setPropertyValue(tloiItem, DISKOnt.getProperty(DISK.HAS_LINE_OF_INQUIRY), loiObj);
@@ -1103,7 +1115,7 @@ public class DiskDB {
         KBObject obj = domainKB.getIndividual(tloiId);
         if (obj != null && obj.getName() != null) {
             TriggeredLOI tloi = new TriggeredLOI(loadCommonResource(obj));
-            loadLOIExtras(tloi, obj);
+            loadLOICommon(tloi, obj);
 
             KBObject parentLOI = domainKB.getPropertyValue(obj, DISKOnt.getProperty(DISK.HAS_LINE_OF_INQUIRY));
             if (parentLOI != null) // We do not load the LOI

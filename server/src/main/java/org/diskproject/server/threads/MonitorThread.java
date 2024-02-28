@@ -154,9 +154,5 @@ public class MonitorThread implements Runnable {
                 }
             }
         }
-        System.out.println("Update wf status:");
-        for (WorkflowInstantiation inst: list) {
-            System.out.println(inst.getStatus());
-        }
     }
 }
