@@ -1,47 +1,28 @@
 package org.diskproject.shared.classes.loi;
 
-import java.util.ArrayList;
 import java.util.List;
-
 import org.diskproject.shared.classes.DISKResource;
-import org.diskproject.shared.classes.question.Question;
 import org.diskproject.shared.classes.workflow.WorkflowSeed;
 
-public class LineOfInquiry extends DISKResource {
-    public static class UpdateConditions {
-        public static final int
-                ON_DATA_UPDATE = 1,
-                ON_METHOD_UPDATE = 2,
-                MANUAL = 4;
-    }
-    int updateCondition = UpdateConditions.ON_DATA_UPDATE;
-    String goalQuery; //Simple query to get the graph.
-    Question question;
+public class LineOfInquiry extends LOICommon {
     DataQueryTemplate dataQueryTemplate;
-    // Methods
     List<WorkflowSeed> workflowSeeds, metaWorkflowSeeds;
+
+    public LineOfInquiry () {}
 
     public LineOfInquiry (DISKResource src) {
         super(src);
     }
 
     public LineOfInquiry (String id){
-        this.setId(id);
-    }
-
-    public LineOfInquiry() {
-        this.workflowSeeds = new ArrayList<WorkflowSeed>();
-        this.metaWorkflowSeeds = new ArrayList<WorkflowSeed>();
+        super(id);
     }
 
     public LineOfInquiry(String id, String name, LineOfInquiry src){
-        super(id,name,src.getDescription());
-        this.updateCondition = src.getUpdateCondition();
-        this.question = src.getQuestion();
+        super(id,name,src);
         this.dataQueryTemplate = src.getDataQueryTemplate();
         this.workflowSeeds = src.getWorkflowSeeds();
         this.metaWorkflowSeeds = src.getMetaWorkflowSeeds();
-        this.goalQuery = src.getGoalQuery();
     }
 
     public DataQueryTemplate getDataQueryTemplate () {
@@ -74,29 +55,5 @@ public class LineOfInquiry extends DISKResource {
 
     public void addMetaWorkflow(WorkflowSeed metaWorkflowId) {
         this.metaWorkflowSeeds.add(metaWorkflowId);
-    }
-
-    public void setUpdateCondition (int b) {
-        this.updateCondition = b;
-    }
-
-    public int getUpdateCondition () {
-        return this.updateCondition;
-    }
-
-    public String getGoalQuery() {
-        return goalQuery;
-    }
-
-    public void setGoalQuery(String goalQuery) {
-        this.goalQuery = goalQuery;
-    }
-
-    public Question getQuestion() {
-        return question;
-    }
-
-    public void setQuestion(Question question) {
-        this.question = question;
     }
 }

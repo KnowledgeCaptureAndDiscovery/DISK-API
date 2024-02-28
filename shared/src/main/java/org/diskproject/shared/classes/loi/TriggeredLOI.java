@@ -9,18 +9,17 @@ import org.diskproject.shared.classes.common.Status;
 import org.diskproject.shared.classes.hypothesis.Goal;
 import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
 
-public class TriggeredLOI extends LineOfInquiry implements Comparable<TriggeredLOI> {
+public class TriggeredLOI extends LOICommon implements Comparable<TriggeredLOI> {
     Status status;
     LineOfInquiry parentLoi;
     Goal parentGoal;
     DataQueryResult queryResults;
     List<WorkflowInstantiation> workflows, metaWorkflows;
 
+    public TriggeredLOI () {}
+
     public TriggeredLOI (DISKResource src) {
         super(src);
-    }
-
-    public TriggeredLOI() {
     }
 
     public TriggeredLOI(LineOfInquiry loi, Goal goal) {

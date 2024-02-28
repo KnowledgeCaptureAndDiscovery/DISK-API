@@ -32,10 +32,10 @@ public class Match {
     public final Question question;
     public final DataAdapter dataSource;
     public boolean fullCSV, valid, ready;
-    public Set<String> seedVariables, arrayVariables; // These are the variables required from the seeds.
+    public Set<String> selectVariables, seedVariables, arrayVariables; // These are the variables required from the seeds.
     public String csvURL, querySend;
     public List<DataResult> queryResult;
-    public Set<String> queryVariables; //this ones dont have the ?
+    public Set<String> queryVariables; //this ones do not have the `?`
 
     public Match (Goal goal, LineOfInquiry loi, Question question, DataAdapter dataSource) {
         this.goal = goal;
@@ -58,7 +58,7 @@ public class Match {
     private boolean analyseWorkflows () {
         boolean isCSV = false;
         List<WorkflowSeed> allSeeds = Stream.concat(loi.getWorkflowSeeds().stream(), loi.getMetaWorkflowSeeds().stream()).collect(Collectors.toList());
-        Set<String> reqVariables = new HashSet<String>(), arrayVars = new HashSet<String>(), nonArrayVars = new HashSet<String>();
+        Set<String> reqVariables = new HashSet<String>(), arrayVars = new HashSet<String>(), selectVars = new HashSet<String>();
         for (WorkflowSeed seed: allSeeds) {
             Endpoint source = seed.getSource();
             if (source == null || source.getId() == null || source.getId().equals("")) {
@@ -76,7 +76,6 @@ public class Match {
                     } else {
                         //This should not happen.
                         System.out.println("Workflow seed configuration sets two variables for a single parameter/input");
-                        nonArrayVars.add(raw);
                         return false;
                     }
                 } else {
@@ -84,6 +83,7 @@ public class Match {
                 }
                 if (raw.startsWith("?")) {
                     reqVariables.add(raw);
+                    selectVars.add(raw);
                 } else if (raw.equals(SPECIAL.CSV)) {
                     isCSV = true;
                 }
@@ -94,9 +94,16 @@ public class Match {
             System.out.println("Workflow seeds must require at least one variable from the data query ");
             return false;
         }
+
+        if (loi.getDataQueryTemplate() != null) {
+            for (String v: loi.getDataQueryTemplate().getVariablesToShow()) {
+                selectVars.add(v);
+            }
+        }
         this.fullCSV = isCSV;
         this.seedVariables = reqVariables;
         this.arrayVariables = arrayVars;
+        this.selectVariables = selectVars;
         return true;
     }
 
@@ -179,7 +186,15 @@ public class Match {
     }
 
     public String getResultsAsCSV () {
-        return "";
+        String csv = String.join(",", queryVariables);
+        for (DataResult line: queryResult) {
+            List<String> arrLine = new ArrayList<String>();
+            for (String varName: queryVariables) {
+                arrLine.add(line.getValue(varName));
+            }
+            csv += "\n" + String.join(",", arrLine);
+        }
+        return csv;
     }
 
     public TriggeredLOI createTLOI () {
@@ -203,6 +218,7 @@ public class Match {
         if (queryResult == null || queryVariables == null || !ready || queryResult.size() == 0 || queryVariables.size() == 0) {
             return null;
         }
+        List<DataResult> filteredResults = filterQueryResults(selectVariables);
         // One seed can create multiple instances. As the results are a table, we need to aggregate the results.
         int runs = 0;
         Map<String,Integer> ticks = new HashMap<String,Integer>();
@@ -210,7 +226,7 @@ public class Match {
             ticks.put(name, 0);
             String lastValue = null;
             boolean isArray = arrayVariables.contains("?" + name);
-            for (DataResult cell: this.queryResult) {
+            for (DataResult cell: filteredResults) {
                 String currentValue = cell.getValue(name);
                 if (currentValue != lastValue) {
                     int newMax = ticks.get(name) + 1;
@@ -223,15 +239,11 @@ public class Match {
             }
         }
 
-        //for (String name: queryVariables) {
-        //    System.out.println(name + (arrayVariables.contains("?" + name) ? " [array]" : " [single]") + " = " + ticks.get(name));
-        //}
-        
         //Separate the table depending of the runs.
         List<List<DataResult>> independentResults = new ArrayList<List<DataResult>>();
         List<DataResult> lastList = new ArrayList<DataResult>();
-        int count = 0, splitSize = queryResult.size()/runs;
-        for (DataResult cell: queryResult) {
+        int count = 0, splitSize = filteredResults.size()/runs;
+        for (DataResult cell: filteredResults) {
             count += 1;
             if (count >= splitSize) {
                 count = 0;
@@ -240,7 +252,6 @@ public class Match {
             }
             lastList.add(cell);
         }
-        //System.out.println(independentResults.size());
 
         List<WorkflowInstantiation> inst = new ArrayList<WorkflowInstantiation>();
         for (List<DataResult> resultsToBind: independentResults) {
@@ -267,7 +278,7 @@ public class Match {
                         }
                     } else {
                         // Required variable is not on the query results.
-                        // Should break the outer loop, FIXME;
+                        // Should break the outer loop?
                         continue;
                     }
                 }
@@ -277,10 +288,26 @@ public class Match {
                 }
             }
             current.setDataBindings(dataBindings);
-            //System.out.println(current);
             inst.add(current);
         }
         return inst;
     }
 
+    private List<DataResult> filterQueryResults (Set<String> allowedVariables) {
+        // If the query results includes variables not used on the workflow, these are removed if the contents are the same.
+        List<DataResult> list = new ArrayList<DataResult>();
+        String lastLine = "";
+        for (DataResult cell: queryResult) {
+            String currentLine = "";
+            for (String v: allowedVariables) {
+                String varName = v.startsWith("?") ? v.substring(1) : v;
+                currentLine += cell.getValue(varName) + ",";
+            }
+            if (!currentLine.equals(lastLine)) {
+                lastLine = currentLine;
+                list.add(cell);
+            }
+        }
+        return list;
+    }
 }

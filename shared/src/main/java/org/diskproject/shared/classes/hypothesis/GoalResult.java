@@ -3,9 +3,7 @@ package org.diskproject.shared.classes.hypothesis;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

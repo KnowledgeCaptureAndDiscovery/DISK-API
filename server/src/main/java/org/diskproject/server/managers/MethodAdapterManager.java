@@ -118,7 +118,7 @@ public class MethodAdapterManager {
 
     /**
      * Create records for each adapter into the RDF database.
-     * @param db Diskdb where to register the adapters.
+     * @param db DiskDB where to register the adapters.
      */
     public void registerAdapters (DiskDB db) {
         this.byId = new HashMap<String, MethodAdapter>();
