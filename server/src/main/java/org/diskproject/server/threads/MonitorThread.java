@@ -90,7 +90,7 @@ public class MonitorThread implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("[M] Running monitoring thread");
+        //System.out.println("[M] Running monitoring thread");
         Execution pendingRun = this.getNextPendingRun();
         if (pendingRun == null || pendingRun.getExternalId() == null) {
             System.out.println("[M] No more pending runs.");
@@ -106,10 +106,13 @@ public class MonitorThread implements Runnable {
             Execution updatedRun = methodAdapter.getRunStatus(runId);
 
             // If we cannot get the status but the run was pending, it means that the run is in the WINGS queue.
-            if (updatedRun == null || updatedRun.getStatus() == null) {
+            if (updatedRun == null || updatedRun.getStatus() == null || updatedRun.getStatus() == Status.INTERNAL_ERROR) {
                 System.out.println("[E] Cannot get status for " + tloi.getId() + " - RUN " + runId);
                 if (pendingRun.getStatus() == Status.PENDING) { // In queue
                     updatedRun = pendingRun;
+                } else if (updatedRun != null && updatedRun.getStatus() == Status.INTERNAL_ERROR) {
+                    updatedRun.setStatus(Status.FAILED);
+                    System.out.println("[E] Internal error for run: " + runId);
                 } else {
                     System.out.println("[E] This should not happen");
                     return;
@@ -122,7 +125,7 @@ public class MonitorThread implements Runnable {
         this.tloi.setStatus(status);
         manager.updateTLOI(tloi);
 
-        if (status == Status.SUCCESSFUL || status == Status.FAILED) {
+        if (status == Status.SUCCESSFUL || status == Status.FAILED || status == Status.INTERNAL_ERROR) {
             if (status == Status.SUCCESSFUL) {
                 if (metamode) {
                     System.out.println("[M] " + this.tloi.getId() + " was successfully executed.");
@@ -130,7 +133,7 @@ public class MonitorThread implements Runnable {
                     System.out.println("[M] Starting metamode after " + this.runList.size() + " runs.");
                     this.manager.executeTLOI(tloi, true);
                 }
-            } else if (status == Status.FAILED) {
+            } else if (status == Status.FAILED || status == Status.INTERNAL_ERROR) {
                 if (metamode) {
                     System.out.println("[M] " + this.tloi.getId() + " was executed with errors.");
                 } else {

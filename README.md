@@ -13,6 +13,11 @@ metadata and outputs for posterior analysis.
 
 Full documentation is available at [https://disk.readthedocs.io](https://disk.readthedocs.io)
 
+
+## Installation
+
+Please read the installation guide available at [readthedocs.io](https://disk.readthedocs.io/en/stable/admin-guide/installation/)
+
 ## Related repositories
 
 - [DISK User Interface](https://github.com/KnowledgeCaptureAndDiscovery/DISK-UI)
