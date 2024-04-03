@@ -8,7 +8,6 @@ import org.diskproject.shared.classes.workflow.WorkflowVariable;
 import org.diskproject.shared.classes.workflow.Execution;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowTemplate;
-import org.diskproject.shared.classes.workflow.WorkflowRun;
 
 public abstract class MethodAdapter {
     private String name;

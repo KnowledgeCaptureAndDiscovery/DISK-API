@@ -52,10 +52,10 @@ public class Match {
             return;
         }
 
-        this.valid = this.analyseWorkflows();
+        this.valid = this.analyzeWorkflows();
     }
 
-    private boolean analyseWorkflows () {
+    private boolean analyzeWorkflows () {
         boolean isCSV = false;
         List<WorkflowSeed> allSeeds = Stream.concat(loi.getWorkflowSeeds().stream(), loi.getMetaWorkflowSeeds().stream()).collect(Collectors.toList());
         Set<String> reqVariables = new HashSet<String>(), arrayVars = new HashSet<String>(), selectVars = new HashSet<String>();
@@ -143,21 +143,31 @@ public class Match {
             String varName = questionVariables.get(varURI);
             if (varNames.contains(varName)) {
                 boolean writtenVarName = false;
-                for (String value: vb.getBinding()) {
+                List<String> allValues = vb.getBinding();
+                for (String value: allValues) {
                     if (value != null && !value.equals("")) {
                         String datatype = vb.getDatatype();
                         if (!writtenVarName) {
-                            query += "\nVALUES " + varName + " {\n";
+                            query += "\n  VALUES " + varName + " {";
+                            if (allValues.size() > 1) {
+                                query += "\n";
+                            }
                             writtenVarName = true;
                         }
                         if (datatype != null && datatype.endsWith("anyURI")) {
-                            query += "  <" + value + ">\n";
+                            query += "  <" + value + ">";
                         } else {
-                            query += "  \"" + value + "\"\n";
+                            query += "  \"" + value + "\"";
+                        }
+                        if (allValues.size() > 1) {
+                            query += "\n";
                         }
                     }
                 }
                 if (writtenVarName) {
+                    if (allValues.size() > 1) {
+                        query += " ";
+                    }
                     query += "}";
                 }
             }
@@ -245,12 +255,12 @@ public class Match {
         int count = 0, splitSize = filteredResults.size()/runs;
         for (DataResult cell: filteredResults) {
             count += 1;
+            lastList.add(cell);
             if (count >= splitSize) {
                 count = 0;
                 independentResults.add(lastList);
                 lastList = new ArrayList<DataResult>();
             }
-            lastList.add(cell);
         }
 
         List<WorkflowInstantiation> inst = new ArrayList<WorkflowInstantiation>();
@@ -260,7 +270,7 @@ public class Match {
             for (VariableBinding varB: Stream.concat(seed.getInputs().stream(), seed.getParameters().stream()).collect(Collectors.toList())) {
                 // These only have one value
                 String wfBiding = varB.getBinding().get(0);
-                VariableBinding newDatabinding = new VariableBinding(varB);
+                VariableBinding newDataBinding = new VariableBinding(varB);
                 List<String> newBindingValues = new ArrayList<String>();
                 if (wfBiding.equals(SPECIAL.CSV)) {
                     newBindingValues.add(csvURL);
@@ -283,8 +293,8 @@ public class Match {
                     }
                 }
                 if (newBindingValues.size() > 0) {
-                    newDatabinding.setBinding(newBindingValues);
-                    dataBindings.add(newDatabinding);
+                    newDataBinding.setBinding(newBindingValues);
+                    dataBindings.add(newDataBinding);
                 }
             }
             current.setDataBindings(dataBindings);

@@ -403,6 +403,7 @@ public class DiskRepository {
                     if (allSolutions != null) {
                         if (allSolutions.size() == 0) {
                             System.out.println("No solutions for " + loi.getId());
+                            //System.out.println(errorMesString);
                             //String errorMesString = "No solutions found for the query: \n" + query;
                             //System.out.println(errorMesString);
                             // throw new NotFoundException(errorMesString);

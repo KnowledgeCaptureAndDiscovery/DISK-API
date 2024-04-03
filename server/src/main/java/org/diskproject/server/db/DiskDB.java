@@ -459,13 +459,13 @@ public class DiskDB {
             return false;
 
         String goalId = createGoalURI(id);
-        KBAPI hypKB = getKB(goalId);
+        KBAPI goalKB = getKB(goalId);
 
-        if (domainKB != null && hypKB != null) {
+        if (domainKB != null && goalKB != null) {
             this.rdf.startRead();
-            KBObject hypitem = domainKB.getIndividual(goalId);
-            if (hypitem != null) {
-                ArrayList<KBObject> questionBindings = domainKB.getPropertyValues(hypitem,
+            KBObject goalItem = domainKB.getIndividual(goalId);
+            if (goalItem != null) {
+                ArrayList<KBObject> questionBindings = domainKB.getPropertyValues(goalItem,
                         DISKOnt.getProperty(DISK.HAS_QUESTION_BINDINGS));
                 this.rdf.end();
                 // Remove question template bindings
@@ -474,14 +474,14 @@ public class DiskDB {
                     for (KBObject binding : questionBindings) {
                         domainKB.deleteObject(binding, true, true);
                     }
-                domainKB.deleteObject(hypitem, true, true);
+                domainKB.deleteObject(goalItem, true, false);
                 this.rdf.save(domainKB);
                 this.rdf.end();
             } else {
                 this.rdf.end();
             }
 
-            return this.rdf.startWrite() && hypKB.delete() && this.rdf.save(hypKB) && this.rdf.end();
+            return this.rdf.startWrite() && goalKB.delete() && this.rdf.save(goalKB) && this.rdf.end();
         }
         return false;
     }
@@ -691,7 +691,7 @@ public class DiskDB {
         this.rdf.startWrite();
         KBObject hypitem = domainKB.getIndividual(loiId);
         if (hypitem != null)
-            domainKB.deleteObject(hypitem, true, true);
+            domainKB.deleteObject(hypitem, true, false);
             //TODO: remove query object too.
 
         return this.rdf.save(domainKB) && this.rdf.end();
@@ -1169,7 +1169,7 @@ public class DiskDB {
         this.rdf.end();
         if (item != null) {
             this.rdf.startWrite();
-            domainKB.deleteObject(item, true, true);
+            domainKB.deleteObject(item, true, false);
             return this.rdf.save(domainKB) && this.rdf.end();
         } else {
             return false;
