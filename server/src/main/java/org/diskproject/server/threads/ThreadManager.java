@@ -11,7 +11,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.diskproject.server.managers.MethodAdapterManager;
 import org.diskproject.server.repository.DiskRepository;
-import org.diskproject.shared.classes.adapters.MethodAdapter;
 import org.diskproject.shared.classes.common.Status;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
@@ -19,19 +18,22 @@ import org.diskproject.shared.classes.workflow.Execution;
 import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
 import org.diskproject.shared.classes.workflow.WorkflowSeed;
-import org.diskproject.shared.classes.workflow.WorkflowVariable;
 
 public class ThreadManager {
     protected MethodAdapterManager methodAdapters;
     private DiskRepository disk;
     protected ScheduledExecutorService monitor;
     protected ExecutorService executor;
+    private DataThread dataThread;
 
     public ThreadManager (MethodAdapterManager methodAdapters, DiskRepository disk) {
         this.disk = disk;
         this.methodAdapters = methodAdapters;
         this.executor = Executors.newFixedThreadPool(2);
         this.monitor = Executors.newScheduledThreadPool(0);
+
+        this.dataThread = new DataThread(disk);
+        this.monitor.scheduleWithFixedDelay(this.dataThread, 0, 1, TimeUnit.DAYS);
     }
 
     public void shutdownExecutors () {
