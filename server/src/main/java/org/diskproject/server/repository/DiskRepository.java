@@ -482,6 +482,17 @@ public class DiskRepository {
     //    return tlois;
     //}
 
+    public void queryAllGoals () {
+        for (Goal goal: this.listGoals()) {
+            String localId = DiskDB.getLocalId(goal.getId());
+            try {
+                this.queryGoal(localId);
+            } catch (Exception e) {
+                System.err.println("Error querying goal " + localId);
+            }
+        }
+    }
+
     public List<TriggeredLOI> queryGoal (String id) throws Exception, QueryParseException {
         System.out.println("Quering goal: " + id);
         Goal goal = this.getGoal(id);
@@ -505,7 +516,7 @@ public class DiskRepository {
                 String template = loiMatch.createQueryTemplate();
                 if (dataSource != null && template != null) {
                     String query = this.getAllPrefixes() + "SELECT DISTINCT " +
-                            String.join(" ", loiMatch.seedVariables)
+                            String.join(" ", loiMatch.selectVariables)
                             + " WHERE { \n" + template + "\n}";
                     String cacheId = dataSource.getId() + "|" + query;
                     if (!queryCache.containsKey(cacheId)) {

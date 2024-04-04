@@ -228,11 +228,16 @@ public class Match {
         if (queryResult == null || queryVariables == null || !ready || queryResult.size() == 0 || queryVariables.size() == 0) {
             return null;
         }
-        List<DataResult> filteredResults = filterQueryResults(selectVariables);
+        List<DataResult> filteredResults = filterQueryResults(seedVariables);
+        Set<String> filteredVariables = new HashSet<String>();
+        for (String varSeed: seedVariables) {
+            filteredVariables.add(varSeed.substring(1));
+        }
+
         // One seed can create multiple instances. As the results are a table, we need to aggregate the results.
         int runs = 0;
         Map<String,Integer> ticks = new HashMap<String,Integer>();
-        for (String name: this.queryVariables) {
+        for (String name: filteredVariables) {
             ticks.put(name, 0);
             String lastValue = null;
             boolean isArray = arrayVariables.contains("?" + name);
@@ -276,7 +281,7 @@ public class Match {
                     newBindingValues.add(csvURL);
                 } else if (wfBiding.startsWith("?")) {
                     String name = wfBiding.substring(1);
-                    if (queryVariables.contains(name)) {
+                    if (filteredVariables.contains(name)) {
                         if (arrayVariables.contains(wfBiding)) {
                             //Is array, send a list with all values.
                             for (DataResult cell: resultsToBind) {
