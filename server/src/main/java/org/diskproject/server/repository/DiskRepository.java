@@ -23,7 +23,7 @@ import org.diskproject.server.managers.DataAdapterManager;
 import org.diskproject.server.managers.MethodAdapterManager;
 import org.diskproject.server.managers.StorageManager;
 import org.diskproject.server.managers.VocabularyManager;
-import org.diskproject.server.quering.Match;
+import org.diskproject.server.querying.Match;
 import org.diskproject.server.threads.ThreadManager;
 import org.diskproject.server.util.Config;
 import org.diskproject.server.util.KBUtils;
@@ -529,6 +529,7 @@ public class DiskRepository {
                         continue;
                     } else {
                         System.out.println("LOI " + DiskDB.getLocalId(cur.getId()) + " got " + solutions.size() + " results. ");
+                        System.out.println(query);
                     }
 
                     if (loiMatch.fullCSV) {

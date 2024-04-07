@@ -64,6 +64,8 @@ public class MonitorThread implements Runnable {
         for (String runId: this.runList) {
             Execution run = this.runInfo.get(runId);
             Status status = run.getStatus();
+            if (status == Status.INTERNAL_ERROR)
+                return Status.INTERNAL_ERROR;
             if (status == Status.FAILED)
                 return Status.FAILED;
             if (status != Status.SUCCESSFUL) //If all of them are pending then the tloi should be pending too.
@@ -107,16 +109,13 @@ public class MonitorThread implements Runnable {
 
             // If we cannot get the status but the run was pending, it means that the run is in the WINGS queue.
             if (updatedRun == null || updatedRun.getStatus() == null || updatedRun.getStatus() == Status.INTERNAL_ERROR) {
-                System.out.println("[E] Cannot get status for " + tloi.getId() + " - RUN " + runId);
-                if (pendingRun.getStatus() == Status.PENDING) { // In queue
+                if (updatedRun == null) {
                     updatedRun = pendingRun;
-                } else if (updatedRun != null && updatedRun.getStatus() == Status.INTERNAL_ERROR) {
-                    updatedRun.setStatus(Status.FAILED);
-                    System.out.println("[E] Internal error for run: " + runId);
-                } else {
-                    System.out.println("[E] This should not happen");
-                    return;
                 }
+                if (updatedRun.getStatus() != Status.INTERNAL_ERROR) {
+                    updatedRun.setStatus(Status.FAILED);
+                }
+                System.out.println("[E] Cannot get status for " + tloi.getId() + " - RUN " + runId);
             }
             updateRun(wf, updatedRun);
         }

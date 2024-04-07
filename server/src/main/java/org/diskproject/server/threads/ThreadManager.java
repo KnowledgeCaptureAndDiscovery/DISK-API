@@ -1,9 +1,7 @@
 package org.diskproject.server.threads;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -15,7 +13,6 @@ import org.diskproject.shared.classes.common.Status;
 import org.diskproject.shared.classes.loi.LineOfInquiry;
 import org.diskproject.shared.classes.loi.TriggeredLOI;
 import org.diskproject.shared.classes.workflow.Execution;
-import org.diskproject.shared.classes.workflow.VariableBinding;
 import org.diskproject.shared.classes.workflow.WorkflowInstantiation;
 import org.diskproject.shared.classes.workflow.WorkflowSeed;
 
@@ -65,8 +62,8 @@ public class ThreadManager {
         executor.execute(workflowThread);
     }
 
-    public void monitorTLOI (TriggeredLOI tloi, LineOfInquiry loi, Boolean metamode) {
-        MonitorThread monitorThread = new MonitorThread(this, tloi, metamode);
+    public void monitorTLOI (TriggeredLOI tloi, LineOfInquiry loi, Boolean metaMode) {
+        MonitorThread monitorThread = new MonitorThread(this, tloi, metaMode);
         monitor.schedule(monitorThread, 15, TimeUnit.SECONDS);
     }
 
@@ -80,9 +77,10 @@ public class ThreadManager {
     }
 
     private boolean addMetaBindings (TriggeredLOI tloi) {
+        //TODO
         List<String> dates = new ArrayList<String>();
-        Map<String, List<String>> files = new HashMap<String, List<String>>();
-            System.out.println("[M] Adding data to metaworkflow");
+        //Map<String, List<String>> files = new HashMap<String, List<String>>();
+            System.out.println("[M] Adding data to meta-workflow");
         boolean allOk = true;
         //Get all 
         String thisParentLoiId = tloi.getParentLoi().getId();
@@ -94,14 +92,13 @@ public class ThreadManager {
                 //TLOIs that match both, LOI & Hypothesis
                 for (WorkflowInstantiation wf: cur.getWorkflows()) {
                     for (Execution run: wf.getExecutions()) {
-                        for (VariableBinding out: run.getOutputs()) {
-                            //FIXME: continue here.
-                            //if (!files.containsKey(outputName)) {
-                            //    files.put(outputName, new ArrayList<String>());
-                            //}
-                            //List<String> list = files.get(outputName);
-                            //list.add(out.id.replaceAll("^.*#", ""));
-                        }
+                        //for (VariableBinding out: run.getOutputs()) {
+                        //    if (!files.containsKey(outputName)) {
+                        //        files.put(outputName, new ArrayList<String>());
+                        //    }
+                        //    List<String> list = files.get(outputName);
+                        //    list.add(out.id.replaceAll("^.*#", ""));
+                        //}
                         dates.add(String.valueOf(run.getEndDate()));
                     }
                 }
@@ -111,7 +108,6 @@ public class ThreadManager {
         /*for (WorkflowSeed wf: tloi.getMetaWorkflowSeeds()) {
             MethodAdapter adapter = this.methodAdapters.getMethodAdapterByName(wf.getSource().getName());
             List<WorkflowVariable> vars = adapter.getWorkflowVariables(wf.getId());
-             Check this also TODO
             for (VariableBinding vb: wf.getBindings()) {
                 String binding = vb.getBinding();
                 if (binding.equals("_RUN_DATE_")) {
@@ -131,8 +127,8 @@ public class ThreadManager {
                             }
                             System.out.println("type: " + type);
                             // Upload files:
-                            for (String dataid: files.get(outName)) {
-                                if (!adapter.registerData(dataid, type));
+                            for (String dataId: files.get(outName)) {
+                                if (!adapter.registerData(dataId, type));
                                     allOk = false;
                             }
                         }

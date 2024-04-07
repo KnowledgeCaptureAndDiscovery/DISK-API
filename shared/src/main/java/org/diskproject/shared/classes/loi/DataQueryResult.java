@@ -3,6 +3,8 @@ package org.diskproject.shared.classes.loi;
 public class DataQueryResult extends DataQueryTemplate {
     private String query, results;
 
+    public DataQueryResult() { }
+
     public DataQueryResult(DataQueryTemplate src) {
         super(src);
     }

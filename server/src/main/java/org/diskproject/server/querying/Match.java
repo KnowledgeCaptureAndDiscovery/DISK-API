@@ -1,4 +1,4 @@
-package org.diskproject.server.quering;
+package org.diskproject.server.querying;
 
 import org.diskproject.shared.classes.adapters.DataAdapter;
 import org.diskproject.shared.classes.adapters.DataResult;
@@ -311,15 +311,15 @@ public class Match {
     private List<DataResult> filterQueryResults (Set<String> allowedVariables) {
         // If the query results includes variables not used on the workflow, these are removed if the contents are the same.
         List<DataResult> list = new ArrayList<DataResult>();
-        String lastLine = "";
+        Set<String> read = new HashSet<String>();
         for (DataResult cell: queryResult) {
             String currentLine = "";
             for (String v: allowedVariables) {
                 String varName = v.startsWith("?") ? v.substring(1) : v;
                 currentLine += cell.getValue(varName) + ",";
             }
-            if (!currentLine.equals(lastLine)) {
-                lastLine = currentLine;
+            if (!read.contains(currentLine)) {
+                read.add(currentLine);
                 list.add(cell);
             }
         }
