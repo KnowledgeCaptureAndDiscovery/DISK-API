@@ -1,5 +1,6 @@
 package org.diskproject.server.repository;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -14,8 +15,10 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.jena.query.Dataset;
 import org.apache.jena.query.QueryParseException;
-
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
 import org.diskproject.server.adapters.wings.WingsParser;
 import org.diskproject.server.db.DiskDB;
 import org.diskproject.server.db.QuestionDB;
@@ -55,7 +58,6 @@ import edu.isi.kcap.ontapi.KBAPI;
 import edu.isi.kcap.ontapi.KBObject;
 import edu.isi.kcap.ontapi.KBTriple;
 import edu.isi.kcap.ontapi.OntSpec;
-import edu.isi.kcap.ontapi.SparqlQuerySolution;
 import javax.ws.rs.NotFoundException;
 
 public class DiskRepository {
@@ -315,31 +317,6 @@ public class DiskRepository {
         return dataVarBindings;
     }
 
-    private String getQueryBindings(String queryPattern, Pattern variablePattern,
-            Map<String, String> variableBindings) {
-        String pattern = "";
-        for (String line : queryPattern.split("\\n")) {
-            line = line.trim();
-            if (line.equals(""))
-                continue;
-            if (variableBindings != null) {
-                Matcher mat = variablePattern.matcher(line);
-                int diff = 0;
-                while (mat.find()) {
-                    if (variableBindings.containsKey(mat.group(1))) {
-                        String varbinding = variableBindings.get(mat.group(1));
-                        int st = mat.start(1);
-                        int end = mat.end(1);
-                        line = line.substring(0, st - 1 + diff) + varbinding + line.substring(end + diff);
-                        diff += varbinding.length() - (end - st) - 1;
-                    }
-                }
-            }
-            pattern += line + "\n";
-        }
-        return pattern;
-    }
-
     public Set<String> interceptVariables(final String queryA, final String queryB) {
         Set<String> A = new HashSet<String>();
         Matcher a = varPattern.matcher(queryA);
@@ -362,125 +339,6 @@ public class DiskRepository {
     /*
      * Executing hypothesis
      */
-
-    private Boolean isValid(LineOfInquiry loi) {
-        // Mandatory fields for Lnes of Inquiry
-        //FIXME: add all `isValid` to the classes.
-        return true;
-    }
-
-    private Boolean isValid(LineOfInquiry loi, Map<String, String> hypothesisBindings) {
-        // Check if the hypothesis bindings (values from the user) are valid in this LOI TODO
-        if (!isValid(loi))
-            return false;
-        return true;
-    }
-
-    public Map<LineOfInquiry, List<Map<String, String>>> getLOIByHypothesisId(String id) {
-        String hypuri = this.server + "/" + "/hypotheses";
-        // LoiId -> [{ variable -> value }]
-        Map<String, List<Map<String, String>>> allMatches = new HashMap<String, List<Map<String, String>>>();
-        List<LineOfInquiry> lois = this.diskDB.listLOIPreviews();
-
-        // Starts checking all LOIs that match the hypothesis directly from the KB.
-        try {
-            this.rdf.startRead();
-            KBAPI hypKB = this.rdf.getFactory().getKB(hypuri, OntSpec.PLAIN, true);
-            System.out.println("GRAPH: " + hypKB.getAllTriples().toString().replace("),", ")\n"));
-            for (LineOfInquiry loi : lois) {
-                String hq = loi.getGoalQuery();
-                if (hq != null) {
-                    String query = this.getAllPrefixes() + "SELECT DISTINCT * WHERE { \n"
-                            + loi.getGoalQuery() + " }";
-                    ArrayList<ArrayList<SparqlQuerySolution>> allSolutions = null;
-                    try {
-                        allSolutions = hypKB.sparqlQuery(query);
-                    } catch (Exception e) {
-                        System.out.println("Error querying:\n" + query);
-                        System.out.println(e);
-                        continue;
-                    }
-                    if (allSolutions != null) {
-                        if (allSolutions.size() == 0) {
-                            System.out.println("No solutions for " + loi.getId());
-                            //System.out.println(errorMesString);
-                            //String errorMesString = "No solutions found for the query: \n" + query;
-                            //System.out.println(errorMesString);
-                            // throw new NotFoundException(errorMesString);
-                        } else
-                            for (List<SparqlQuerySolution> row : allSolutions) {
-                                // One match per cell, store variables on cur.
-                                Map<String, String> cur = new HashMap<String, String>();
-                                for (SparqlQuerySolution cell : row) {
-                                    String var = cell.getVariable(), val = null;
-                                    KBObject obj = cell.getObject();
-                                    if (obj != null) {
-                                        if (obj.isLiteral()) {
-                                            val = '"' + obj.getValueAsString() + '"';
-                                        } else {
-                                            val = "<" + obj.getID() + ">";
-                                        }
-                                        cur.put(var, val);
-                                    }
-                                }
-                                // If there is at least one variable, add to match list.
-                                if (cur.size() > 0) {
-                                    String loiId = loi.getId().replaceAll("^.*\\/", "");
-                                    if (!allMatches.containsKey(loiId))
-                                        allMatches.put(loiId, new ArrayList<Map<String, String>>());
-                                    List<Map<String, String>> curList = allMatches.get(loiId);
-                                    curList.add(cur);
-                                }
-                            }
-                    }
-                } else {
-                    System.out.println("Error: No hypothesis query");
-                }
-            }
-            // this.end();
-        } catch (Exception e) {
-            // throw e;
-            e.printStackTrace();
-        } finally {
-            this.rdf.end();
-        }
-
-        Map<LineOfInquiry, List<Map<String, String>>> results = new HashMap<LineOfInquiry, List<Map<String, String>>>();
-        // allMatches contains LOIs that matches hypothesis, now check other conditions
-        for (String loiId : allMatches.keySet()) {
-            LineOfInquiry loi = this.getLOI(loiId);
-            for (Map<String, String> hBindings : allMatches.get(loiId)) {
-                if (isValid(loi, hBindings)) {
-                    if (!results.containsKey(loi))
-                        results.put(loi, new ArrayList<Map<String, String>>());
-                    List<Map<String, String>> curList = results.get(loi);
-                    curList.add(hBindings);
-                } else {
-                    System.out.println("Invalid:" + hBindings.toString());
-                }
-            }
-        }
-
-        // LOI -> [{ variable -> value }, {...}, ...]
-        return results;
-    }
-
-    //public List<TriggeredLOI> newQueryHypothesis (String username, String id) throws Exception, QueryParseException {
-    //    // New approach, use the question bindings.
-    //    List<TriggeredLOI> tlois = new ArrayList<TriggeredLOI>();
-    //    Hypothesis hypothesis = this.getHypothesis(username, id);
-    //    List<LineOfInquiry> lois = this.diskDB.listLOIPreviews(username);
-    //    List<LineOfInquiry> matchingLois = new ArrayList<LineOfInquiry>();
-    //    for (LineOfInquiry loi: lois) {
-    //        if (loi.getQuestionId().equals(hypothesis.getQuestionId())) {
-    //            matchingLois.add(loi);
-    //        }
-    //    }
-    //    List<VariableBinding> questionBindings = hypothesis.getQuestionBindings();
-    //    for (LineOfInquiry loi: matchingLois) {
-    //    }
-    //    return tlois;
-    //}
 
     public void queryAllGoals () {
         for (Goal goal: this.listGoals()) {
@@ -526,10 +384,13 @@ public class DiskRepository {
                     List<DataResult> solutions = queryCache.get(cacheId);
                     if (solutions.size() == 0) {
                         System.out.println("LOI " + DiskDB.getLocalId(cur.getId()) + " got no results. ");
+                        System.out.println(query);
+                        System.out.println("=========");
                         continue;
                     } else {
                         System.out.println("LOI " + DiskDB.getLocalId(cur.getId()) + " got " + solutions.size() + " results. ");
                         System.out.println(query);
+                        System.out.println("=========");
                     }
 
                     if (loiMatch.fullCSV) {
@@ -796,22 +657,6 @@ public class DiskRepository {
      * Threads
      */
 
-    private Double processPValue (MethodAdapter methodAdapter, String dataid) {
-        String wingsP = downloadAsString(methodAdapter, dataid);
-        Double pVal = null;
-        try {
-            String strPVal = wingsP != null ? wingsP.split("\n", 2)[0] : "";
-            pVal = Double.valueOf(strPVal);
-        } catch (Exception e) {
-            System.err.println("[M] Error: " + dataid + " is a non valid p-value: " + wingsP);
-        }
-        if (pVal != null) {
-            System.out.println("[M] Detected p-value: " + pVal);
-            return pVal;
-        }
-        return null;
-    }
-
     private String downloadAsString (MethodAdapter methodAdapter, String dataid) {
         FileAndMeta fm = methodAdapter.fetchData(dataid);
         byte[] byteConf = fm.data;
@@ -831,10 +676,31 @@ public class DiskRepository {
                     // The following require only one input file to be processed:
                     if (!values.getIsArray() && values.getBindingType() == BindingTypes.DISK_DATA) {
                         if (binding.equals(SPECIAL.CONFIDENCE_V)) {
-                            Double pVal = processPValue(methodAdapter, values.getSingleBinding());
+                            String wingsP = downloadAsString(methodAdapter, values.getSingleBinding());
+                            Double pVal = null, n = null;
+                            try {
+                                String[] lines = wingsP != null ? wingsP.split("\n") : null;
+                                String strPVal = lines != null && lines.length > 0 ? lines[0] : null;
+                                String strN = lines != null && lines.length > 1 ? lines[1] : null;
+                                if (strPVal != null)
+                                    pVal = Double.valueOf(strPVal);
+                                if (strN != null)
+                                    n = Double.valueOf(strN);
+                            } catch (Exception e) {
+                                System.err.println("[M] Error: " + values.getSingleBinding() + " is a non valid p-value: " + wingsP);
+                            }
                             if (pVal != null) {
+                                System.out.println("[M] Detected p-value: " + pVal);
                                 newResult.setConfidenceType("p-Value"); //FIXME, set a way to determine the kind of confidence we use.
                                 newResult.setConfidenceValue(pVal);
+                            }
+                            if (pVal != null && n != null) {
+                                VariableBinding bindingX = new VariableBinding("X", String.valueOf(n));
+                                bindingX.setDatatype(KBConstants.XSD_NS + "double");
+                                newResult.addValue(bindingX);
+                                VariableBinding bindingY = new VariableBinding("Y", String.valueOf(pVal));
+                                bindingY.setDatatype(KBConstants.XSD_NS + "double");
+                                newResult.addValue(bindingY);
                             }
                         } else if (binding.equals(SPECIAL.BRAIN_VIZ) || binding.equals(SPECIAL.SHINY_LOG)) {
                             String v = downloadAsString(methodAdapter, values.getSingleBinding());
@@ -869,5 +735,16 @@ public class DiskRepository {
 
     public Entity getOrCreateEntity(String username) {
         return this.diskDB.loadOrRegisterEntity(username);
+    }
+
+    public FileAndMeta getOntologyAll() {
+        this.rdf.startRead();
+        Dataset all = this.rdf.fac.getDataset();
+		ByteArrayOutputStream rawBytes = new ByteArrayOutputStream(); 
+        RDFDataMgr.write(rawBytes, all, Lang.NQUADS);
+		byte[] bytes = rawBytes.toByteArray();
+		FileAndMeta fileData = new FileAndMeta(bytes, "application/n-quads");
+        this.rdf.end();
+        return fileData;
     }
 }

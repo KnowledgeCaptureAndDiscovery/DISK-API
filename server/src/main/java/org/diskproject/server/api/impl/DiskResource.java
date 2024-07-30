@@ -507,4 +507,35 @@ public class DiskResource implements DiskService {
     ResponseBuilder rBuild = Response.ok(result.data, result.contentType);
     return rBuild.build();
   }
+
+  @GET
+  @Path("ontology.nq")
+  @Override
+  public Response getOntologyAll() {
+    try {
+      FileAndMeta all = this.repo.getOntologyAll();
+      ResponseBuilder rBuild = Response.ok(all.data, all.contentType);
+      return rBuild.build();
+    } catch (Exception e) {
+      try {
+        // Create Json error response
+        Gson gson = new Gson();
+        ErrorMessage error = new ErrorMessage(e.getMessage());
+        String jsonData = gson.toJson(error);
+
+        // Prepare the response
+        response.setContentType("application/json");
+        response.setCharacterEncoding("utf-8");
+        response.setStatus(500);
+
+        // Send the response
+        response.getWriter().print(jsonData.toString());
+        response.getWriter().flush();
+      } catch (IOException e1) {
+        e1.printStackTrace();
+      }
+    }
+    return null;
+  }
+
 }

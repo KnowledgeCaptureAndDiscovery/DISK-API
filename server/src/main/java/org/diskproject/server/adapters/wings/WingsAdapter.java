@@ -1273,7 +1273,7 @@ public class WingsAdapter extends MethodAdapter {
 				System.out.print("OK\n");
 				return true;
 			} catch (Exception e) {
-				System.err.print("\nERROR: WINGS adapter could not open KB: " + libUri);
+				System.err.print("\nERROR: WINGS adapter could not open KB: " + libUri + "\n");
 				return false;
 			}
 		} else {

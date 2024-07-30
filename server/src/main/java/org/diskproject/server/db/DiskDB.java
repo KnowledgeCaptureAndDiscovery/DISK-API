@@ -113,7 +113,7 @@ public class DiskDB {
         try {
             kb = this.rdf.getFactory().getKB(url, OntSpec.PLAIN, true);
         } catch (Exception e) {
-            System.err.print("Could not open or create KB: " + url);
+            System.err.println("Could not open or create KB: " + url);
         }
         return kb;
     }
@@ -123,7 +123,8 @@ public class DiskDB {
         try {
             kb = this.rdf.getFactory().getKB(url, OntSpec.PLAIN, false);
         } catch (Exception e) {
-            System.err.print("Could not open KB: " + url);
+            System.err.println("Could not open KB: " + url);
+            e.printStackTrace();
         }
         return kb;
     }
@@ -186,13 +187,16 @@ public class DiskDB {
 
     private Graph loadGraphFromKB(String url) {
         KBAPI kb = getKB(url);
+        rdf.startRead();
         if (kb != null) {
             Graph graph = new Graph();
             for (KBTriple t : kb.getAllTriples()) {
                 graph.addTriple(kbTripleToTriple(t));
             }
+            rdf.end();
             return graph;
         }
+        rdf.end();
         return null;
 
     }
@@ -422,10 +426,10 @@ public class DiskDB {
     public Goal loadGoal (String id) {
         String goalId = createGoalURI(id);
         //if (domainKB == null) return null;
+        Graph graph = this.loadGraphFromKB(goalId);
 
         this.rdf.startRead();
         KBObject goalItem = domainKB.getIndividual(goalId);
-        Graph graph = this.loadGraphFromKB(goalId);
         if (goalItem == null || graph == null) {
             this.rdf.end();
             return null;
@@ -710,8 +714,8 @@ public class DiskDB {
 
     // -- Workflow Seeds and execution
     private KBObject writeWorkflowSeed (WorkflowSeed seed, String parentId) {
-        String prefix = parentId != null ? parentId + "/seeds/" : null;
-        KBObject seedObj = domainKB.createObjectOfClass(prefix != null ? prefix + GUID.randomId("") : null , DISKOnt.getClass(DISK.WORKFLOW_SEED));
+        KBObject seedObj = domainKB.createObjectOfClass(parentId + "/" + GUID.randomId("seed"),
+                DISKOnt.getClass(DISK.WORKFLOW_SEED));
         return _writeWorkflowSeed(seed, seedObj);
     }
 
@@ -785,8 +789,7 @@ public class DiskDB {
     }
 
     private KBObject writeWorkflowInstantiation (WorkflowInstantiation inst, String parentId) {
-        String prefix = parentId != null ? parentId + "/instantiations/" : null;
-        String fullId = prefix != null ? prefix + GUID.randomId("") : null;
+        String fullId = parentId + "/" + GUID.randomId("instantiation");
         KBObject seedObj = domainKB.createObjectOfClass(fullId, DISKOnt.getClass(DISK.WORKFLOW_INSTANTIATION));
         KBObject instObj = _writeWorkflowSeed(inst, seedObj);
         String instId = instObj.getID();
@@ -838,10 +841,8 @@ public class DiskDB {
     }
 
     private KBObject writeExecutionRecord (ExecutionRecord exec, String parentId) {
-        String prefix = parentId != null ? parentId + "/executions/" : null;
-        return _writeExecutionRecord(exec, domainKB.createObjectOfClass(
-            prefix != null ? prefix + GUID.randomId("") : null,
-            DISKOnt.getClass(DISK.EXECUTION_RECORD)));
+        String fullId = parentId + "/" + GUID.randomId("execution");
+        return _writeExecutionRecord(exec, domainKB.createObjectOfClass(fullId, DISKOnt.getClass(DISK.EXECUTION_RECORD)));
     }
 
     private KBObject _writeExecutionRecord (ExecutionRecord exec, KBObject execObj) {
