@@ -32,28 +32,35 @@
 			<artifactId>javax.ws.rs-api</artifactId>
 			<version>${javax.rs-api.version}</version>
 		</dependency>
+
+		<!-- Jackson Annotations -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
 		
-		<!-- Servlet API -->
+		<!-- Servlet API
 		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
 			<version>${servlet-api.version}</version>
 			<scope>provided</scope>
-		</dependency>
+		</dependency> -->
 		
-		<!-- Jackson Annotations -->
+		<!-- Jackson Annotations
 		<dependency>
 			<groupId>com.fasterxml.jackson.jaxrs</groupId>
 			<artifactId>jackson-jaxrs-json-provider</artifactId>
 			<version>${jackson.version}</version>
-		</dependency>
+		</dependency> -->
 		
-		<!-- Apache commons lang -->
+		<!-- Apache commons lang 
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 			<version>3.4</version>
-		</dependency>
+		</dependency> -->
 		
 	</dependencies>
 
