@@ -737,7 +737,7 @@ public class DiskRepository {
         return this.diskDB.loadOrRegisterEntity(username);
     }
 
-    /*public FileAndMeta getOntologyAll() {
+    public FileAndMeta getOntologyAll() {
         this.rdf.startRead();
         Dataset all = this.rdf.fac.getDataset();
 		ByteArrayOutputStream rawBytes = new ByteArrayOutputStream(); 
@@ -746,5 +746,5 @@ public class DiskRepository {
 		FileAndMeta fileData = new FileAndMeta(bytes, "application/n-quads");
         this.rdf.end();
         return fileData;
-    }*/
+    }
 }

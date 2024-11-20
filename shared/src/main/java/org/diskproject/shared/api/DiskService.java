@@ -220,8 +220,8 @@ public interface DiskService {
       @JsonProperty("request") ExternalDataRequest r);
 
   // Download ontologies
-  //@GET
-  //@Path("ontology.nq")
-  //@Produces("application/rdf+xml")
-  //public Response getOntologyAll();
+  @GET
+  @Path("ontology.nq")
+  @Produces("application/rdf+xml")
+  public Response getOntologyAll();
 }
