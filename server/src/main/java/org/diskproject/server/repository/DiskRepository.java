@@ -87,7 +87,12 @@ public class DiskRepository {
     public static DiskRepository get() {
         if (!creatingKB && singleton == null) {
             creatingKB = true;
-            singleton = new DiskRepository();
+            try {
+                singleton = new DiskRepository();
+            } catch (Exception e) {
+                System.err.println("Error while creating DISK Repository. Could not connect with one or more services.");
+                e.printStackTrace();
+            }
             creatingKB = false;
         }
         return singleton;

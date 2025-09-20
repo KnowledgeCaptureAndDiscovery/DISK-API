@@ -62,17 +62,11 @@ public class DiskResource implements DiskService {
   @Context HttpServletRequest request;
   @Context SecurityContext securityContext;
 
-  DiskRepository repo;
-
-  public DiskResource() {
-    this.repo = DiskRepository.get();
-  }
-
   @GET
   @Path("server/endpoints")
   @Override
   public List<DataAdapterResponse> getEndpoints() {
-    return this.repo.getDataAdapters();
+    return DiskRepository.get().getDataAdapters();
   }
 
   /*
@@ -82,7 +76,7 @@ public class DiskResource implements DiskService {
   @Path("vocabulary")
   @Override
   public Map<String, Vocabulary> getVocabularies() {
-    return this.repo.getVocabularies();
+    return DiskRepository.get().getVocabularies();
   }
 
   @GET
@@ -91,7 +85,7 @@ public class DiskResource implements DiskService {
   @Override
   public String reloadVocabularies() {
     try {
-      this.repo.reloadKBCaches();
+      DiskRepository.get().reloadKBCaches();
       return "OK";
     } catch (Exception e) {
       e.printStackTrace();
@@ -114,7 +108,7 @@ public class DiskResource implements DiskService {
 
     String username = (String) request.getAttribute("username"); //username is an email.
     if (username != null) {
-      Entity author = this.repo.getOrCreateEntity(username);
+      Entity author = DiskRepository.get().getOrCreateEntity(username);
       obj.setAuthor(author);
     }
   }
@@ -128,14 +122,14 @@ public class DiskResource implements DiskService {
   public Goal addGoal(
       @JsonProperty("goal") Goal goal) {
     this.addAuthorFromRequest(goal, request);
-    return this.repo.addGoal(goal);
+    return DiskRepository.get().addGoal(goal);
   }
 
   @GET
   @Path("goals")
   @Override
   public List<Goal> listGoals() {
-    return this.repo.listGoals();
+    return DiskRepository.get().listGoals();
   }
 
   @GET
@@ -143,7 +137,7 @@ public class DiskResource implements DiskService {
   @Override
   public Goal getGoal(
       @PathParam("id") String id) {
-    return this.repo.getGoal(id);
+    return DiskRepository.get().getGoal(id);
   }
 
   @PUT
@@ -153,7 +147,7 @@ public class DiskResource implements DiskService {
       @PathParam("id") String id,
       @JsonProperty("goal") Goal goal) {
     this.addAuthorFromRequest(goal, request);
-    return this.repo.updateGoal(id, goal);
+    return DiskRepository.get().updateGoal(id, goal);
   }
 
   @DELETE
@@ -161,7 +155,7 @@ public class DiskResource implements DiskService {
   @Override
   public void deleteGoal(
       @PathParam("id") String id) {
-    this.repo.removeGoal(id);
+    DiskRepository.get().removeGoal(id);
   }
 
   @GET
@@ -173,7 +167,7 @@ public class DiskResource implements DiskService {
     response.setContentType("application/json");
     response.setCharacterEncoding("utf-8");
     try {
-      return this.repo.queryGoal(id);
+      return DiskRepository.get().queryGoal(id);
     } catch (NotFoundException e) {
       try {
         ErrorMessage error = new ErrorMessage(e.getMessage());
@@ -222,14 +216,14 @@ public class DiskResource implements DiskService {
   public LineOfInquiry addLOI(
       @JsonProperty("loi") LineOfInquiry loi) {
     this.addAuthorFromRequest(loi, request);
-    return this.repo.addLOI(loi);
+    return DiskRepository.get().addLOI(loi);
   }
 
   @GET
   @Path("lois")
   @Override
   public List<LineOfInquiry> listLOIs() {
-    return this.repo.listLOIs();
+    return DiskRepository.get().listLOIs();
   }
 
   @GET
@@ -237,7 +231,7 @@ public class DiskResource implements DiskService {
   @Override
   public LineOfInquiry getLOI(
       @PathParam("id") String id) {
-    return this.repo.getLOI(id);
+    return DiskRepository.get().getLOI(id);
   }
 
   @PUT
@@ -247,7 +241,7 @@ public class DiskResource implements DiskService {
       @PathParam("id") String id,
       @JsonProperty("loi") LineOfInquiry loi) {
     this.addAuthorFromRequest(loi, request);
-    return this.repo.updateLOI(id, loi);
+    return DiskRepository.get().updateLOI(id, loi);
   }
 
   @DELETE
@@ -255,7 +249,7 @@ public class DiskResource implements DiskService {
   @Override
   public void deleteLOI(
       @PathParam("id") String id) {
-    this.repo.removeLOI(id);
+    DiskRepository.get().removeLOI(id);
   }
 
   /*
@@ -266,7 +260,7 @@ public class DiskResource implements DiskService {
   @Override
   public TriggeredLOI addTriggeredLOI(
       @JsonProperty("tloi") TriggeredLOI tloi) {
-    return this.repo.addTriggeredLOI(tloi);
+    return DiskRepository.get().addTriggeredLOI(tloi);
   }
 
   @PUT
@@ -276,14 +270,14 @@ public class DiskResource implements DiskService {
       @PathParam("id") String id,
       @JsonProperty("tloi") TriggeredLOI tloi) {
     this.addAuthorFromRequest(tloi, request);
-    return this.repo.updateTriggeredLOI(id, tloi);
+    return DiskRepository.get().updateTriggeredLOI(id, tloi);
   }
 
   @GET
   @Path("tlois")
   @Override
   public List<TriggeredLOI> listTriggeredLOIs() {
-    return this.repo.listTriggeredLOIs();
+    return DiskRepository.get().listTriggeredLOIs();
   }
 
   @GET
@@ -291,7 +285,7 @@ public class DiskResource implements DiskService {
   @Override
   public TriggeredLOI getTriggeredLOI(
       @PathParam("id") String id) {
-    return this.repo.getTriggeredLOI(id);
+    return DiskRepository.get().getTriggeredLOI(id);
   }
 
   @DELETE
@@ -299,7 +293,7 @@ public class DiskResource implements DiskService {
   @Override
   public void deleteTriggeredLOI(
       @PathParam("id") String id) {
-    this.repo.removeTriggeredLOI(id);
+    DiskRepository.get().removeTriggeredLOI(id);
   }
 
   /*
@@ -311,7 +305,7 @@ public class DiskResource implements DiskService {
   public List<WorkflowTemplateResponse> listWorkflows() {
     Gson response_error = new Gson();
     try {
-      return this.repo.methodAdapters.getWorkflowList();
+      return DiskRepository.get().methodAdapters.getWorkflowList();
     } catch (Exception e) {
       try {
         // Create Json error response
@@ -339,7 +333,7 @@ public class DiskResource implements DiskService {
   public List<WorkflowVariable> getWorkflowVariables(
       @PathParam("source") String source,
       @PathParam("id") String id) {
-    return this.repo.methodAdapters.getWorkflowVariablesByName(source, id);
+    return DiskRepository.get().methodAdapters.getWorkflowVariablesByName(source, id);
   }
 
   @GET
@@ -348,7 +342,7 @@ public class DiskResource implements DiskService {
   public Execution monitorWorkflow(
       @PathParam("source") String source,
       @PathParam("id") String id) {
-    return this.repo.getWorkflowRunStatus(source, id);
+    return DiskRepository.get().getWorkflowRunStatus(source, id);
   }
 
   @GET
@@ -360,7 +354,7 @@ public class DiskResource implements DiskService {
       @QueryParam("query") String query) {
     try {
       // return WingsAdapter.get().getWorkflowList();
-      return repo.queryExternalStore(endpoint, query, variables);
+      return DiskRepository.get().queryExternalStore(endpoint, query, variables);
     } catch (Exception e) {
       try {
         // Create Json error response
@@ -390,7 +384,7 @@ public class DiskResource implements DiskService {
   @Path("questions")
   @Override
   public List<Question> listQuestions() {
-    return this.repo.listHypothesesQuestions();
+    return DiskRepository.get().listHypothesesQuestions();
   }
 
   @POST
@@ -398,7 +392,7 @@ public class DiskResource implements DiskService {
   public Map<String, List<VariableOption>> listDynamicOptions(
       @JsonProperty("config") QuestionOptionsRequest opts) {
     try {
-      return this.repo.listDynamicOptions(opts);
+      return DiskRepository.get().listDynamicOptions(opts);
     } catch (Exception e) {
       try {
         e.printStackTrace();
@@ -431,7 +425,7 @@ public class DiskResource implements DiskService {
   public List<TriggeredLOI> getExecutions(
       @PathParam("hid") String hid,
       @PathParam("lid") String lid) {
-    return this.repo.getTLOIsForHypothesisAndLOI(hid, lid);
+    return DiskRepository.get().getTLOIsForHypothesisAndLOI(hid, lid);
   }
 
   @GET
@@ -441,7 +435,7 @@ public class DiskResource implements DiskService {
       @PathParam("hid") String hid,
       @PathParam("lid") String lid) {
     try {
-      return this.repo.runHypothesisAndLOI(hid, lid);
+      return DiskRepository.get().runHypothesisAndLOI(hid, lid);
     } catch (Exception e) {
       try {
         // Create Json error response
@@ -469,7 +463,7 @@ public class DiskResource implements DiskService {
   @Override
   public Boolean runHypotheses() {
     try {
-      return this.repo.runAllHypotheses();
+      return DiskRepository.get().runAllHypotheses();
     } catch (Exception e) {
       try {
         // Create Json error response
@@ -496,7 +490,7 @@ public class DiskResource implements DiskService {
   @Path("getData")
   @Override
   public Response getOutputData(@JsonProperty("request") ExternalDataRequest r) {
-    FileAndMeta result = this.repo.getOutputData(r.getSource(), r.getDataId());
+    FileAndMeta result = DiskRepository.get().getOutputData(r.getSource(), r.getDataId());
     if (result == null) {
       ResponseBuilder rBuilder = Response.status(Response.Status.NOT_FOUND);
       return rBuilder.type(MediaType.TEXT_PLAIN)
@@ -513,7 +507,7 @@ public class DiskResource implements DiskService {
   @Override
   public Response getOntologyAll() {
     try {
-      FileAndMeta all = this.repo.getOntologyAll();
+      FileAndMeta all = DiskRepository.get().getOntologyAll();
       ResponseBuilder rBuild = Response.ok(all.data, all.contentType);
       return rBuild.build();
     } catch (Exception e) {
