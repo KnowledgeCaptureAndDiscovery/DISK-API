@@ -9,15 +9,17 @@ a new workflow execution will be send. Each experiment execution is stored with 
 metadata and outputs for posterior analysis.
 
 
-## Documentation
+## Documentation and Links
 
-Full documentation is available at [https://disk.readthedocs.io](https://disk.readthedocs.io)
+- Full documentation is available at [https://disk.readthedocs.io](https://disk.readthedocs.io)
+- The project website is available at [https://disk-project.org/index.html](https://disk-project.org/index.html)
+- Check our our ENIGMA DISK live demo at [https://disk.isi.edu](https://disk.isi.edu)
 
+## Related repositories
+
+- [DISK User Interface](https://github.com/KnowledgeCaptureAndDiscovery/DISK-UI) the web interface for this application.
+- We use [WINGS](https://github.com/KnowledgeCaptureAndDiscovery/WINGS) as the workflow manager for the DISK runs.
 
 ## Installation
 
 Please read the installation guide available at [readthedocs.io](https://disk.readthedocs.io/en/stable/admin-guide/installation/)
-
-## Related repositories
-
-- [DISK User Interface](https://github.com/KnowledgeCaptureAndDiscovery/DISK-UI)
