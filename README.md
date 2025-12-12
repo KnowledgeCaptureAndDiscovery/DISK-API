@@ -13,6 +13,7 @@ metadata and outputs for posterior analysis.
 
 - Full documentation is available at [https://disk.readthedocs.io](https://disk.readthedocs.io)
 - The project website is available at [https://disk-project.org/index.html](https://disk-project.org/index.html)
+- ENIGMA DISK is a domain specific implementation of DISK for the neuroscience domain. [Read more](https://knowledgecaptureanddiscovery.github.io/NeuroDISK/)
 - Check our our ENIGMA DISK live demo at [https://disk.isi.edu](https://disk.isi.edu)
 
 ## Related repositories
